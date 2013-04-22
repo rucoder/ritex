@@ -21,6 +21,8 @@
 
 #include "DeviceCommandFactory.h"
 
+#include <sqlite3.h>
+
 #define PID_FILE "/tmp/retex.pid"
 #define BD_MAX_CLOSE 8192
 
@@ -259,6 +261,8 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 int Adapter::Run() {
 	//TODO: validate command according to adapter properties
 
+	UpdateChannelList(8);
+
 	CmdLineCommand* pCommand = m_pCmdLineParser->GetCommand();
 
 	if(pCommand != NULL) {
@@ -351,11 +355,50 @@ bool Adapter::AddParameter(AdapterParameter* parameter)
 
 bool Adapter::UpdateChannelList(int devId)
 {
+	// clear old list
     while(!m_channelList.empty())
     {
         delete m_channelList.front();
         m_channelList.pop_front();
     }
+
+    sqlite3* pDb;
+    char *zErrMsg = 0;
+
+    int rc = sqlite3_open_v2("/home/ruinmmal/ic_data/ic_data3.sdb", &pDb,SQLITE_OPEN_READONLY, NULL);
+
+    if(rc != SQLITE_OK)
+    {
+    	printf("[SQL] couldn't open DB\n");
+    	sqlite3_close(pDb);
+    	return false;
+    }
+
+    sqlite3_stmt* pStm;
+
+    if ((rc = sqlite3_prepare_v2(pDb, "select * from tblChanelInfo where DeviceId == 8", - 1,
+    		&pStm, NULL)) == SQLITE_OK) {
+    	if (pStm != NULL) {
+    		int cols = sqlite3_column_count(pStm);
+    		printf("[SQL] cols=%d\n", cols);
+    		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
+
+    		}
+    		sqlite3_finalize(pStm);
+    	}
+    } else {
+    	printf("[SQL] error preparing %d %s\n", rc, sqlite3_errmsg(pDb));
+    }
+
+	sqlite3_close(pDb);
+    rc = sqlite3_exec(pDb,"select * from tblchanelinfo  where  DeviceId == 8", NULL, NULL, &zErrMsg);
+
+//    if (rc != SQLITE_OK)
+//    {
+//    	printf("[SQL] couldn't open DB\n");
+//    	sqlite3_close(pDb);
+//    	return false;
+//    }
 
 	//TODO: get settings from DB. stub for now
     DeviceChannel* pChannel = new DeviceChannel();
