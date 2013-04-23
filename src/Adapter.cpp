@@ -261,14 +261,14 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 int Adapter::Run() {
 	//TODO: validate command according to adapter properties
 
-	UpdateChannelList(8);
+	CmdLineCommand* pCmdLineCommand = m_pCmdLineParser->GetCommand();
 
-	CmdLineCommand* pCommand = m_pCmdLineParser->GetCommand();
+	if(pCmdLineCommand != NULL && pCmdLineCommand->Compile()) {
+#if 1
+		pCmdLineCommand->Dump();
+#endif
 
-	if(pCommand != NULL) {
-		pCommand->Dump();
-
-		DeviceCommand* pDevCmd = DeviceCommandFactory::CreateDeviceCommand(*pCommand, this);
+		DeviceCommand* pDevCmd = DeviceCommandFactory::CreateDeviceCommand(*pCmdLineCommand, this);
 
 		//execute and exit
 		if(!pDevCmd->isNeedDaemon()) {
@@ -280,6 +280,13 @@ int Adapter::Run() {
 		// need launch daemon and establish communication channel before execution
 		else
 		{
+			//set device ID first so daemon will know it
+			if(pCmdLineCommand->m_deviceId < 0) {
+				printf("ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
+				return -1;
+			}
+			m_pDevice->SetDeviceId(pCmdLineCommand->m_deviceId);
+
 			switch (BecomeDaemon()) {
 				case CONTEXT_ERROR: //error. may happen from either child or parent
 					::syslog(LOG_ERR, "Couldn't run daemon. Exiting");
@@ -306,6 +313,10 @@ int Adapter::Run() {
 					//TODO: create communication thread
 					//TODO: create RS-485 processor
 					//TODO: create DB flusher
+
+					//Update channels information from DB
+					UpdateChannelList(8);
+
 					DaemonLoop();
 					break;
 			}
@@ -338,6 +349,7 @@ int Adapter::Run() {
 	return 0;
 }
 
+#if 0
 void Adapter::printSupportedParameters()
 {
     for(std::list<AdapterParameter*>::iterator itr = m_parameterList.begin(); itr != m_parameterList.end(); itr++)
@@ -352,15 +364,16 @@ bool Adapter::AddParameter(AdapterParameter* parameter)
 	m_parameterList.push_back(parameter);
 	return true;
 }
+#endif
 
 bool Adapter::UpdateChannelList(int devId)
 {
 	// clear old list
-    while(!m_channelList.empty())
-    {
-        delete m_channelList.front();
-        m_channelList.pop_front();
-    }
+//    while(!m_channelList.empty())
+//    {
+//        delete m_channelList.front();
+//        m_channelList.pop_front();
+//    }
 
     sqlite3* pDb;
     char *zErrMsg = 0;
@@ -402,7 +415,7 @@ bool Adapter::UpdateChannelList(int devId)
 
 	//TODO: get settings from DB. stub for now
     DeviceChannel* pChannel = new DeviceChannel();
-    m_channelList.push_back(pChannel);
+//    m_channelList.push_back(pChannel);
 }
 
 

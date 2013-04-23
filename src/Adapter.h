@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include "CmdLineParser.h"
 #include "AdapterParameter.h"
-#include "DeviceChannel.h"
+#include "Device.h"
 #include "DaemonCommChannel.h"
 #include <list>
 class Adapter {
@@ -35,16 +35,17 @@ protected:
 	std::string m_adapterDescription;
 
 	CmdLineParser * m_pCmdLineParser;
-	std::list<AdapterParameter*> m_parameterList;
 
-	//TODO: should we support several list for several device IDs?
-	std::list<DeviceChannel*> m_channelList;
+	// device attached
+	Device* m_pDevice;
 
-	void printAdapterInfo();
-	void printSupportedCommands();
-	void printSupportedParameters();
+	// supported additional parameters. assume all options accept all parameters
+	//TODO:
+
+	//supported commands
 
 	// for daemon communication
+	// TODO: hide somehow. make abstract channel
 	std::string m_socket;
 	DaemonCommChannel* m_pCommChannel;
 
@@ -59,7 +60,7 @@ public:
 	const std::string& GetName() { return m_adapterName; };
 	const std::string& GetVersion() { return m_adapterVersion; };
 	const std::string& GetDescription() { return m_adapterDescription; };
-	const std::list<AdapterParameter*> GetParameterList() { return m_parameterList; }
+	Device* GetDevice() { return m_pDevice; }
 	DaemonCommChannel* GetCommChannel() { return m_pCommChannel; };
 };
 

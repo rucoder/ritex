@@ -36,17 +36,21 @@ RetexAdapter::RetexAdapter(CmdLineParser* parser)
 	m_adapterVersion = "v0.1 alpha";
 	m_adapterDescription = "Адаптер Ритекс";
 
-	AdapterParameter* p = new AdapterParameter(1050100010, "Канал состояния", true, false, "X:X:X:X");
-	AddParameter(p);
+	m_pDevice = new Device();
 
-	p = new AdapterParameter(1050109000, "Число оборотов ВД", true, false, "X:X:X:X");
-	AddParameter(p);
+	// add device channels
+	m_pDevice->AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X", false)));
 
-	p = new AdapterParameter(1050110000, "Средний ток ВД", true, false, "X:X:X:X");
-	AddParameter(p);
 
-	p = new AdapterParameter(1050111010, "Напряжение сети", true, false, "X:X:X:X");
-	AddParameter(p);
+	Sensor* pSensor = new Sensor(1);
+
+	pSensor->AddChannel(new DeviceChannel(1, false, new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X", false)));
+	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050110000, "Средний ток ВД", true, "X:X:X:X", false)));
+	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050111010, "Напряжение сети", true, "X:X:X:X", false)));
+//	pSensor->AddChannel(new DeviceChannel());
+//	pSensor->AddChannel(new DeviceChannel());
+
+	m_pDevice->AddSensor(pSensor);
 
 	//set socket name
 	m_socket = "ritex_socket";

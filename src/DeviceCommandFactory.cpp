@@ -8,11 +8,13 @@
 #include "DeviceCommandFactory.h"
 #include "ShowInfoHostCommand.h"
 #include "DaemonCommandChangeSetting.h"
+#include "HostCommandShowParameters.h"
 
 #include <stdlib.h>
 #include <vector>
 #include <string>
 
+#include <stdio.h>
 DeviceCommandFactory::DeviceCommandFactory() {
 	// TODO Auto-generated constructor stub
 
@@ -31,17 +33,20 @@ DeviceCommand* DeviceCommandFactory::CreateDeviceCommand(CmdLineCommand& cmdLine
 	case CMD_COMMAND:
 		{
 			//TODO: assign functions for command creation to supported command list or at least make index definitions
-			int cmd = atoi(cmdLineCommand.m_cmdType.c_str());
-			switch (cmd) {
+			switch (cmdLineCommand.m_cmdId) {
 				case 3: //change setting
-					//std::vector<std::string> x = std::string::split("one:two::three", ':');
+					// TODO: get values from command
 					return new DaemonCommandChangeSetting(pAdapter,987,1.5);
 				default:
 					break;
 			}
 		}
 		break;
+	case CMD_GET_CONNECTED_DEVICE_INFO:
+		return new HostCommandShowParameters(pAdapter);
+		break;
 	default:
+		printf("WARNING: NOT SUPPORTED: cmdLineCommand.m_cmdLineCommandType == %d\n", cmdLineCommand.m_cmdLineCommandType);
 		return NULL;
 	}
 }

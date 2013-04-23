@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
+#define OPT_INDEX_CMD  0
+#define OPT_INDEX_SP   1
+#define OPT_INDEX_EXIT 2
 
 struct option CmdLineParser::m_LongOptions[] = { { "cmd", optional_argument, 0,
 		0 }, { "sp", optional_argument, 0, 0 }, { "exit", no_argument, 0, 0 }, {
@@ -144,7 +146,7 @@ bool CmdLineParser::Parse() {
 		case OPTION_CMD_DEVID:
 			switch (c) {
 				case 1:
-					m_pCommand->m_cmdType = optarg;
+					m_pCommand->m_cmdTypeRaw = optarg;
 					state = OPTION_CMD_TYPE;
 					break;
 				default:
@@ -157,7 +159,7 @@ bool CmdLineParser::Parse() {
 		case OPTION_CMD_TYPE:
 			switch (c) {
 				case 1:
-					m_pCommand->m_message = optarg;
+					m_pCommand->m_messageRaw = optarg;
 					state = OPTION_CMD_MSG;
 					break;
 				default:
@@ -171,7 +173,7 @@ bool CmdLineParser::Parse() {
 		case OPTION_CMD_MSG:
 			switch (c) {
 				case 1:
-					m_pCommand->m_source = optarg;
+					m_pCommand->m_sourceRaw = optarg;
 					state = OPTION_CMD_SRC;
 					break;
 				default:
@@ -185,7 +187,7 @@ bool CmdLineParser::Parse() {
 		case OPTION_CMD_SRC:
 			switch (c) {
 				case 1:
-					m_pCommand->m_cmdId = optarg;
+					m_pCommand->m_cmdIdRaw = optarg;
 					state = OPTION_CMD_ID;
 					break;
 				default:
@@ -199,10 +201,11 @@ bool CmdLineParser::Parse() {
 		case OPTION_CMD_ID:
 			switch (c) {
 				case 0:
-					if(option_index == 1) {
+					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						//TODO error
+						printf("ERROR: [-cmd] -sp expected.\n");
+						isError = true;
 					}
 					break;
 				default:
@@ -232,13 +235,13 @@ bool CmdLineParser::Parse() {
 			// -d may only have -a parameter list in format '-a name value -a name value ...'
 		case OPTION_D:
 			printf("command -d: ");
-			//TODO: create command
+			m_pCommand->SetCmdLineCmdType(CMD_GET_CONNECTED_DEVICE_INFO);
 			switch (c) {
 			case 'a':
 				state = OPTION_A_NAME;
 				break;
 			default:
-				printf("ERROR: option -t requires -a parameter list\n");
+				printf("ERROR: option -d requires -a parameter list\n");
 				isError = true;
 				break;
 
@@ -257,8 +260,6 @@ bool CmdLineParser::Parse() {
 		case OPTION_A_NAME:
 			switch (c) {
 			case 1:
-				//TODO: save name
-				//printf("name=%s\n", optarg);
 				lastArgName = optarg;
 				state = OPTION_A_VALUE;
 				break;
@@ -274,7 +275,6 @@ bool CmdLineParser::Parse() {
 		case OPTION_A_VALUE:
 			switch (c) {
 			case 1:
-				//printf("value=%s\n", optarg);
 				state = OPTION_A_LIST;
 				m_pCommand->AddParameter(lastArgName, optarg);
 				break;
@@ -291,8 +291,8 @@ bool CmdLineParser::Parse() {
 			{
 				case 1:
 					printf("[-r] device ID: %s\n", optarg);
+					m_pCommand->SetCmdLineCmdType(CMD_GET_MESUREMENTS);
 					m_pCommand->SetDeviceId(optarg);
-					//TODO: save device ID
 					state = OPTION_R_DEVID;
 					break;
 				default:
@@ -305,10 +305,11 @@ bool CmdLineParser::Parse() {
 		case OPTION_R_DEVID:
 			switch (c) {
 				case 0:
-					if(option_index == 1) {
+					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						//TODO: error
+						printf("ERROR: [-r] -sp expected\n");
+						isError = true;
 					}
 					break;
 				default:
@@ -322,8 +323,7 @@ bool CmdLineParser::Parse() {
 		case OPTION_SP:
 			switch (c) {
 				case 1:
-					//TODO: save script path
-					m_pCommand->m_scriptPath = optarg;
+					m_pCommand->m_scriptPathRaw = optarg;
 					state = OPTION_SP_PATH;
 					break;
 				default:

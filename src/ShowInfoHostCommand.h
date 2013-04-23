@@ -16,6 +16,8 @@ public:
 	ShowInfoHostCommand(Adapter* adapter);
 	virtual ~ShowInfoHostCommand();
 	virtual bool Execute();
+private:
+	void printParameter(AdapterParameter* pParam, bool isDeviceChannel);
 };
 
 #endif /* SHOWINFOHOSTCOMMAND_H_ */
