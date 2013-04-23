@@ -12,4 +12,16 @@
 *.la
 *.a
 
+# Eclipse out dirs
 Debug
+Release
+
+# ARM target out directory and executable
+arm_obj
+Ritex
+
+#gedit backup files
+*~
+
+# test data bases
+data
