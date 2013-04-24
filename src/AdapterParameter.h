@@ -23,9 +23,13 @@ private:
 	std::string m_paramArgs;
 	// only applicable if m_bEventDriven == true
 	std::map<std::string, float> m_ValueRangeMap;
+
+	// controller specific data used to get parameter from HW
+	//TODO: make it more C++-ish
+	void* m_ControllerData;
 public:
 	AdapterParameter();
-	AdapterParameter(int id, const char* name, bool isOverridable, char* args, bool isEventDriven = false);
+	AdapterParameter(int id, const char* name, bool isOverridable, char* args, bool isEventDriven = false, void* controllerData = NULL);
 	virtual ~AdapterParameter();
 
 	bool SetValueRange(std::string name, float value);

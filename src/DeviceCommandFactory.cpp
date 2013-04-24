@@ -44,7 +44,9 @@ DeviceCommand* DeviceCommandFactory::CreateDeviceCommand(CmdLineCommand& cmdLine
 		break;
 	case CMD_GET_CONNECTED_DEVICE_INFO:
 		return new HostCommandShowParameters(pAdapter);
-		break;
+	case CMD_GET_MESUREMENTS:
+		// dummy implementation since we just need start daemon
+		return new DaemonCommand();
 	default:
 		printf("WARNING: NOT SUPPORTED: cmdLineCommand.m_cmdLineCommandType == %d\n", cmdLineCommand.m_cmdLineCommandType);
 		return NULL;

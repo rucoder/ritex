@@ -26,6 +26,11 @@
 //pthread
 #include <pthread.h>
 
+//comm port
+#include <termios.h>
+#include <stdio.h>
+
+
 #include "RetexAdapter.h"
 
 RetexAdapter::RetexAdapter(CmdLineParser* parser)
@@ -35,30 +40,35 @@ RetexAdapter::RetexAdapter(CmdLineParser* parser)
 	m_adapterName = "Ritex";
 	m_adapterVersion = "v0.1 alpha";
 	m_adapterDescription = "Адаптер Ритекс";
+	//base part of socket name
+	m_socket = "ritex_socket";
 
+	//populate device tree structure
 	m_pDevice = new Device();
 
 	// add device channels
-	m_pDevice->AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X", false)));
+	m_pDevice->AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
 
-
+	// we have one and only sensor
 	Sensor* pSensor = new Sensor(1);
 
-	pSensor->AddChannel(new DeviceChannel(1, false, new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X", false)));
-	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050110000, "Средний ток ВД", true, "X:X:X:X", false)));
-	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050111010, "Напряжение сети", true, "X:X:X:X", false)));
-//	pSensor->AddChannel(new DeviceChannel());
-//	pSensor->AddChannel(new DeviceChannel());
+	pSensor->AddChannel(new DeviceChannel(1, false, new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050110000, "Средний ток ВД", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050111010, "Напряжение сети", true, "X:X:X:X")));
+
+	pSensor->AddChannel(new DeviceChannel(4, false, new AdapterParameter(1050100050, "Загрузка ВД", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(5, false, new AdapterParameter(1050100060, "Дисбаланс входных напряжений", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(6, false, new AdapterParameter(1050100070, "Дисбаланс выходных напряжений", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(7, false, new AdapterParameter(1050100080, "Дисбаланс выходных токов", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(8, false, new AdapterParameter(1050104000, "ТМС, температура двигателя", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(9, false, new AdapterParameter(1000601000, "Наработка оборудования НИ", true, "X:X:X:X")));
 
 	m_pDevice->AddSensor(pSensor);
-
-	//set socket name
-	m_socket = "ritex_socket";
 }
 
 bool RetexAdapter::isDaemonRunning() {
 	/* if PID file exists and we cannot obtain lock then daemon is running*/
-	int fd = open(PID_FILE, O_RDWR);
+	int fd = open(m_pidFileName.c_str(), O_RDWR);
 	if (fd > 0) {
 		if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
 			if (errno == EWOULDBLOCK) {
@@ -80,7 +90,7 @@ RetexAdapter::~RetexAdapter() {
 }
 
 #define BUF_SIZE 100
-#define SV_SOCK_PATH "ritex_socket"
+#define SV_SOCK_PATH "ritex_socket40"
 #define BACKLOG 5
 
 void* socket_loop(void* arg) {
@@ -139,34 +149,166 @@ void* socket_loop(void* arg) {
 	}
 }
 
-int RetexAdapter::DaemonLoop() {
-	pthread_t socket_thread;
+int RetexAdapter::OpenCommPort(std::string port, int speed)
+{
+	struct termios tios;
+    int fd;
 
-	pthread_create(&socket_thread, NULL, socket_loop, NULL);
+	fd = open(port.c_str(), O_RDWR | O_NOCTTY);
+    if (fd < 0) {
+            syslog(LOG_ERR, "[COMM]: Can't open port %s\n", port.c_str());
+            return -1;
+    }
+    //tcgetattr(fd, &(tios[TIOS_OLD])); /* save current port settings */
+    memset(&tios, 0, sizeof(tios));
+    switch (speed) {
+    case 1200:
+    	speed = B1200;
+            break;
+    case 2400:
+    	speed = B2400;
+            break;
+    case 4800:
+    	speed = B4800;
+            break;
+    case 19200:
+    	speed = B19200;
+            break;
+    case 38400:
+    	speed = B38400;
+            break;
+    case 57600:
+    	speed = B57600;
+            break;
+    case 115200:
+    	speed = B115200;
+            break;
+    default:
+    	speed = B9600;
+            break;
+    }
+    tios.c_cflag = speed | CS8 | CLOCAL | CREAD;
+    tios.c_iflag = IGNPAR;
+    tios.c_oflag = 0;
+    /* set input mode (non-canonical, no echo,...) */
+    tios.c_lflag = 0;
 
-	int a = 1;
-	while (1) {
-		::sleep(3);
-		::syslog(LOG_ERR, "I'm daemon running for %d sec.", a * 3);
-		a++;
-	}
-	return 0;
+    tios.c_cc[VTIME] = 1; /* inter-character timer used */
+    tios.c_cc[VMIN] = 200; /* blocking read until 1000 chars received */
+
+    tcflush(fd, TCIFLUSH);
+    tcsetattr(fd, TCSANOW, &tios);
+    return fd;
+
 }
 
-/* -p
- * Ritex|v1.0.3|Адаптер Ритекс
-1050100010|Канал состояния|1|0|X:X:X:X|0
-1050109000|Число оборотов ВД|0|0|X:X:X:X|0
-1050110000|Средний ток ВД|0|0|X:X:X:X|0
-1050111010|Напряжение сети|0|0|X:X:X:X|0
-1050100050|Загрузка ВД|0|0|X:X:X:X|0
-1050100060|Дисбаланс входных напряжений|0|0|X:X:X:X|0
-1050100070|Дисбаланс выходных напряжений|0|0|X:X:X:X|0
-1050100080|Дисбаланс выходных токов|0|0|X:X:X:X|0
-1050104000|ТМС, температура двигателя|0|0|X:X:X:X|0
-1000601000|Наработка оборудования НИ|0|0|X:X:X:X|0
- *
- */
+int RetexAdapter::DaemonLoop() {
+	/*
+	 * -- Before enter to the main loop
+	 * 1. Create communication channel to get commands from host process
+	 * 2. Build offset table for parameters enabled in DB
+	 * 3. Prepare SQL query for storing data to data DB
+	 * 4. Open TTY to device as very last step
+	 *
+	 * -- In the loop
+	 * 1. wait for ping-pong cycle. set window_opened = true
+	 * 2. push data got in response to the DB-writing thread
+	 * 3. check if there is pending command and send if any
+	 */
+
+	pthread_t socket_thread;
+	pthread_create(&socket_thread, NULL, socket_loop, NULL);
+
+
+	int fd = OpenCommPort("/dev/ttySC1", 9600);
+
+	if (fd < 0) {
+		return -1;
+	}
+
+	// TODO: crate state machine
+	while(true) {
+		unsigned char address;
+		unsigned short length;
+		unsigned char command;
+		unsigned char* buffer;
+		bool isBadPacket = false;
+		int result;
+
+		isBadPacket = false;
+
+		//sync to beginig of the packet
+		do {
+			result = read(fd, &address, 1);
+		} while (result == 1 && address != 0x36);
+
+		result = read(fd,&length, 2); //packet length
+
+		result = read(fd, &command, 1); //command ID
+
+		// simple check
+		switch(command) {
+		case 0x84: //1
+		case 0x94: //1
+		case 0x88: //1
+		case 0x9C: //1
+		case 0xA4: //1
+			if (length != 1) {
+				isBadPacket = true;
+			}
+			break;
+		case 0x8C: //2
+		case 0x80: //2
+		case 0xA0: //2
+			if (length != 2) {
+				isBadPacket = true;
+			}
+			break;
+		case 0x90: //4
+			if (length != 4) {
+				isBadPacket = true;
+			}
+			break;
+		case 0x98: //7
+			if (length != 7) {
+				isBadPacket = true;
+			}
+			break;
+		//REPLYS
+		case 0x64: //0x28
+		case 0x68: //0x0213
+		case 0x6C: //0x2E
+		case 0x0B: // 2 // ACK
+		case 0x70: // 5
+			break;
+		default:
+			isBadPacket = true;
+			break;
+		}
+
+		if(isBadPacket) {
+			continue;
+		}
+
+		//we passed sanity check. probably good packet.
+		// read 'length' bytes +2 bytes CRC
+		buffer = new unsigned char[length + 2]; // + 2 for CRC
+		result = read(fd, buffer, length + 2);
+
+		//TODO: check CRC
+		//TODO: pass collected data to DB thread
+
+
+	}
+
+//	int a = 1;
+//	while (1) {
+//		::sleep(3);
+//		::syslog(LOG_ERR, "I'm daemon running for %d sec.", a * 3);
+//		a++;
+//	}
+	return 0;
+}
 
 /*
  * -a

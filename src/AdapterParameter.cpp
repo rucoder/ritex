@@ -8,8 +8,8 @@
 #include "AdapterParameter.h"
 #include <stdio.h>
 
-AdapterParameter::AdapterParameter(int id, const char* name, bool isOverridable, char* args, bool isEventDriven)
-	: m_Id(id), m_Name(name), m_bEventDriven(isEventDriven), m_paramArgs(args), m_bIsOverridable(isOverridable)
+AdapterParameter::AdapterParameter(int id, const char* name, bool isOverridable, char* args, bool isEventDriven, void* controllerData)
+	: m_Id(id), m_Name(name), m_bEventDriven(isEventDriven), m_paramArgs(args), m_bIsOverridable(isOverridable), m_ControllerData(controllerData)
 {
 }
 

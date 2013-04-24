@@ -14,6 +14,9 @@
 #include "Device.h"
 #include "DaemonCommChannel.h"
 #include <list>
+
+#define PID_FILE_PATH "/tmp/"
+
 class Adapter {
 private:
 
@@ -47,6 +50,8 @@ protected:
 	// for daemon communication
 	// TODO: hide somehow. make abstract channel
 	std::string m_socket;
+	std::string m_pidFileName;
+	std::string m_pidFilePath;
 	DaemonCommChannel* m_pCommChannel;
 
 public:
@@ -62,6 +67,7 @@ public:
 	const std::string& GetDescription() { return m_adapterDescription; };
 	Device* GetDevice() { return m_pDevice; }
 	DaemonCommChannel* GetCommChannel() { return m_pCommChannel; };
+	void GeneratePidFileName(int deviceId);
 };
 
 #endif /* ADAPTER_H_ */

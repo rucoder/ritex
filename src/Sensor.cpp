@@ -24,6 +24,7 @@ Sensor::~Sensor() {
 bool Sensor::AddChannel(DeviceChannel* pChannel)
 {
 	m_deviceChannelList.push_back(pChannel);
+	return true;
 }
 
 

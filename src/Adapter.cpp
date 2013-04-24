@@ -23,13 +23,13 @@
 
 #include <sqlite3.h>
 
-#define PID_FILE "/tmp/retex.pid"
+
 #define BD_MAX_CLOSE 8192
 
 
 Adapter::Adapter(CmdLineParser* parser) :
 		m_adapterName("Dummy adapter. REDEFINE ME!"), m_adapterVersion("V 0.0"), m_adapterDescription(
-				"REDEFINE ME!"), m_pCmdLineParser(parser), m_pCommChannel(NULL) {
+				"REDEFINE ME!"), m_pCmdLineParser(parser), m_pCommChannel(NULL), m_pDevice(NULL), m_pidFilePath(PID_FILE_PATH) {
 }
 
 Adapter::~Adapter() {
@@ -197,13 +197,13 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	}
 
 #if 1
-	fd = open(PID_FILE, O_WRONLY | O_CREAT | O_EXCL, 0);
+	fd = open(m_pidFileName.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0);
 	if (fd < 0) {
-		syslog(LOG_ERR, "Cannot open PID file exclusivly %s\n", PID_FILE);
-		fd = open(PID_FILE, O_RDWR);
+		syslog(LOG_ERR, "Cannot open PID file exclusivly %s\n", m_pidFileName.c_str());
+		fd = open(m_pidFileName.c_str(), O_RDWR);
 		if (fd < 0)
 		{
-			syslog(LOG_ERR, "Still cannot open PID file for RD %s\n", PID_FILE);
+			syslog(LOG_ERR, "Still cannot open PID file for RD %s\n", m_pidFileName.c_str());
 			return CONTEXT_ERROR;
 		}
 	}
@@ -280,15 +280,22 @@ int Adapter::Run() {
 		// need launch daemon and establish communication channel before execution
 		else
 		{
-			//set device ID first so daemon will know it
+			//set device ID first so daemon will know it. It cannot be changed until daemon restart
 			if(pCmdLineCommand->m_deviceId < 0) {
 				printf("ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
 				return -1;
 			}
 			m_pDevice->SetDeviceId(pCmdLineCommand->m_deviceId);
+			//create device-oriented socket since several adapter daemons can coexist
+			m_socket+=pCmdLineCommand->m_deviceIdRaw;
+			//generate PID file name
+			GeneratePidFileName(pCmdLineCommand->m_deviceId);
+			//TODO: how to handle -a params the best way?
+
+			printf("PID FILE: %s\n", m_pidFileName.c_str());
 
 			switch (BecomeDaemon()) {
-				case CONTEXT_ERROR: //error. may happen from either child or parent
+				case CONTEXT_ERROR: //error. may happen from either child or parent so call syslog
 					::syslog(LOG_ERR, "Couldn't run daemon. Exiting");
 					_exit(EXIT_FAILURE);
 					break;
@@ -296,8 +303,9 @@ int Adapter::Run() {
 					{
 						m_pCommChannel = new DaemonCommChannel();
 						if(m_pCommChannel != NULL) {
+							printf("opening channel socket %s\n", m_socket.c_str());
 							if(m_pCommChannel->open(m_socket) == 0) {
-								printf("Channel opened\n");
+								printf("Channel opened on socket %s\n", m_socket.c_str());
 								//channel opened, execute command
 								//TODO: not a good idea to have implicit dependency to CommChannel
 								bool result = pDevCmd->Execute();
@@ -315,66 +323,23 @@ int Adapter::Run() {
 					//TODO: create DB flusher
 
 					//Update channels information from DB
-					UpdateChannelList(8);
+					UpdateChannelList(pCmdLineCommand->m_deviceId);
 
 					DaemonLoop();
 					break;
 			}
 
 		}
-
-
-		//TODO: preprocess before become daemon ?
-		//TODO: check that daemon is running?
-#if 0
-		switch (BecomeDaemon()) {
-		case CONTEXT_ERROR: //error
-			::syslog(LOG_ERR, "Couldn't run daemon. Exiting");
-			_exit(EXIT_FAILURE);
-			break;
-		case CONTEXT_PARENT: //we are in parent. wait for daemon init compleate and run command if neccessary
-			ParentLoop();
-			break;
-		case CONTEXT_DAEMON: //in daemon
-			int a = 0;
-			//TODO: create communication thread
-			//TODO: create RS-485 processor
-			//TODO: create DB flusher
-			DaemonLoop();
-			break;
-		}
-#endif
 	}
 
 	return 0;
 }
 
-#if 0
-void Adapter::printSupportedParameters()
-{
-    for(std::list<AdapterParameter*>::iterator itr = m_parameterList.begin(); itr != m_parameterList.end(); itr++)
-    {
-        std::string s = (*itr)->FormatString();
-        printf("%s\n", s.c_str());
-    }
-}
-
-bool Adapter::AddParameter(AdapterParameter* parameter)
-{
-	m_parameterList.push_back(parameter);
-	return true;
-}
-#endif
-
+/*
+ * works in daemon context
+ */
 bool Adapter::UpdateChannelList(int devId)
 {
-	// clear old list
-//    while(!m_channelList.empty())
-//    {
-//        delete m_channelList.front();
-//        m_channelList.pop_front();
-//    }
-
     sqlite3* pDb;
     char *zErrMsg = 0;
 
@@ -382,41 +347,42 @@ bool Adapter::UpdateChannelList(int devId)
 
     if(rc != SQLITE_OK)
     {
-    	printf("[SQL] couldn't open DB\n");
+    	syslog(LOG_ERR,"[SQL] couldn't open DB\n");
     	sqlite3_close(pDb);
     	return false;
     }
 
     sqlite3_stmt* pStm;
 
-    if ((rc = sqlite3_prepare_v2(pDb, "select * from tblChanelInfo where DeviceId == 8", - 1,
-    		&pStm, NULL)) == SQLITE_OK) {
+    char* query = new char[1024];
+
+    if (query == NULL) {
+    	syslog(LOG_ERR,"[SQL] OOM creating query\n");
+    	sqlite3_close(pDb);
+    	return false;
+    }
+    snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where DeviceId == %d AND isOn == 1", devId);
+
+    if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
     	if (pStm != NULL) {
     		int cols = sqlite3_column_count(pStm);
-    		printf("[SQL] cols=%d\n", cols);
+    		syslog(LOG_ERR,"[SQL] cols=%d\n", cols);
     		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
 
     		}
     		sqlite3_finalize(pStm);
     	}
     } else {
-    	printf("[SQL] error preparing %d %s\n", rc, sqlite3_errmsg(pDb));
+    	syslog(LOG_ERR,"[SQL] error preparing %d %s\n", rc, sqlite3_errmsg(pDb));
     }
-
-	sqlite3_close(pDb);
-    rc = sqlite3_exec(pDb,"select * from tblchanelinfo  where  DeviceId == 8", NULL, NULL, &zErrMsg);
-
-//    if (rc != SQLITE_OK)
-//    {
-//    	printf("[SQL] couldn't open DB\n");
-//    	sqlite3_close(pDb);
-//    	return false;
-//    }
-
-	//TODO: get settings from DB. stub for now
-    DeviceChannel* pChannel = new DeviceChannel();
-//    m_channelList.push_back(pChannel);
+    return true;
 }
 
+void Adapter::GeneratePidFileName(int deviceId)
+{
+	char filename[32];
+	snprintf(filename, 32, "%s-%d.pid",m_adapterName.c_str(), deviceId);
+	m_pidFileName = m_pidFilePath+filename;
+}
 
 

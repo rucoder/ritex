@@ -10,9 +10,9 @@
 
 #include "Adapter.h"
 
-#define PID_FILE "/home/ruinmmal/ritex.pid"
-
 class RetexAdapter: public Adapter {
+private:
+	int OpenCommPort(std::string port, int speed);
 public:
 	RetexAdapter() {};
 	RetexAdapter(CmdLineParser* parser);

@@ -17,6 +17,7 @@ protected:
 	bool m_isNeedDaemon;
 public:
 	DeviceCommand(Adapter* adapter, bool needDaemon);
+	DeviceCommand(bool needDaemon);
 	virtual ~DeviceCommand();
 	virtual bool Execute() = 0;
 	bool isNeedDaemon() { return m_isNeedDaemon; };

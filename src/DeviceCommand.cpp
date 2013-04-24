@@ -18,6 +18,12 @@ DeviceCommand::DeviceCommand(Adapter* adapter, bool needDaemon)
 
 }
 
+DeviceCommand::DeviceCommand(bool needDaemon)
+: m_pAdapter(NULL), m_isNeedDaemon(needDaemon)
+{
+
+}
+
 
 DeviceCommand::~DeviceCommand() {
 	// TODO Auto-generated destructor stub

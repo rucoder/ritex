@@ -7,7 +7,8 @@
 
 #include "DaemonCommand.h"
 
-DaemonCommand::DaemonCommand() {
+DaemonCommand::DaemonCommand() : DeviceCommand(true)
+{
 	// TODO Auto-generated constructor stub
 
 }
@@ -20,4 +21,10 @@ DaemonCommand::DaemonCommand(Adapter* adapter) : DeviceCommand(adapter, true)
 DaemonCommand::~DaemonCommand() {
 	// TODO Auto-generated destructor stub
 }
+
+bool DaemonCommand::Execute()
+{
+	return true;
+}
+
 

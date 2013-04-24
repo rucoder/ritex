@@ -15,6 +15,7 @@ public:
 	DaemonCommand();
 	DaemonCommand(Adapter* adapter);
 	virtual ~DaemonCommand();
+	virtual bool Execute();
 };
 
 #endif /* DAEMONCOMMAND_H_ */
