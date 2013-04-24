@@ -19,7 +19,7 @@ protected:
 public:
 	Thread();
 	virtual ~Thread();
-	bool Create(bool createDetached = false);
+	virtual bool Create(bool createDetached = false);
 	bool Join();
 	bool Cancel();
 };
