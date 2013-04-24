@@ -15,6 +15,7 @@
 #include <time.h>
 // close()
 #include <unistd.h>
+#include <assert.h>
 
 DaemonCommChannel::DaemonCommChannel()
 	: m_fd(-1)
@@ -69,11 +70,14 @@ int DaemonCommChannel::close()
 {
 	if(m_fd > 0) {
 		::close(m_fd);
+		m_fd = -1;
 	}
 }
 
 int DaemonCommChannel::send(unsigned char* buffer, int length)
 {
+	assert(isOpened());
+
 	unsigned char* envelope = new unsigned char[length + sizeof(int)];
 	if (envelope == NULL)
 		return -1;
@@ -84,6 +88,7 @@ int DaemonCommChannel::send(unsigned char* buffer, int length)
 
 int DaemonCommChannel::recv(unsigned char* buffer, int length)
 {
+	assert(isOpened());
 #if 0
 	unsigned char* envelope = new unsigned char[length + sizeof(int)];
 	if (envelope == NULL)

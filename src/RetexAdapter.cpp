@@ -220,7 +220,7 @@ int RetexAdapter::DaemonLoop() {
 	pthread_create(&socket_thread, NULL, socket_loop, NULL);
 
 
-	int fd = OpenCommPort("/dev/ttySC1", 9600);
+	int fd = OpenCommPort("/dev/ttyUSB0", 9600);
 
 	if (fd < 0) {
 		return -1;
@@ -327,9 +327,13 @@ com_timeout|list|50000|70000|90000|120000|150000
 2|Команда управления|Команды управления ВД
 ~1|Команды управления ВД|list|7~Левое вращения ВД|8~Правое вращения ВД|9~Включить ВД|10~начать тарировку|11~Сброс ВД|12~Выключить ВД
  */
-
-int RetexAdapter::ParentLoop() {
+#include "EventLoggerThread.h"
+int RetexAdapter::ParentLoop(bool isCommOk) {
 	printf("We are in parent process PID: %d\n", ::getpid());
+//	EventLoggerThread* pLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+//	pLogger->Create();
+//	pLogger->Join();
+	printf("Exiting parent: PID: %d\n", ::getpid());
 	return 0;
 }
 

@@ -30,4 +30,6 @@ $(OUT)/%.o: src/%.cpp
 .PHONY: dirs
 dirs:
 	mkdir -p $(OUT)
-
+clean::
+	rm -rf $(OUT)/*
+	rm -rf $(EXECUTABLE)

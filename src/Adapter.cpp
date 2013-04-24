@@ -22,14 +22,17 @@
 #include "DeviceCommandFactory.h"
 
 #include <sqlite3.h>
+#include <assert.h>
 
 
 #define BD_MAX_CLOSE 8192
 
 
-Adapter::Adapter(CmdLineParser* parser) :
-		m_adapterName("Dummy adapter. REDEFINE ME!"), m_adapterVersion("V 0.0"), m_adapterDescription(
-				"REDEFINE ME!"), m_pCmdLineParser(parser), m_pCommChannel(NULL), m_pDevice(NULL), m_pidFilePath(PID_FILE_PATH) {
+Adapter::Adapter(CmdLineParser* parser)
+	: m_adapterName("Dummy adapter. REDEFINE ME!"), m_adapterVersion("V 0.0"), m_adapterDescription(
+				"REDEFINE ME!"), m_pCmdLineParser(parser), m_pCommChannel(NULL), m_pDevice(NULL), m_pidFilePath(PID_FILE_PATH),
+				m_pEventLogger(NULL), m_pDataLogger(NULL)
+{
 }
 
 Adapter::~Adapter() {
@@ -259,6 +262,13 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 }
 
 int Adapter::Run() {
+
+	//must not ever happen. derived class MUST initialize
+	assert(m_pDevice != NULL);
+	// paranoid check
+	assert(m_pCmdLineParser != NULL);
+
+
 	//TODO: validate command according to adapter properties
 
 	CmdLineCommand* pCmdLineCommand = m_pCmdLineParser->GetCommand();
@@ -268,12 +278,19 @@ int Adapter::Run() {
 		pCmdLineCommand->Dump();
 #endif
 
+		//TODO: declare as interface and move to Device class
 		DeviceCommand* pDevCmd = DeviceCommandFactory::CreateDeviceCommand(*pCmdLineCommand, this);
+
+		if (pDevCmd == NULL) {
+			printf("ERROR: couldn't create  DeviceCommand()\n");
+			return -1;
+		}
 
 		//execute and exit
 		if(!pDevCmd->isNeedDaemon()) {
 			bool result = pDevCmd->Execute(); //blocking call
 			//TODO: get command result and print here instead of execute?
+			delete pCmdLineCommand;
 			delete pDevCmd;
 			return result ? 0 : -1;
 		}
@@ -283,9 +300,11 @@ int Adapter::Run() {
 			//set device ID first so daemon will know it. It cannot be changed until daemon restart
 			if(pCmdLineCommand->m_deviceId < 0) {
 				printf("ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
+				delete pCmdLineCommand;
+				delete pDevCmd;
 				return -1;
 			}
-			m_pDevice->SetDeviceId(pCmdLineCommand->m_deviceId);
+			m_pDevice->setDeviceId(pCmdLineCommand->m_deviceId);
 			//create device-oriented socket since several adapter daemons can coexist
 			m_socket+=pCmdLineCommand->m_deviceIdRaw;
 			//generate PID file name
@@ -312,20 +331,90 @@ int Adapter::Run() {
 								if(result) {
 									//TODO: get return value
 								}
+							} else {
+								printf("Error connecting to daemon on %s\n", m_socket.c_str());
 							}
+						} else {
+							printf("OOM creating DaemonCommChannel\n");
+							delete pCmdLineCommand;
+							delete pDevCmd;
+							return -1;
 						}
-						ParentLoop();
+
+						ParentLoop(m_pCommChannel != NULL && m_pCommChannel->isOpened());
+
+						if(m_pCommChannel) {
+							delete m_pCommChannel;
+						}
+						delete pCmdLineCommand;
+						delete pDevCmd;
 					}
 					break;
+					/*
+					 * !!!!!!! VERY IMPORTANT NOTE !!!!!!!
+					 * Due to specific behavior of pthreads and fork()
+					 * all objects inherited from Thread class must be created in
+					 * CONTEXT_DAEMON
+					 */
 				case CONTEXT_DAEMON: //in daemon
+					/*
+					 * following objects do not have any sense in daemon context.
+					 * they are just copies of parent objects. they actually hold
+					 * command line which was passed to host process
+					 * when daemon was launched. Real command will be passed over AF_UNIX socket
+					 * if needed
+					 */
+					delete pCmdLineCommand;
+					delete pDevCmd;
+
+					/************************ The work starts here ******************/
+					assert(m_pDevice->getDeviceId() > 0);
+
+					//Update channels information from DB
+					if (!UpdateChannelFilter(m_pDevice->getDeviceId())) {
+						//cannot continue. cleanup and exit
+					}
+
+					/*
+					 * Now create all necessary communication facilities:
+					 * - EventLogger
+					 * - DataLogger
+					 * - Command logger
+					 * - Server socket for communication with host process
+					 */
+					//TODO: replace this cascade with functions
+					m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+					if(m_pEventLogger) {
+						if(m_pEventLogger->Create()) {
+							m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
+							if(m_pDataLogger) {
+								if(m_pDataLogger->Create()) {
+									m_pCmdLogger = new CmdLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+									if(m_pCmdLogger) {
+										if(m_pCmdLogger->Create()) {
+											//now we can pass all objects to Device and start data logging
+											m_pDevice->Run(m_pEventLogger, m_pCmdLogger, m_pDataLogger);
+										}
+									}
+								}
+							}
+						}
+					}
+
+					if(m_pEventLogger) {
+						delete m_pEventLogger;
+					}
+					if(m_pDataLogger) {
+						delete m_pDataLogger;
+					}
+
+					if(m_pCmdLogger) {
+						delete m_pCmdLogger;
+					}
 					//TODO: create communication thread
 					//TODO: create RS-485 processor
 					//TODO: create DB flusher
 
-					//Update channels information from DB
-					UpdateChannelList(pCmdLineCommand->m_deviceId);
-
-					DaemonLoop();
 					break;
 			}
 
@@ -338,7 +427,7 @@ int Adapter::Run() {
 /*
  * works in daemon context
  */
-bool Adapter::UpdateChannelList(int devId)
+bool Adapter::UpdateChannelFilter(int devId)
 {
     sqlite3* pDb;
     char *zErrMsg = 0;
@@ -384,5 +473,17 @@ void Adapter::GeneratePidFileName(int deviceId)
 	snprintf(filename, 32, "%s-%d.pid",m_adapterName.c_str(), deviceId);
 	m_pidFileName = m_pidFilePath+filename;
 }
+
+void Adapter::DeletePidFile()
+{
+	//TODO: implement
+}
+
+int Adapter::ParentLoop(bool isCommOk)
+{
+	//dummy implementation. does nothing
+	return 0;
+}
+
 
 

@@ -13,7 +13,9 @@
 #include "AdapterParameter.h"
 #include "Device.h"
 #include "DaemonCommChannel.h"
-#include <list>
+#include "EventLoggerThread.h"
+#include "DataLoggerThread.h"
+#include "CmdLoggerThread.h"
 
 #define PID_FILE_PATH "/tmp/"
 
@@ -25,9 +27,11 @@ private:
 		CONTEXT_PARENT,
 		CONTEXT_ERROR
 	};
-	eExecutionContext BecomeDaemon();
 
+	eExecutionContext BecomeDaemon();
 	int LockPidFile(const char* pidfile);
+	void DeletePidFile();
+	void GeneratePidFileName(int deviceId);
 
 
 protected:
@@ -49,25 +53,29 @@ protected:
 
 	// for daemon communication
 	// TODO: hide somehow. make abstract channel
+	DaemonCommChannel* m_pCommChannel;
+
 	std::string m_socket;
 	std::string m_pidFileName;
 	std::string m_pidFilePath;
-	DaemonCommChannel* m_pCommChannel;
 
+	// logging facilities
+	EventLoggerThread* m_pEventLogger;
+	DataLoggerThread* m_pDataLogger;
+	CmdLoggerThread* m_pCmdLogger;
 public:
 	Adapter(CmdLineParser* parser);
 	bool AddParameter(AdapterParameter* parameter);
 	virtual ~Adapter();
 	virtual int Run();
-	virtual int DaemonLoop() = 0;
-	virtual int ParentLoop() = 0;
-	bool UpdateChannelList(int deviId);
+	//may be useful to create interactive application to test daemon or for unit tests
+	virtual int ParentLoop(bool isCommOk);
+	bool UpdateChannelFilter(int deviId);
 	const std::string& GetName() { return m_adapterName; };
 	const std::string& GetVersion() { return m_adapterVersion; };
 	const std::string& GetDescription() { return m_adapterDescription; };
 	Device* GetDevice() { return m_pDevice; }
 	DaemonCommChannel* GetCommChannel() { return m_pCommChannel; };
-	void GeneratePidFileName(int deviceId);
 };
 
 #endif /* ADAPTER_H_ */

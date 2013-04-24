@@ -11,6 +11,10 @@
 #include "DeviceChannel.h"
 #include "Sensor.h"
 
+#include "DataLoggerThread.h"
+#include "EventLoggerThread.h"
+#include "CmdLoggerThread.h"
+
 #include <list>
 
 //consists of channels and sensors. each sensor has its own channels
@@ -24,9 +28,11 @@ public:
 	virtual ~Device();
 	bool AddSensor(Sensor* pSensor);
 	bool AddChannel(DeviceChannel* pChannel);
-	std::list<Sensor*>& getSensors() { return m_sensorList; };
-	std::list<DeviceChannel*>& getChannels() { return m_deviceChannelList; };
-	void SetDeviceId(int devId) { m_deviceId = devId; };
+	const std::list<Sensor*>& getSensors() const { return m_sensorList; };
+	const std::list<DeviceChannel*>& getChannels() const { return m_deviceChannelList; };
+	void setDeviceId(int devId) { m_deviceId = devId; };
+	int getDeviceId() { return m_deviceId; };
+	virtual bool Run(EventLoggerThread* pEvtLogger, CmdLoggerThread* pCmdLogger, DataLoggerThread* pDataLogger) {};
 };
 
 #endif /* DEVICE_H_ */

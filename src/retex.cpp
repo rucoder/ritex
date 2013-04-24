@@ -13,12 +13,6 @@
 //using namespace std;
 
 int main(int argc, char* argv[]) {
-
-	syslog(LOG_ERR, "Starting ritex with %d arguments", argc - 1);
-	syslog(LOG_ERR, "Command line:");
-	for (int i = 1; i < argc; i++)
-		syslog(LOG_ERR, "%s", argv[i]);
-
 	CmdLineParser* pCmdLineParser = new CmdLineParser(argc, argv);
 
 	if (pCmdLineParser != NULL) {
@@ -26,8 +20,12 @@ int main(int argc, char* argv[]) {
 		if (pCmdLineParser->Parse()) {
 			RetexAdapter* pAdapter = new RetexAdapter(pCmdLineParser);
 			// go into the loop which either run the daemon or exits after command line parameter processing
-			pAdapter->Run();
+			if(pAdapter) {
+				pAdapter->Run();
+				delete pAdapter;
+			}
 		}
+		delete pCmdLineParser;
 	}
 	return 0;
 }

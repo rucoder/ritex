@@ -18,8 +18,8 @@ public:
 	RetexAdapter(CmdLineParser* parser);
 	virtual ~RetexAdapter();
 	bool isDaemonRunning();
-	virtual int DaemonLoop();
-	virtual int ParentLoop();
+	int DaemonLoop();
+	virtual int ParentLoop(bool isCommOk);
 };
 
 #endif /* RETEXADAPTER_H_ */

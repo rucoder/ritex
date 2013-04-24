@@ -18,6 +18,7 @@ public:
 	virtual ~DaemonCommChannel();
 	int open(std::string socketName);
 	int close();
+	bool isOpened() { return m_fd != -1; };
 	int send(unsigned char* buffer, int length);
 	int recv(unsigned char* buffer, int length);
 };
