@@ -10,13 +10,13 @@
 
 #include "Adapter.h"
 
-class RetexAdapter: public Adapter {
+class RitexAdapter: public Adapter {
 private:
 	int OpenCommPort(std::string port, int speed);
 public:
-	RetexAdapter() {};
-	RetexAdapter(CmdLineParser* parser);
-	virtual ~RetexAdapter();
+	RitexAdapter() {};
+	RitexAdapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
+	virtual ~RitexAdapter();
 	bool isDaemonRunning();
 	int DaemonLoop();
 	virtual int ParentLoop(bool isCommOk);

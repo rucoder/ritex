@@ -8,15 +8,18 @@
 #ifndef HOSTCOMMANDSHOWPARAMETERS_H_
 #define HOSTCOMMANDSHOWPARAMETERS_H_
 
-#include "HostCommand.h"
+#include "DeviceCommand.h"
+#include "Device.h"
 
-class HostCommandShowParameters : public HostCommand {
-public:
+class HostCommandShowParameters : public DeviceCommand {
+protected:
 	HostCommandShowParameters();
-	HostCommandShowParameters(Adapter* pAdapter);
+public:
+	HostCommandShowParameters(Device* device);
 	virtual ~HostCommandShowParameters();
 	virtual bool Execute();
 private:
+	Device* m_pDevice;
 	void printParameter(AdapterParameter* pParam);
 };
 

@@ -19,24 +19,25 @@
 
 #include <pthread.h>
 
-#include "DeviceCommandFactory.h"
-
 #include <sqlite3.h>
 #include <assert.h>
 
+#include "DaemonCommServer.h"
 
 #define BD_MAX_CLOSE 8192
 
 
-Adapter::Adapter(CmdLineParser* parser)
-	: m_adapterName("Dummy adapter. REDEFINE ME!"), m_adapterVersion("V 0.0"), m_adapterDescription(
-				"REDEFINE ME!"), m_pCmdLineParser(parser), m_pCommChannel(NULL), m_pDevice(NULL), m_pidFilePath(PID_FILE_PATH),
-				m_pEventLogger(NULL), m_pDataLogger(NULL)
+Adapter::Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser)
+	: m_adapterName(name), m_adapterVersion(version), m_adapterDescription(description),
+	  m_pCmdLineParser(parser), m_pDevice(NULL), m_pCommChannel(NULL),
+	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pDataLogger(NULL),
+	  m_pCmdLogger(NULL)
 {
+	//generate base part of socket name
+	m_socket = name + "_socket";
 }
 
 Adapter::~Adapter() {
-	// TODO Auto-generated destructor stub
 }
 
 
@@ -279,7 +280,7 @@ int Adapter::Run() {
 #endif
 
 		//TODO: declare as interface and move to Device class
-		DeviceCommand* pDevCmd = DeviceCommandFactory::CreateDeviceCommand(*pCmdLineCommand, this);
+		DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCmdLineCommand);
 
 		if (pDevCmd == NULL) {
 			printf("ERROR: couldn't create  DeviceCommand()\n");
@@ -287,8 +288,8 @@ int Adapter::Run() {
 		}
 
 		//execute and exit
-		if(!pDevCmd->isNeedDaemon()) {
-			bool result = pDevCmd->Execute(); //blocking call
+		if(!pDevCmd->isHWCommand()) {
+			bool result = pDevCmd->Execute();//m_pDevice->Execute(pDevCmd);
 			//TODO: get command result and print here instead of execute?
 			delete pCmdLineCommand;
 			delete pDevCmd;
@@ -325,11 +326,18 @@ int Adapter::Run() {
 							printf("opening channel socket %s\n", m_socket.c_str());
 							if(m_pCommChannel->open(m_socket) == 0) {
 								printf("Channel opened on socket %s\n", m_socket.c_str());
-								//channel opened, execute command
-								//TODO: not a good idea to have implicit dependency to CommChannel
-								bool result = pDevCmd->Execute();
-								if(result) {
-									//TODO: get return value
+								unsigned length;
+								m_pCommChannel->send(pDevCmd->getRawCommand(), pDevCmd->getRawCommandLength());
+								m_pCommChannel->recv(&length, 4); //length
+								printf("Got reply length: %d\n", length);
+
+								if (length > 0) {
+									unsigned char* resp = new unsigned char[length];
+									m_pCommChannel->recv(resp,length); //length
+
+									//output command result
+									printf("%s", resp);
+									delete resp;
 								}
 							} else {
 								printf("Error connecting to daemon on %s\n", m_socket.c_str());
@@ -371,50 +379,32 @@ int Adapter::Run() {
 					assert(m_pDevice->getDeviceId() > 0);
 
 					//Update channels information from DB
-					if (!UpdateChannelFilter(m_pDevice->getDeviceId())) {
+					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
 						//cannot continue. cleanup and exit
 					}
+
+					//m_pDevice->SetParametrFilter();
 
 					/*
 					 * Now create all necessary communication facilities:
 					 * - EventLogger
 					 * - DataLogger
 					 * - Command logger
-					 * - Server socket for communication with host process
+					 *
 					 */
-					//TODO: replace this cascade with functions
-					m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
-					if(m_pEventLogger) {
-						if(m_pEventLogger->Create()) {
-							m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
-							if(m_pDataLogger) {
-								if(m_pDataLogger->Create()) {
-									m_pCmdLogger = new CmdLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
-									if(m_pCmdLogger) {
-										if(m_pCmdLogger->Create()) {
-											//now we can pass all objects to Device and start data logging
-											m_pDevice->Run(m_pEventLogger, m_pCmdLogger, m_pDataLogger);
-										}
-									}
-								}
-							}
-						}
-					}
 
-					if(m_pEventLogger) {
-						delete m_pEventLogger;
+					if(CreateLoggerFacility()) {
+						/*
+						 * now create server socket and start listening. there must be a command alredy
+						 * which initiated daemonization! Here we have to go to some kind of endless loop
+						 * so we go into command processing loop
+						 */
+						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice);
+						pServer->Create();
+						syslog(LOG_ERR, "Waiting for Server to complete");
+						pServer->Join();//stuck here till the end of daemon live
+						delete pServer;
 					}
-					if(m_pDataLogger) {
-						delete m_pDataLogger;
-					}
-
-					if(m_pCmdLogger) {
-						delete m_pCmdLogger;
-					}
-					//TODO: create communication thread
-					//TODO: create RS-485 processor
-					//TODO: create DB flusher
-
 					break;
 			}
 
@@ -427,7 +417,7 @@ int Adapter::Run() {
 /*
  * works in daemon context
  */
-bool Adapter::UpdateChannelFilter(int devId)
+bool Adapter::UpdateParameterFilter(int devId)
 {
     sqlite3* pDb;
     char *zErrMsg = 0;
@@ -483,6 +473,33 @@ int Adapter::ParentLoop(bool isCommOk)
 {
 	//dummy implementation. does nothing
 	return 0;
+}
+
+bool Adapter::CreateLoggerFacility()
+{
+	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
+	m_pCmdLogger = new CmdLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+
+	if(m_pCmdLogger && m_pEventLogger && m_pDataLogger) {
+		if(m_pEventLogger->Create() && m_pDataLogger->Create() && m_pCmdLogger->Create()) {
+			return true;
+		}
+	}
+
+	if(m_pEventLogger) {
+		delete m_pEventLogger;
+		m_pEventLogger = NULL;
+	}
+	if(m_pDataLogger) {
+		delete m_pDataLogger;
+		m_pDataLogger = NULL;
+	}
+	if(m_pCmdLogger) {
+		delete m_pCmdLogger;
+		m_pCmdLogger = NULL;
+	}
+	return false;
 }
 
 

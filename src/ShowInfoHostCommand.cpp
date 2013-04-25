@@ -8,15 +8,16 @@
 #include "ShowInfoHostCommand.h"
 #include <stdio.h>
 
-ShowInfoHostCommand::ShowInfoHostCommand() {
-	// TODO Auto-generated constructor stub
+ShowInfoHostCommand::ShowInfoHostCommand()
+	: DeviceCommand(false), m_pDevice(NULL), m_pAdapter(NULL)
+{
 
 }
 
-ShowInfoHostCommand::ShowInfoHostCommand(Adapter* adapter)
-	: HostCommand(adapter)
+ShowInfoHostCommand::ShowInfoHostCommand(Device* device, IAdapter* adapter)
+	: DeviceCommand(false), m_pDevice(device), m_pAdapter(adapter)
 {
-
+	m_cmdId = 3;
 }
 
 
@@ -33,10 +34,11 @@ void ShowInfoHostCommand::printParameter(AdapterParameter* pParam, bool isDevice
 
 bool ShowInfoHostCommand::Execute()
 {
-	printf("\"%s\"|\"%s\"|\"%s\"\n", m_pAdapter->GetName().c_str(), m_pAdapter->GetVersion().c_str(),m_pAdapter->GetDescription().c_str());
+
+	printf("\"%s\"|\"%s\"|\"%s\"\n", m_pAdapter->getName().c_str(), m_pAdapter->getVersion().c_str(),m_pAdapter->getDescription().c_str());
 
 	// loop through device channels
-	Device* pDev = m_pAdapter->GetDevice();
+	Device* pDev = m_pDevice;
 
 	for(std::list<DeviceChannel*>::const_iterator ch = pDev->getChannels().begin(); ch != pDev->getChannels().end(); ch++) {
 		AdapterParameter* pParam = (*ch)->GetParameter();

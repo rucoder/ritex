@@ -13,9 +13,10 @@ HostCommandShowParameters::HostCommandShowParameters() {
 
 }
 
-HostCommandShowParameters::HostCommandShowParameters(Adapter* pAdapter)
-	: HostCommand(pAdapter)
+HostCommandShowParameters::HostCommandShowParameters(Device* pDevice)
+	: DeviceCommand(false), m_pDevice(pDevice)
 {
+	m_cmdId = 4;
 }
 
 HostCommandShowParameters::~HostCommandShowParameters() {
@@ -25,7 +26,7 @@ HostCommandShowParameters::~HostCommandShowParameters() {
 bool HostCommandShowParameters::Execute()
 {
 	// loop through device channels
-	Device* pDev = m_pAdapter->GetDevice();
+	Device* pDev = m_pDevice;
 
 	for(std::list<DeviceChannel*>::const_iterator ch = pDev->getChannels().begin(); ch != pDev->getChannels().end(); ch++) {
 		AdapterParameter* pParam = (*ch)->GetParameter();

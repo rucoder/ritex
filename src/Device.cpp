@@ -6,12 +6,17 @@
  */
 
 #include "Device.h"
+#include <stdio.h>
+#include <assert.h>
 
-Device::Device() :
-	m_deviceId(-1) // make it invalid
+
+#include "ShowInfoHostCommand.h"
+#include "HostCommandShowParameters.h"
+
+Device::Device(IAdapter* pAdapter) :
+	m_deviceId(-1), // make it invalid
+	m_pAdapter(pAdapter)
 {
-	// TODO Auto-generated constructor stub
-
 }
 
 Device::~Device() {
@@ -29,5 +34,28 @@ bool Device::AddChannel(DeviceChannel* pChannel)
 	m_deviceChannelList.push_back(pChannel);
 	return true;
 }
+
+
+DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
+{
+	//handle common commands like -p, -cmd, -d
+	switch(cmd->m_cmdLineCommandType)
+	{
+	case CMD_SHOW_INFO:
+		return new ShowInfoHostCommand(this, m_pAdapter);
+	case CMD_GET_CONNECTED_DEVICE_INFO:
+		return new HostCommandShowParameters(this);
+	default:
+		printf("WARNING: NOT SUPPORTED: cmdLineCommand.m_cmdLineCommandType == %d\n", cmd->m_cmdLineCommandType);
+		return NULL;
+	}
+}
+
+DeviceCommand* Device::CreateCommand(void* rawCommand, int length)
+{
+	return NULL;
+}
+
+
 
 

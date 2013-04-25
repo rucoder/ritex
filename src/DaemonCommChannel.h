@@ -19,8 +19,8 @@ public:
 	int open(std::string socketName);
 	int close();
 	bool isOpened() { return m_fd != -1; };
-	int send(unsigned char* buffer, int length);
-	int recv(unsigned char* buffer, int length);
+	int send(void* buffer, int length);
+	int recv(void* buffer, int length);
 };
 
 #endif /* DAEMONCOMMCHANNEL_H_ */

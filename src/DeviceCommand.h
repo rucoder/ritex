@@ -8,19 +8,31 @@
 #ifndef DEVICECOMMAND_H_
 #define DEVICECOMMAND_H_
 
-#include "Adapter.h"
-
 class DeviceCommand {
-protected:
-	Adapter* m_pAdapter;
-	DeviceCommand();
-	bool m_isNeedDaemon;
+private:
+	bool m_isHWCommand;
 public:
-	DeviceCommand(Adapter* adapter, bool needDaemon);
-	DeviceCommand(bool needDaemon);
+	struct __serial_data {
+		int m_cmd;
+	};
+
+protected:
+	DeviceCommand();
+	unsigned char* m_rawResult;
+	int m_rawResultLength;
+	unsigned char* m_rawCommand;
+	int m_rawCommandLength;
+	virtual void Serialize(){};
+	int m_cmdId;
+public:
+	DeviceCommand(bool isHw);
 	virtual ~DeviceCommand();
+	bool isHWCommand() { return m_isHWCommand; };
+	unsigned char* getRawResult() { return m_rawResult; };
+	int getRawResultLength() { return m_rawResultLength; };
+	unsigned char* getRawCommand();
+	int getRawCommandLength();
 	virtual bool Execute() = 0;
-	bool isNeedDaemon() { return m_isNeedDaemon; };
 };
 
 #endif /* DEVICECOMMAND_H_ */

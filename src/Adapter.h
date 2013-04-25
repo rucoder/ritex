@@ -9,9 +9,10 @@
 #define ADAPTER_H_
 
 #include <pthread.h>
+#include "IAdapter.h"
+#include "Device.h"
 #include "CmdLineParser.h"
 #include "AdapterParameter.h"
-#include "Device.h"
 #include "DaemonCommChannel.h"
 #include "EventLoggerThread.h"
 #include "DataLoggerThread.h"
@@ -19,7 +20,7 @@
 
 #define PID_FILE_PATH "/tmp/"
 
-class Adapter {
+class Adapter: public IAdapter{
 private:
 
 	enum eExecutionContext {
@@ -63,19 +64,25 @@ protected:
 	EventLoggerThread* m_pEventLogger;
 	DataLoggerThread* m_pDataLogger;
 	CmdLoggerThread* m_pCmdLogger;
+	bool CreateLoggerFacility();
 public:
-	Adapter(CmdLineParser* parser);
+	Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
 	bool AddParameter(AdapterParameter* parameter);
 	virtual ~Adapter();
 	virtual int Run();
 	//may be useful to create interactive application to test daemon or for unit tests
 	virtual int ParentLoop(bool isCommOk);
-	bool UpdateChannelFilter(int deviId);
-	const std::string& GetName() { return m_adapterName; };
-	const std::string& GetVersion() { return m_adapterVersion; };
-	const std::string& GetDescription() { return m_adapterDescription; };
-	Device* GetDevice() { return m_pDevice; }
+	bool UpdateParameterFilter(int deviId);
 	DaemonCommChannel* GetCommChannel() { return m_pCommChannel; };
+
+	//From IAdapter
+	const std::string& getName() { return m_adapterName; };
+	const std::string& getVersion() { return m_adapterVersion; };
+	const std::string& getDescription() { return m_adapterDescription; };
+	virtual CmdLoggerThread* getCmdLogger() { return m_pCmdLogger; };
+	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
+	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
+
 };
 
 #endif /* ADAPTER_H_ */

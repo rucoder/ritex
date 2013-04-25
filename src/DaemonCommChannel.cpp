@@ -72,9 +72,10 @@ int DaemonCommChannel::close()
 		::close(m_fd);
 		m_fd = -1;
 	}
+	return 0;
 }
 
-int DaemonCommChannel::send(unsigned char* buffer, int length)
+int DaemonCommChannel::send(void* buffer, int length)
 {
 	assert(isOpened());
 
@@ -86,7 +87,7 @@ int DaemonCommChannel::send(unsigned char* buffer, int length)
 	return ::send(m_fd,envelope,length + sizeof(int),0);
 }
 
-int DaemonCommChannel::recv(unsigned char* buffer, int length)
+int DaemonCommChannel::recv(void* buffer, int length)
 {
 	assert(isOpened());
 #if 0

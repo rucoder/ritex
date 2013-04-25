@@ -17,11 +17,14 @@ struct option CmdLineParser::m_LongOptions[] = { { "cmd", optional_argument, 0,
 		0 }, { "sp", optional_argument, 0, 0 }, { "exit", no_argument, 0, 0 }, {
 		0, 0, 0, 0 } };
 
-CmdLineParser::CmdLineParser() {
+CmdLineParser::CmdLineParser()
+	: m_Argc(0), m_Argv(NULL), m_pCommand(NULL)
+{
 }
 
-CmdLineParser::CmdLineParser(int argc, char* argv[]) :
-		m_Argc(argc), m_Argv(argv) {
+CmdLineParser::CmdLineParser(int argc, char* argv[])
+	: m_Argc(argc), m_Argv(argv), m_pCommand(NULL)
+{
 	m_ShortOptioonsStr = "-a::pdr::t";
 }
 

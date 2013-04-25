@@ -8,16 +8,21 @@
 #ifndef SHOWINFOHOSTCOMMAND_H_
 #define SHOWINFOHOSTCOMMAND_H_
 
-#include "HostCommand.h"
+#include "DeviceCommand.h"
+#include "Device.h"
+#include "AdapterParameter.h"
+#include "IAdapter.h"
 
-class ShowInfoHostCommand: public HostCommand {
+class ShowInfoHostCommand: public DeviceCommand {
 public:
 	ShowInfoHostCommand();
-	ShowInfoHostCommand(Adapter* adapter);
+	ShowInfoHostCommand(Device* device, IAdapter* adapter);
 	virtual ~ShowInfoHostCommand();
 	virtual bool Execute();
 private:
 	void printParameter(AdapterParameter* pParam, bool isDeviceChannel);
+	Device* m_pDevice;
+	IAdapter* m_pAdapter;
 };
 
 #endif /* SHOWINFOHOSTCOMMAND_H_ */
