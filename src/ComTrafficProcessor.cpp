@@ -19,12 +19,13 @@
 #include <string.h>
 
 //select
-#include <sys/time.h>
 #include <sys/select.h>
 
-//#include <stdlib.h>
+#include <unistd.h>
 
-//need to swap byte if running on LE tagret
+#include <errno.h>
+
+//need to swap byte if running on LE target (e.g. x86)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 static inline unsigned short swap16(unsigned short x)
 {
@@ -163,140 +164,179 @@ bool ComTrafficProcessor::isLengthMatches(unsigned char cmd, unsigned short leng
 	return false;
 }
 
+std::string ComTrafficProcessor::GetErrorStr(int error)
+{
+	switch (error) {
+		case ERROR_READ_BAD_CRC:
+			return std::string("ERROR_READ_BAD_CRC");
+		case ERROR_READ_BAD_PACKET:
+			return std::string("ERROR_READ_BAD_PACKET");
+		case ERROR_READ_NO_ERROR:
+			return std::string("ERROR_READ_NO_ERROR");
+		case ERROR_READ_OTHER:
+			return std::string("ERROR_READ_OTHER");
+		case ERROR_READ_TIMEOUT:
+			return std::string("ERROR_READ_TIMEOUT");
+		default:
+			return std::string("ERROR_XXX: UNHANDLED!!!!");
+	}
+}
 
 void* ComTrafficProcessor::Run()
 {
 
 	int type;
 
+	struct timeval timeout;
+
+	syslog(LOG_ERR, "Enter run...");
 	for(;;) {
 		int error;
-		struct __tag_packet* packet;
-		packet = ReadPacket(error);
 
-		syslog(LOG_ERR, "Got packet: address=%d cmd=%d length=%d", packet->address, packet->cmd, packet->length);
-//		switch(m_state) {
-//		case STATE_INIT:
+		//reset timeout
+		timeout.tv_sec = 0;
+		timeout.tv_usec = 1000 * 1000; //1 sec ms waiting for line activity
 
-//			break;
-//		}
+
+		syslog(LOG_ERR, "[Run] waiting for packet");
+
+		struct __tag_packet* packet = ReadPacket(&timeout, error);
+
+		if (packet == NULL) {
+			syslog(LOG_ERR, "[Run] error getting packet: %s", GetErrorStr(error).c_str());
+		} else { //got packet. process it
+			syslog(LOG_ERR, "Got packet: address=0x%X cmd=0x%X length=%d type=%s", packet->address, packet->cmd, packet->length, packet->type == TYPE_CMD ? "CMD" : "ACK");
+			delete packet;
+		}
 	}
+	syslog(LOG_ERR, "Exit run...");
 	return NULL;
 }
 
-int ComTrafficProcessor::Read(void* buffer, int length, long time_ms)
+/*
+ * do not return until all required bytes read or timeout
+ */
+int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 {
 	fd_set readfds, errorfds;
-	struct timeval timeout, *ptm = NULL;
 	int ret;
 	int total_read = 0;
-
-	if (time_ms != 0) {
-		timeout.tv_sec = 0;
-		timeout.tv_usec = time_ms*1000L;
-
-		ptm = &timeout;
-	}
 
 	FD_ZERO(&readfds);
 	FD_SET(m_fd, &readfds);
 	FD_ZERO(&errorfds);
 	FD_SET(m_fd, &errorfds);
 
-
-	// TODO
-
-	ret = select(1, &readfds, NULL, &errorfds, ptm);
-
-	syslog(LOG_ERR, "select %d", ret);
-
-	if (ret == -1) {
-		return ERROR_READ_OTHER;
-	} else if (ret == 0) { //timeout
-		return ERROR_READ_TIMEOUT;
-	} else {
-		//error
-		if (FD_ISSET(m_fd, &errorfds))
-		{
-			return ERROR_READ_OTHER;
-		}
+	do {
 		ret = read(m_fd, buffer, length);
-		if (ret != length) {
-			syslog(LOG_ERR,"WARNING: not all data read!!!! %d %d", length, ret);
+
+		if(ret < 0) {
+			if(errno == EWOULDBLOCK) {
+				//syslog(LOG_ERR,"WOULDBLOCK");
+				// wait for event
+				ret = select(m_fd + 1, &readfds, NULL, &errorfds, timeout);
+
+				//timeout
+				if(ret == 0) {
+					return ERROR_READ_TIMEOUT;
+				} else if (ret == -1) { //some fatal error
+					return ERROR_READ_OTHER;
+				} else { //got descriptor number
+					if(FD_ISSET(m_fd, &errorfds)) { //error on descriptor
+						return ERROR_READ_OTHER;
+					}
+					if(FD_ISSET(m_fd, &readfds)) { //got data. just reread
+						continue;
+					}
+				}
+
+			} else {
+				return ERROR_READ_OTHER;
+			}
+		} else {
+			total_read += ret;
 		}
-		return ret;
-	}
-
-
-	return 0;
+	} while(length != total_read);
+	return total_read;
 }
 
-#define CHAR_TIMEOUT 100 //millis
-
-struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(int &error)
+struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 {
 	int numRead;
 	unsigned char address = 0;
 	unsigned short length;
 	unsigned char cmd;
-	unsigned short crc16 = 0, calculatedCrc16;
+	unsigned short crc16 = 0, calculatedCrc16 = 0;
 	int type;
 
 	while(address != 0x36) {
-		numRead = Read(&address, 1);
+		numRead = Read(&address, 1, timeout);
 		if(numRead < 0) {
 			error = numRead;
 			return NULL;
 		}
+		//we got activity on the line so decrease timeout
+		timeout->tv_sec = 0;
+		//TODO: IMPORTANT: get the right value
+		timeout->tv_usec = 100 * 1000;
 	}
 
-	//TODO: add to  CRC
+	calculatedCrc16 = Crc16(calculatedCrc16, address);
 
-	numRead = Read(&length, 2, 100);
+	numRead = Read(&length, 2, timeout);
 	if(numRead < 0) {
 		error = numRead;
 		return NULL;
 	}
+
+	calculatedCrc16 = Crc16(calculatedCrc16, (unsigned char*)&length, 2);
 
 	length = swap16(length);
 
-	//TODO: add to  CRC
-
-	numRead = Read(&cmd, 1, CHAR_TIMEOUT);
+	numRead = Read(&cmd, 1, timeout);
 	if(numRead < 0) {
 		error = numRead;
 		return NULL;
 	}
 
-	//TODO: add to  CRC
+	calculatedCrc16 = Crc16(calculatedCrc16, cmd);
 
 	//probably good packet
 	if (isLengthMatches(cmd, length, type)) {
+		//command is included in the length
+		length--;
 
-		struct __tag_packet* packet = (struct __tag_packet*)new unsigned char[length + 7 /* including length and command */];
+		struct __tag_packet* packet = (struct __tag_packet*)new unsigned char[length + 70 /* including length and command */];
 
-		// read the rest and check CRC
-		numRead = Read((void*)&packet->data[0], length,CHAR_TIMEOUT);
+		// read the rest if needed and check CRC
+		if(length > 0) {
+			numRead = Read((void*)&(packet->data[0]), length,timeout);
+
+			if(numRead < 0) {
+				delete packet;
+				error = numRead;
+				return NULL;
+			}
+			calculatedCrc16 = Crc16(calculatedCrc16, packet->data, length);
+		}
+
+		// read CRC16
+		numRead = Read(&crc16, 2, timeout);
+
 		if(numRead < 0) {
 			delete packet;
 			error = numRead;
 			return NULL;
 		}
-		//TODO: add to CRC
-
-		// read CRC16
-		numRead = Read(&crc16, 2, CHAR_TIMEOUT);
 
 		crc16 = swap16(crc16);
 
-		//TODO: check CRC match
-#if 0
 		if (crc16 != calculatedCrc16) {
+			syslog(LOG_ERR, "CRC ERROR CRC16=0x%X CALCULATED=0x%X", crc16, calculatedCrc16);
 			delete packet;
 			error = ERROR_READ_BAD_CRC;
 			return NULL;
 		}
-#endif
 
 		packet->address = address;
 		packet->cmd = cmd;
@@ -307,6 +347,27 @@ struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(int &e
 	}
 	error = ERROR_READ_BAD_PACKET;
 	return NULL;
+}
+
+unsigned short ComTrafficProcessor::Crc16(unsigned short crcInit, unsigned char byte) {
+	  unsigned short lb = byte;
+	  int i;
+	  crcInit ^= lb << 8;
+	  for (i=0; i < 8; i++)
+	  {
+		  if ( (crcInit & (1 << 15)) != 0)
+			  crcInit = (crcInit << 1) ^ 0x8005;
+		  else
+			  crcInit  = crcInit << 1;
+	  }
+	  return  crcInit;
+}
+
+
+unsigned short ComTrafficProcessor::Crc16(unsigned short crcInit, unsigned char buffer[], int size) {
+	for (int i = 0; i < size; i++)
+		crcInit = Crc16(crcInit, buffer[i]);
+	return crcInit;
 }
 
 bool ComTrafficProcessor::Create(std::string port, int speed)

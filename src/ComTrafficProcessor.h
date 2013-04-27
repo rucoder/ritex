@@ -12,6 +12,9 @@
 
 #include <string>
 
+//for timeval
+#include <sys/time.h>
+
 #define REQ_VD_ON               0x80
 #define REQ_VD_OFF              0x84
 #define REQ_VD_ROTATION         0x8C
@@ -43,7 +46,6 @@ protected:
 	};
 
 #pragma pack(push, 1)
-
 	struct __tag_packet {
 		unsigned char address;
 		unsigned short length;
@@ -60,15 +62,29 @@ protected:
 		STATE_CUSTOM_CMD,
 		STATE_WAIT_CUSTOM_ACK
 	} m_state;
-	virtual void* Run();
-    int OpenCommPort(std::string port, int speed);
-    int m_fd;
-    bool isRunning() { return m_fd != -1; };
-    bool isLengthMatches(unsigned char cmd, unsigned short length, int& type);
-    struct __tag_packet* ReadPacket(int &error);
-    int Read(void* buffer, int length, long time_ms = 0);
+
+
+protected:
+	int m_fd;
     static __tag_cmdParams m_cmdParams[];
     static __tag_cmdParams m_ackParams[];
+
+
+protected:
+	virtual void* Run();
+    int OpenCommPort(std::string port, int speed);
+    bool isRunning() { return m_fd != -1; };
+    bool isLengthMatches(unsigned char cmd, unsigned short length, int& type);
+    struct __tag_packet* ReadPacket(struct timeval* timeout, int &error);
+    int Read(void* buffer, int length, struct timeval* timeout = NULL);
+    //TODO: place under debug
+    std::string GetErrorStr(int error);
+
+    //CRC16
+    unsigned short Crc16(unsigned short crcInit, unsigned char byte);
+    unsigned short Crc16(unsigned short crcInit, unsigned char buffer[], int size);
+
+
 public:
 	ComTrafficProcessor();
 	virtual ~ComTrafficProcessor();

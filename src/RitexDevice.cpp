@@ -73,5 +73,5 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 
 bool RitexDevice::StartMesurements()
 {
-	return m_pProcessor->Create("/dev/ttySC1", 9600);
+	return m_pProcessor->Create("/dev/tnt1", 9600);
 }
