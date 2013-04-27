@@ -49,7 +49,7 @@ int DaemonCommChannel::open(std::string socketName)
 	::strncpy(&addr.sun_path[1], socketName.c_str(), sizeof(addr.sun_path) - 2);
 
 	// wait for 5 sec at most
-	for(int i = 0; i < 50; i++) {
+	for(int i = 0; i < 500; i++) {
 		connectResult = ::connect(m_fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un));
 		if (connectResult == -1) {
 			::nanosleep(&tim, NULL);

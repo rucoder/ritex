@@ -48,7 +48,7 @@ public:
 	void ReportDataPacket(DataPacket* packet);
 
 	// command implementations
-	bool StartMesurements();
+	bool StartMesurements(std::string com, int speed);
 };
 
 #endif /* RITEXDEVICE_H_ */

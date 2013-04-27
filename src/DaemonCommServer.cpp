@@ -6,6 +6,9 @@
  */
 
 #include "DaemonCommServer.h"
+#include "CmdLineParser.h"
+#include "CmdLineCommand.h"
+#include "DeviceCommand.h"
 
 //socket
 #include <sys/un.h>
@@ -21,8 +24,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-DaemonCommServer::DaemonCommServer(Device* pDevice)
-	: Thread(), m_pDevice(pDevice), m_connectSock(-1), m_clientSock(-1)
+DaemonCommServer::DaemonCommServer(Device* pDevice, IAdapter* pAdapter)
+	: Thread(), m_pDevice(pDevice), m_pAdapter(pAdapter), m_connectSock(-1), m_clientSock(-1)
 {
 
 }
@@ -71,6 +74,8 @@ void* DaemonCommServer::Run() {
 
 	int numRead;
 
+	CmdLineParser* pParser = new CmdLineParser();
+
 	for (;;) {
 		/* Handle client connections iteratively */
 
@@ -84,7 +89,6 @@ void* DaemonCommServer::Run() {
 			return NULL;
 		}
 
-		syslog(LOG_ERR, "");
 		/*
 		 * Command handling loop
 		 */
@@ -100,11 +104,53 @@ void* DaemonCommServer::Run() {
 				rawData = new unsigned char[length];
 				numRead = recv(m_clientSock, rawData, length, 0); //get the data
 
-				syslog(LOG_ERR, "Got packet data read. =%d", numRead);
+				syslog(LOG_ERR, "Got packet data read. =%d expected=%d", numRead, length);
+
+				syslog(LOG_ERR, "data: %s", rawData);
+
 
 				//good packet
 				if(numRead == length) {
+					syslog(LOG_ERR, "--- 0");
+					pParser->SetCmdLine((char*)rawData);
+					syslog(LOG_ERR, "--- 0.1");
 
+					//valid command line ?
+					if (pParser->Parse()) {
+						syslog(LOG_ERR, "--- 1");
+						CmdLineCommand* pCommand = pParser->GetCommand();
+						if(pCommand && pCommand->Compile(m_pAdapter->GetAdditionalParameterMap())) {
+							syslog(LOG_ERR, "--- 2");
+							DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCommand);
+							if (pDevCmd) {
+								syslog(LOG_ERR, "--- 3");
+
+								syslog(LOG_ERR, "Executing...");
+								pDevCmd->Execute();
+
+								length = pDevCmd->getRawResultLength();
+
+								syslog(LOG_ERR, "Sending result: length: %d", length);
+
+
+								unsigned char* envelope = new unsigned char[length + sizeof(int)];
+								//if (envelope == NULL)
+								//	return -1;
+								::memcpy(envelope, &length, sizeof(int));
+								if(length > 0) {
+									::memcpy(envelope + sizeof(int), pDevCmd->getRawResult(), length);
+								}
+
+								syslog(LOG_ERR, "Calling send()");
+								send(m_clientSock,envelope,length + sizeof(int),0);
+								delete [] envelope;
+								delete pCommand;
+
+							}
+						}
+					}
+
+#if 0
 					DeviceCommand* pCommand = m_pDevice->CreateCommand(rawData, length);
 
 
@@ -152,6 +198,7 @@ void* DaemonCommServer::Run() {
 //						send(m_clientSock,envelope,length,0);
 //						delete envelope;
 					}
+#endif
 					continue;
 				}
 				break;

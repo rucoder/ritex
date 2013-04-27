@@ -54,10 +54,6 @@ DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
 	}
 }
 
-DeviceCommand* Device::CreateCommand(void* rawCommand, int length)
-{
-	return NULL;
-}
 
 
 

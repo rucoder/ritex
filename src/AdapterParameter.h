@@ -15,7 +15,6 @@
 
 class AdapterParameter {
 private:
-//	bool m_bCanModify;
 	int m_Id;
 	std::string m_Name;
 	bool m_bEventDriven;
@@ -29,7 +28,7 @@ private:
 	void* m_ControllerData;
 public:
 	AdapterParameter();
-	AdapterParameter(int id, const char* name, bool isOverridable, char* args, bool isEventDriven = false, void* controllerData = NULL);
+	AdapterParameter(int id, std::string name, bool isOverridable, std::string args, bool isEventDriven = false, void* controllerData = NULL);
 	virtual ~AdapterParameter();
 
 	bool SetValueRange(std::string name, float value);

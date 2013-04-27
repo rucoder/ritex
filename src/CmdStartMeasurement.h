@@ -13,13 +13,11 @@
 
 class CmdStartMeasurement: public DeviceCommand {
 protected:
-	struct __sm_serial: public __serial_data {
-
-	};
-	virtual void Serialize();
 	CmdStartMeasurement();
+	std::string m_commport;
+	int m_speed;
 public:
-	CmdStartMeasurement(RitexDevice* p_device);
+	CmdStartMeasurement(RitexDevice* p_device, std::string commport, int speed);
 	virtual ~CmdStartMeasurement();
 	virtual bool Execute();
 private:

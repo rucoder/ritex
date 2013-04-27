@@ -42,7 +42,6 @@ public:
 	void setDeviceId(int devId) { m_deviceId = devId; };
 	int getDeviceId() { return m_deviceId; };
     virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);
-    virtual DeviceCommand* CreateCommand(void* rawCommand, int length);
 //	virtual DeviceCommand* CreateCommand(void* rawCommand, int length);
 //	virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);
 //

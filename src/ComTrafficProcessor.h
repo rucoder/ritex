@@ -23,7 +23,7 @@ protected:
 	struct __tag_cmdParams {
 		unsigned char m_cmd;
 		unsigned short m_length;
-		unsigned char m_ack;
+		int m_ack;
 	};
 
 protected:

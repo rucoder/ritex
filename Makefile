@@ -25,7 +25,8 @@ $(EXECUTABLE): $(OBJ_FILES)
 	$(CC) $(LD_FLAGS) -o $@ $^
 
 $(OUT)/%.o: src/%.cpp
-	$(CC) $(CC_FLAGS) -c -o $@ $^
+	@echo Compiling $^
+	@$(CC) $(CC_FLAGS) -c -o $@ $^
 
 .PHONY: dirs
 dirs:

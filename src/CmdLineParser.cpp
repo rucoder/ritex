@@ -8,10 +8,17 @@
 #include "CmdLineParser.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <sstream>
+#include <vector>
+#include <string.h>
+
+#include <syslog.h>
 
 #define OPT_INDEX_CMD  0
 #define OPT_INDEX_SP   1
 #define OPT_INDEX_EXIT 2
+
+const char* CmdLineParser::m_ShortOptioonsStr = "-a::pdr::t";
 
 struct option CmdLineParser::m_LongOptions[] = { { "cmd", optional_argument, 0,
 		0 }, { "sp", optional_argument, 0, 0 }, { "exit", no_argument, 0, 0 }, {
@@ -25,10 +32,55 @@ CmdLineParser::CmdLineParser()
 CmdLineParser::CmdLineParser(int argc, char* argv[])
 	: m_Argc(argc), m_Argv(argv), m_pCommand(NULL)
 {
-	m_ShortOptioonsStr = "-a::pdr::t";
+	m_Argv = new char* [argc];
+	for(int i = 0; i < argc; i++) {
+		m_Argv[i] = new char[strlen(argv[i]) + 1];
+		memcpy(m_Argv[i], argv[i], strlen(argv[i]) + 1);
+	}
 }
 
+void CmdLineParser::SetCmdLine(char* cmdLine)
+{
+	std::istringstream iss(cmdLine);
+	std::string s;
+	std::vector<std::string> args;
+	int i = 0;
+	syslog(LOG_ERR, "SetCmdLine: %s", cmdLine);
+	while ( std::getline( iss, s, ' ' ) ) {
+		i++;
+		syslog(LOG_ERR,"[%d] %s\n", i,s.c_str());
+		syslog(LOG_ERR,"[%d] %s\n",i, s.c_str());
+		args.push_back(s);
+	}
+
+	m_Argc = args.size();
+	m_Argv = new char*[m_Argc];
+
+	for(int i = 0; i < m_Argc; i++) {
+		m_Argv[i] = new char[args[i].length() + 1];
+		memcpy(m_Argv[i], args[i].c_str(), args[i].length() + 1);
+	}
+}
+
+std::string CmdLineParser::GetCmdLine()
+{
+	std::string s("");
+	for(int i = 0; i < m_Argc; i++) {
+		s+=m_Argv[i];
+		if(i != m_Argc -1)
+			s+=" ";
+	}
+	return s;
+}
+
+
 CmdLineParser::~CmdLineParser() {
+	if(m_Argv) {
+		for (int i = 0; i < m_Argc; i++) {
+			delete [] m_Argv[i];
+		}
+		delete [] m_Argv;
+	}
 }
 
 bool CmdLineParser::Parse() {
@@ -41,10 +93,15 @@ bool CmdLineParser::Parse() {
 
 	m_pCommand = new CmdLineCommand();
 
-	printf("\nRaw Command line: ");
-	for(int i = 1; i < m_Argc; i++)
-		printf("%s ", m_Argv[i]);
-	printf("\n");
+	//syslog(LOG_ERR,"\nRaw Command line: ");
+	syslog(LOG_ERR,"Raw Command line: ");
+	for(int i = 0; i < m_Argc; i++) {
+		//printf(LOG_ERR,"%s ", m_Argv[i]);
+		syslog(LOG_ERR, "[%s]", m_Argv[i]);
+	}
+	syslog(LOG_ERR,"\n");
+
+	optind = 1;
 
 	if (m_pCommand == NULL)
 		return false;
@@ -56,7 +113,7 @@ bool CmdLineParser::Parse() {
 		c = ::getopt_long_only(m_Argc, m_Argv, m_ShortOptioonsStr,
 				m_LongOptions, &option_index);
 
-		//printf("state=%d c=%d optarg=%s\n", state, c, optarg);
+		syslog(LOG_ERR,"state=%d c=%d optarg=%s\n", state, c, optarg);
 
 		switch (state) {
 
@@ -73,7 +130,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_EXIT;
 					break;
 				default:
-					printf("ERROR: Only -cmd, -p ,-a or -exit can be the first option\n");
+					syslog(LOG_ERR,"ERROR: Only -cmd, -p ,-a or -exit can be the first option\n");
 					isError = true;
 					break;
 				}
@@ -97,7 +154,7 @@ bool CmdLineParser::Parse() {
 				isError = true;
 				break;
 			default:
-				printf(
+				syslog(LOG_ERR,
 						"ERROR: Only -cmd, -p or -a can be the first option and should not have parameters\n");
 				isError = true;
 				break;
@@ -110,7 +167,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->SetCmdLineCmdType(CMD_GET_ADDITIONAL_PARAMETER_LIST);
 				return true;
 			default:
-				printf(
+				syslog(LOG_ERR,
 						"ERROR: option -a has no parameter when comes first. other options are not allowed\n");
 				isError = true;
 				break;
@@ -124,7 +181,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->SetCmdLineCmdType(CMD_SHOW_INFO);
 				return true;
 			default:
-				printf(
+				syslog(LOG_ERR,
 						"ERROR: option -p has no parameter. other options are not allowed\n");
 				isError = true;
 				break;
@@ -153,7 +210,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_TYPE;
 					break;
 				default:
-					printf("ERROR: [-cmd] device ID expected.\n");
+					syslog(LOG_ERR,"ERROR: [-cmd] device ID expected.\n");
 					isError = true;
 					break;
 
@@ -166,7 +223,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_MSG;
 					break;
 				default:
-					printf("ERROR: [-cmd] command type expected.\n");
+					syslog(LOG_ERR,"ERROR: [-cmd] command type expected.\n");
 					isError = true;
 					break;
 
@@ -180,7 +237,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_SRC;
 					break;
 				default:
-					printf("ERROR: [-cmd] command message expected.\n");
+					syslog(LOG_ERR,"ERROR: [-cmd] command message expected.\n");
 					isError = true;
 					break;
 
@@ -194,7 +251,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_ID;
 					break;
 				default:
-					printf("ERROR: [-cmd] command source expected.\n");
+					syslog(LOG_ERR,"ERROR: [-cmd] command source expected.\n");
 					isError = true;
 					break;
 
@@ -207,12 +264,12 @@ bool CmdLineParser::Parse() {
 					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						printf("ERROR: [-cmd] -sp expected.\n");
+						syslog(LOG_ERR,"ERROR: [-cmd] -sp expected.\n");
 						isError = true;
 					}
 					break;
 				default:
-					printf("ERROR: [-cmd] -sp expected.\n");
+					syslog(LOG_ERR,"ERROR: [-cmd] -sp expected.\n");
 					isError = true;
 					break;
 
@@ -222,14 +279,14 @@ bool CmdLineParser::Parse() {
 
 			// -t may only have -a parameter list in format '-a name value -a name value ...'
 		case OPTION_T:
-			printf("command -t: \n");
+			syslog(LOG_ERR,"command -t: \n");
 			m_pCommand->SetCmdLineCmdType(CMD_TEST_DEVICE);
 			switch (c) {
 			case 'a':
 				state = OPTION_A_NAME;
 				break;
 			default:
-				printf("ERROR: option -t requires -a parameter list\n");
+				syslog(LOG_ERR,"ERROR: option -t requires -a parameter list\n");
 				isError = true;
 				break;
 
@@ -237,14 +294,14 @@ bool CmdLineParser::Parse() {
 			break;
 			// -d may only have -a parameter list in format '-a name value -a name value ...'
 		case OPTION_D:
-			printf("command -d: ");
+			syslog(LOG_ERR,"command -d: ");
 			m_pCommand->SetCmdLineCmdType(CMD_GET_CONNECTED_DEVICE_INFO);
 			switch (c) {
 			case 'a':
 				state = OPTION_A_NAME;
 				break;
 			default:
-				printf("ERROR: option -d requires -a parameter list\n");
+				syslog(LOG_ERR,"ERROR: option -d requires -a parameter list\n");
 				isError = true;
 				break;
 
@@ -267,7 +324,7 @@ bool CmdLineParser::Parse() {
 				state = OPTION_A_VALUE;
 				break;
 			default:
-				printf(
+				syslog(LOG_ERR,
 						"ERROR: wrong -a parameter list: unexpected token: %d(%c) \n",
 						c, c);
 				isError = true;
@@ -282,7 +339,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->AddParameter(lastArgName, optarg);
 				break;
 			default:
-				printf("ERROR: wrong -a parameter list\n");
+				syslog(LOG_ERR,"ERROR: wrong -a parameter list\n");
 				isError = true;
 				break;
 
@@ -293,13 +350,13 @@ bool CmdLineParser::Parse() {
 			switch (c)
 			{
 				case 1:
-					printf("[-r] device ID: %s\n", optarg);
+					syslog(LOG_ERR,"[-r] device ID: %s\n", optarg);
 					m_pCommand->SetCmdLineCmdType(CMD_GET_MESUREMENTS);
 					m_pCommand->SetDeviceId(optarg);
 					state = OPTION_R_DEVID;
 					break;
 				default:
-					printf("ERROR: [-r] device ID expected.\n");
+					syslog(LOG_ERR,"ERROR: [-r] device ID expected.\n");
 					isError = true;
 					break;
 
@@ -311,12 +368,12 @@ bool CmdLineParser::Parse() {
 					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						printf("ERROR: [-r] -sp expected\n");
+						syslog(LOG_ERR,"ERROR: [-r] -sp expected\n");
 						isError = true;
 					}
 					break;
 				default:
-					printf("ERROR: [-r] -sp expected\n");
+					syslog(LOG_ERR,"ERROR: [-r] -sp expected\n");
 					isError = true;
 					break;
 
@@ -330,7 +387,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_SP_PATH;
 					break;
 				default:
-					printf("ERROR: option -sp should have parameter\n");
+					syslog(LOG_ERR,"ERROR: option -sp should have parameter\n");
 					isError = true;
 					break;
 
@@ -343,7 +400,7 @@ bool CmdLineParser::Parse() {
 					break;
 				//TODO: handle -1 as 'true' if -a list  is not mandatory
 				default:
-					printf("ERROR: -a list expected\n");
+					syslog(LOG_ERR,"ERROR: -a list expected\n");
 					isError = true;
 					break;
 
@@ -355,7 +412,7 @@ bool CmdLineParser::Parse() {
 					m_pCommand->SetCmdLineCmdType(CMD_EXIT);
 					return true;
 				default:
-					printf("ERROR: option -exit has no parameter\n");
+					syslog(LOG_ERR,"ERROR: option -exit has no parameter\n");
 					isError = true;
 					break;
 

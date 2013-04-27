@@ -35,19 +35,23 @@ private:
 		OPTION_SP_PATH,
 		OPTION_EXIT
 	} parser_state_t;
-	CmdLineParser();
 protected:
 	// command line parsing
 	static struct option m_LongOptions[];
-	const char* m_ShortOptioonsStr;
+	static const char* m_ShortOptioonsStr;
 	int m_Argc;
 	char** m_Argv;
 	CmdLineCommand* m_pCommand;
+	bool isParameterValid(std::string name, char* value);
+
 public:
+	CmdLineParser();
 	CmdLineParser(int argc, char* argv[]);
+	void SetCmdLine(char* cmdLine);
 	virtual ~CmdLineParser();
 	bool Parse();
 	CmdLineCommand* GetCommand() { return m_pCommand; }
+	std::string GetCmdLine();
 };
 
 #endif /* CMDLINEPARSER_H_ */

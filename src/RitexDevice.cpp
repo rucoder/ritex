@@ -44,40 +44,34 @@ RitexDevice::~RitexDevice() {
 	//TODO:
 }
 
-DeviceCommand* RitexDevice::CreateCommand(void* rawCommand, int length)
-{
-	assert(length >= sizeof(DeviceCommand::__serial_data));
-
-	DeviceCommand::__serial_data* p = (DeviceCommand::__serial_data*)rawCommand;
-
-	syslog(LOG_ERR, "Got raw command: %d", p->m_cmd);
-
-	switch(p->m_cmd)
-	{
-	case 2:
-		//TODO: call constructor with raw data
-		return new CmdStartMeasurement(this);
-	}
-
-	return NULL;
-}
-
 DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 {
 	//handle device specific commands
 	switch(cmd->m_cmdLineCommandType)
 	{
 	case CMD_GET_MESUREMENTS:
-		return new CmdStartMeasurement(this);
+	{
+		//we need COM name and COM speed
+		std::string comm;
+		int speed;
+		cmd->GetParameter("comdevice", comm);
+		cmd->GetParameter("baudrate", speed);
+
+		syslog(LOG_ERR, "comdevice: %s", comm.c_str());
+		syslog(LOG_ERR, "baudrate: %d", speed);
+
+		return new CmdStartMeasurement(this, comm, speed);
+	}
+
 	default:
 		return Device::CreateCommand(cmd);
 	}
 }
 
 
-bool RitexDevice::StartMesurements()
+bool RitexDevice::StartMesurements(std::string com, int speed)
 {
-	return m_pProcessor->Create("/dev/tnt1", 9600);
+	return m_pProcessor->Create(com, speed);
 }
 
 

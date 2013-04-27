@@ -71,7 +71,7 @@ public:
 	bool AddAdditionalParameter(std::string name, int a, int b);
 	bool AddAdditionalParameterFloat(std::string name, float a, float b);
 	bool AddAdditionalParameter(std::string name, std::string value);
-	bool AddAdditionalParameter(std::string name, char* list[], int size, eListValueType type);
+	bool AddAdditionalParameter(std::string name, const char* const list[], int size, eListValueType type);
 
 	virtual ~Adapter();
 	virtual int Run();

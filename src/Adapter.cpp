@@ -21,6 +21,7 @@
 
 #include <sqlite3.h>
 #include <assert.h>
+#include <string>
 
 #include "DaemonCommServer.h"
 
@@ -274,7 +275,7 @@ int Adapter::Run() {
 
 	CmdLineCommand* pCmdLineCommand = m_pCmdLineParser->GetCommand();
 
-	if(pCmdLineCommand != NULL && pCmdLineCommand->Compile()) {
+	if(pCmdLineCommand != NULL && pCmdLineCommand->Compile(GetAdditionalParameterMap())) {
 #if 1
 		pCmdLineCommand->Dump();
 #endif
@@ -289,8 +290,7 @@ int Adapter::Run() {
 
 		//execute and exit
 		if(!pDevCmd->isHWCommand()) {
-			bool result = pDevCmd->Execute();//m_pDevice->Execute(pDevCmd);
-			//TODO: get command result and print here instead of execute?
+			bool result = pDevCmd->Execute();
 			delete pCmdLineCommand;
 			delete pDevCmd;
 			return result ? 0 : -1;
@@ -326,8 +326,14 @@ int Adapter::Run() {
 							printf("opening channel socket %s\n", m_socket.c_str());
 							if(m_pCommChannel->open(m_socket) == 0) {
 								printf("Channel opened on socket %s\n", m_socket.c_str());
+								//send raw command line
+								std::string cmdLine = m_pCmdLineParser->GetCmdLine();
+
+								printf("RAW::: %s\n", cmdLine.c_str());
+
+								m_pCommChannel->send((unsigned char*)cmdLine.c_str(), cmdLine.length() + 1); //send sero terminated command line
+
 								unsigned length;
-								m_pCommChannel->send(pDevCmd->getRawCommand(), pDevCmd->getRawCommandLength());
 								m_pCommChannel->recv(&length, 4); //length
 								printf("Got reply length: %d\n", length);
 
@@ -339,6 +345,7 @@ int Adapter::Run() {
 									printf("%s", resp);
 									delete resp;
 								}
+
 							} else {
 								printf("Error connecting to daemon on %s\n", m_socket.c_str());
 							}
@@ -399,7 +406,7 @@ int Adapter::Run() {
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
 						 * so we go into command processing loop
 						 */
-						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice);
+						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
 						pServer->Create();
 						syslog(LOG_ERR, "Waiting for Server to complete");
 						pServer->Join();//stuck here till the end of daemon live
@@ -531,7 +538,7 @@ bool Adapter::AddAdditionalParameter(std::string name, std::string value)
 	return true;
 }
 
-bool Adapter::AddAdditionalParameter(std::string name, char* list[], int size, eListValueType type)
+bool Adapter::AddAdditionalParameter(std::string name, const char* const list[], int size, eListValueType type)
 {
 	struct additional_parameter_t* param = new additional_parameter_t();
 	param->value.list.data = list;
