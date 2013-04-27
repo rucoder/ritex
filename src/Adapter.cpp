@@ -502,5 +502,44 @@ bool Adapter::CreateLoggerFacility()
 	return false;
 }
 
+bool Adapter::AddAdditionalParameter(std::string name, int a, int b)
+{
+	struct additional_parameter_t* param = new additional_parameter_t();
+	param->value.i.min = a;
+	param->value.i.max = b;
+	param->type = PARAM_TYPE_INT;
+	m_additionalParameters[name] = param;
+	return true;
+}
+
+bool Adapter::AddAdditionalParameterFloat(std::string name, float a, float b)
+{
+	struct additional_parameter_t* param = new additional_parameter_t();
+	param->value.f.min = a;
+	param->value.f.max = b;
+	param->type = PARAM_TYPE_FLOAT;
+	m_additionalParameters[name] = param;
+	return true;
+}
+
+bool Adapter::AddAdditionalParameter(std::string name, std::string value)
+{
+	struct additional_parameter_t* param = new additional_parameter_t();
+	param->value.str = strdup(value.c_str());
+	param->type = PARAM_TYPE_STRING;
+	m_additionalParameters[name] = param;
+	return true;
+}
+
+bool Adapter::AddAdditionalParameter(std::string name, char* list[], int size, eListValueType type)
+{
+	struct additional_parameter_t* param = new additional_parameter_t();
+	param->value.list.data = list;
+	param->value.list.size = size;
+	param->value.list.dataType = type;
+	param->type = PARAM_TYPE_LIST;
+	m_additionalParameters[name] = param;
+	return true;
+}
 
 

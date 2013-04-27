@@ -22,20 +22,38 @@
 
 #include <signal.h>
 
-
-
 //pthread
 #include <pthread.h>
 
+char* RitexAdapter::m_commDevices[] {
+	"/dev/ttySC0",
+	"/dev/ttySC1",
+	"/dev/ttySC2",
+	"/dev/ttySC3",
+	"/dev/ttySC4"
+};
 
+
+char* RitexAdapter::m_commSpeed[] {
+	"75", "110", "300","1200","2400","4800","9600","19200","38400","57600","115200"
+};
 
 
 
 RitexAdapter::RitexAdapter(std::string name, std::string version, std::string description,CmdLineParser* parser)
 	:Adapter(name, version, description, parser)
 {
+
 	//populate device tree structure
 	m_pDevice = new RitexDevice(this);
+	AddAdditionalParameterFloat("test1", 0.4, 8.55555789);
+	AddAdditionalParameter("comdevice", m_commDevices, sizeof(m_commDevices)/ sizeof(char*), LIST_VALUE_STRING);
+	AddAdditionalParameter("baudrate", m_commSpeed, sizeof(m_commSpeed)/ sizeof(char*), LIST_VALUE_INT);
+	AddAdditionalParameter("debug",0,1);
+
+
+
+	AddAdditionalParameter("address","54");
 }
 
 bool RitexAdapter::isDaemonRunning() {
@@ -168,14 +186,6 @@ int RitexAdapter::DaemonLoop() {
 	return 0;
 }
 
-/*
- * -a
- * comdevice|list|/dev/ttySC0|/dev/ttySC1|/dev/ttySC2|/dev/ttySC3|/dev/ttySC4
-baudrate|list|75|110|300|1200|2400|4800|9600|19200|38400|57600|115200
-debug|list|0|1
-address|string
-com_timeout|list|50000|70000|90000|120000|150000
- */
 
 /*
  * -cmd

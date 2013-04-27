@@ -21,6 +21,7 @@
 #define PID_FILE_PATH "/tmp/"
 
 class Adapter: public IAdapter{
+
 private:
 
 	enum eExecutionContext {
@@ -34,7 +35,6 @@ private:
 	void DeletePidFile();
 	void GeneratePidFileName(int deviceId);
 
-
 protected:
 	Adapter() {};
 
@@ -46,9 +46,6 @@ protected:
 
 	// device attached
 	Device* m_pDevice;
-
-	// supported additional parameters. assume all options accept all parameters
-	//TODO:
 
 	//supported commands
 
@@ -65,9 +62,17 @@ protected:
 	DataLoggerThread* m_pDataLogger;
 	CmdLoggerThread* m_pCmdLogger;
 	bool CreateLoggerFacility();
+
+	// supported parameters
+	std::map<std::string, struct additional_parameter_t*> m_additionalParameters;
 public:
 	Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
 	bool AddParameter(AdapterParameter* parameter);
+	bool AddAdditionalParameter(std::string name, int a, int b);
+	bool AddAdditionalParameterFloat(std::string name, float a, float b);
+	bool AddAdditionalParameter(std::string name, std::string value);
+	bool AddAdditionalParameter(std::string name, char* list[], int size, eListValueType type);
+
 	virtual ~Adapter();
 	virtual int Run();
 	//may be useful to create interactive application to test daemon or for unit tests
@@ -82,6 +87,7 @@ public:
 	virtual CmdLoggerThread* getCmdLogger() { return m_pCmdLogger; };
 	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
 	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
+	virtual std::map<std::string, struct additional_parameter_t*>& GetAdditionalParameterMap() {return m_additionalParameters;}
 
 };
 

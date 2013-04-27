@@ -12,6 +12,7 @@
 
 #include "ShowInfoHostCommand.h"
 #include "HostCommandShowParameters.h"
+#include "CmdGetAdditionalParameters.h"
 
 Device::Device(IAdapter* pAdapter) :
 	m_deviceId(-1), // make it invalid
@@ -45,6 +46,8 @@ DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
 		return new ShowInfoHostCommand(this, m_pAdapter);
 	case CMD_GET_CONNECTED_DEVICE_INFO:
 		return new HostCommandShowParameters(this);
+	case CMD_GET_ADDITIONAL_PARAMETER_LIST:
+		return new CmdGetAdditionalParameters(m_pAdapter);
 	default:
 		printf("WARNING: NOT SUPPORTED: cmdLineCommand.m_cmdLineCommandType == %d\n", cmd->m_cmdLineCommandType);
 		return NULL;
