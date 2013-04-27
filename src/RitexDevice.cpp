@@ -13,13 +13,17 @@
 RitexDevice::RitexDevice(IAdapter* pAdapter)
 	: Device(pAdapter)
 {
+	AdapterParameter* p;
 	// add device channels
-	AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
+	AddChannel(new DeviceChannel(0, false, p = new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
 
 	// we have one and only sensor
 	Sensor* pSensor = new Sensor(1);
 
-	pSensor->AddChannel(new DeviceChannel(1, false, new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X")));
+	pSensor->AddChannel(new DeviceChannel(1, false, p = new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X")));
+	//TODO: add to apropreate map
+
+
 	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050110000, "Средний ток ВД", true, "X:X:X:X")));
 	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050111010, "Напряжение сети", true, "X:X:X:X")));
 
@@ -32,7 +36,7 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 
 	AddSensor(pSensor);
 
-	m_pProcessor = new ComTrafficProcessor();
+	m_pProcessor = new ComTrafficProcessor(this);
 }
 
 RitexDevice::~RitexDevice() {
@@ -75,3 +79,10 @@ bool RitexDevice::StartMesurements()
 {
 	return m_pProcessor->Create("/dev/tnt1", 9600);
 }
+
+
+void RitexDevice::ReportDataPacket(DataPacket* packet)
+{
+	//Now get per-parameter data from packet
+}
+

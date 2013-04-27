@@ -54,7 +54,7 @@ public:
 
 	 void SetParameterFilter() {};
 	 //bool Execute(DeviceCommand* pCommand) {};
-	 bool StartDataLogging() {};
+	 bool StartDataLogging() { return false; }
 };
 
 #endif /* DEVICE_H_ */

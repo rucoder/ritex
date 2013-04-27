@@ -5,7 +5,9 @@
  *      Author: ruinmmal
  */
 
+#include "RitexDevice.h"
 #include "ComTrafficProcessor.h"
+#include "DataPacket.h"
 
 //comm port
 #include <termios.h>
@@ -20,10 +22,12 @@
 
 //select
 #include <sys/select.h>
-
+// for EWOULDBLOCK
+#include <errno.h>
+//for open
 #include <unistd.h>
 
-#include <errno.h>
+#include <assert.h>
 
 //need to swap byte if running on LE target (e.g. x86)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -40,6 +44,7 @@ static inline unsigned short swap16(unsigned short x)
 #define ERROR_READ_TIMEOUT  -2
 #define ERROR_READ_BAD_PACKET  -3
 #define ERROR_READ_OTHER     -4
+#define ERROR_OOM - 5
 
 
 //MUST be aligned with ComTrafficProcessor::m_ackParams array
@@ -48,6 +53,8 @@ static inline unsigned short swap16(unsigned short x)
 #define IDX_ACK_ALL_SETTINGS 2
 #define IDX_ACK_INFO 3
 #define IDX_ACK_STORED_INFO 4
+
+#define IDX_ACK_NONE -1
 
 ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_cmdParams[] = {
 		{REQ_VD_OFF, 1, IDX_ACK_ACK},
@@ -67,18 +74,18 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_cmdParams[] = {
 #define MAX_COMMAND_INDEX (sizeof(m_cmdParams) / sizeof(ComTrafficProcessor::__tag_cmdParams))
 
 ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
-		{ACK_ACK, 2, 0},
-		{ACK_PASSWORDS, 5, 0},
+		{ACK_ACK, 2, IDX_ACK_NONE},
+		{ACK_PASSWORDS, 5, IDX_ACK_NONE},
 		{ACK_ALL_SETTINGS, 0x2E, IDX_ACK_ACK}, //has an alternative reply
-		{ACK_INFO, 0x28, 0},
-		{ACK_STORED_INFO, 0x213, 0}
+		{ACK_INFO, 0x28, IDX_ACK_NONE},
+		{ACK_STORED_INFO, 0x213, IDX_ACK_NONE}
 };
 
 #define MAX_ACK_INDEX (sizeof(m_cmdParams) / sizeof(ComTrafficProcessor::__tag_cmdParams))
 
 
-ComTrafficProcessor::ComTrafficProcessor()
-	: m_state(STATE_INIT), m_fd(-1)
+ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
+	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice)
 {
 	// TODO Auto-generated constructor stub
 
@@ -164,6 +171,26 @@ bool ComTrafficProcessor::isLengthMatches(unsigned char cmd, unsigned short leng
 	return false;
 }
 
+int ComTrafficProcessor::GetAckForCmd(int cmd, bool primary){
+	int index = -1;
+	for(unsigned int i = 0; i < MAX_COMMAND_INDEX; i++) {
+		if(m_cmdParams[i].m_cmd == cmd)
+			index = m_cmdParams[i].m_ack;
+	}
+
+	if (index == -1)
+		return -1;
+
+	if(!primary)
+		index = m_ackParams[index].m_ack;
+
+	if (index == -1)
+		return -1;
+
+	return m_ackParams[index].m_ack;
+
+}
+
 std::string ComTrafficProcessor::GetErrorStr(int error)
 {
 	switch (error) {
@@ -177,36 +204,122 @@ std::string ComTrafficProcessor::GetErrorStr(int error)
 			return std::string("ERROR_READ_OTHER");
 		case ERROR_READ_TIMEOUT:
 			return std::string("ERROR_READ_TIMEOUT");
+		case ERROR_OOM:
+			return std::string("ERROR_OOM");
 		default:
 			return std::string("ERROR_XXX: UNHANDLED!!!!");
 	}
 }
 
+DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
+	struct timeval to;
+	//reset timeout
+	to.tv_sec = 0;
+	to.tv_usec = timeout * 1000; //1 sec ms waiting for line activity
+
+	syslog(LOG_ERR, "[Run] waiting for KSU");
+
+	return ReadPacket(&to, error);
+}
+
+#define MAX_KSU_CHANCES 3
+#define KSU_INACTIVITY_TIMEOUT 1000 //1 sec
+
 void* ComTrafficProcessor::Run()
 {
 
 	int type;
+	int number_of_ksu_failures = 3;
 
-	struct timeval timeout;
+	m_state = STATE_INIT;
 
 	syslog(LOG_ERR, "Enter run...");
 	for(;;) {
 		int error;
+		int currentCmd = -1;
+		DataPacket* packet;
 
-		//reset timeout
-		timeout.tv_sec = 0;
-		timeout.tv_usec = 1000 * 1000; //1 sec ms waiting for line activity
+		syslog(LOG_ERR, "#### STATE: %d", m_state);
+
+		switch (m_state) {
+			case STATE_INIT:
+				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
+
+				switch(error) {
+				case ERROR_READ_NO_ERROR:
+					assert(packet != NULL);
+
+					number_of_ksu_failures = MAX_KSU_CHANCES;
+
+					if(packet->GetType() == TYPE_CMD) {
+						//we got a command. so wait for ACK
+						m_state = STATE_WAIT_ACK;
+					} else {
+						//we got ACK. staty in the state
+					}
+
+					break;
+				case ERROR_READ_TIMEOUT:
+					if(--number_of_ksu_failures == 0) {
+						//TODO: check logic. How many times we need to report event?
+						number_of_ksu_failures = MAX_KSU_CHANCES;
+						//TODO: report event here
+						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
+					}
+					break;
+				case ERROR_READ_BAD_CRC:
+					// TODO: report event
+					break;
+				default:
+					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
+					break;
+				}
+
+				break;
+			/*
+			 * the command was previously detected in the traffic so 'ПИУ'
+			 * expects ACK within KSU_INACTIVITY_TIMEOUT so do we
+			 * 1. if timeout happens 'ПИУ' will repeat the command so we need to go to INIT
+			 * 2. if ACK has gotten then report data and wait for the next CMD
+			 */
+			case STATE_WAIT_ACK:
+				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
+				switch(error) {
+					case ERROR_READ_TIMEOUT:
+						m_state = STATE_INIT;
+						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
+						//number_of_ksu_failures++;
+						break;
+					case ERROR_READ_NO_ERROR:
+						//1. report data
 
 
-		syslog(LOG_ERR, "[Run] waiting for packet");
-
-		struct __tag_packet* packet = ReadPacket(&timeout, error);
-
-		if (packet == NULL) {
-			syslog(LOG_ERR, "[Run] error getting packet: %s", GetErrorStr(error).c_str());
-		} else { //got packet. process it
-			syslog(LOG_ERR, "Got packet: address=0x%X cmd=0x%X length=%d type=%s", packet->address, packet->cmd, packet->length, packet->type == TYPE_CMD ? "CMD" : "ACK");
-			delete packet;
+						//if(pendingCommand ) m_state=CUSTOM_CMD
+						m_state = STATE_WAIT_CMD;
+						break;
+					default:
+						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
+						break;
+				}
+				break;
+			case STATE_WAIT_CMD:
+				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
+				switch(error) {
+					case ERROR_READ_TIMEOUT:
+						m_state = STATE_INIT;
+						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
+						//number_of_ksu_failures++;
+						break;
+					case ERROR_READ_NO_ERROR:
+						m_state = STATE_WAIT_ACK;
+						break;
+					default:
+						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
+						break;
+				}
+				break;
+			default:
+				break;
 		}
 	}
 	syslog(LOG_ERR, "Exit run...");
@@ -260,7 +373,7 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 	return total_read;
 }
 
-struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
+DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 {
 	int numRead;
 	unsigned char address = 0;
@@ -306,18 +419,28 @@ struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(struct
 		//command is included in the length
 		length--;
 
-		struct __tag_packet* packet = (struct __tag_packet*)new unsigned char[length + 70 /* including length and command */];
+		DataPacket* packet = new DataPacket(type, address, cmd, time(NULL));
+
+		if(packet == NULL) {
+			error = ERROR_OOM;
+			return NULL;
+		}
 
 		// read the rest if needed and check CRC
 		if(length > 0) {
-			numRead = Read((void*)&(packet->data[0]), length,timeout);
+			unsigned char * p = packet->Allocate(length);
+			if(p == NULL){
+				error = ERROR_OOM;
+				return NULL;
+			}
+			numRead = Read((void*)p, length,timeout);
 
 			if(numRead < 0) {
 				delete packet;
 				error = numRead;
 				return NULL;
 			}
-			calculatedCrc16 = Crc16(calculatedCrc16, packet->data, length);
+			calculatedCrc16 = Crc16(calculatedCrc16, packet->GetDataPtr(), length);
 		}
 
 		// read CRC16
@@ -338,10 +461,6 @@ struct ComTrafficProcessor::__tag_packet* ComTrafficProcessor::ReadPacket(struct
 			return NULL;
 		}
 
-		packet->address = address;
-		packet->cmd = cmd;
-		packet->length = length;
-		packet->type = type;
 		error = ERROR_READ_NO_ERROR;
 		return packet;
 	}
