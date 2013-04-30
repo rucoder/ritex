@@ -95,7 +95,7 @@ public:
 
 	    if(rc != SQLITE_OK)
 	    {
-	    	syslog(LOG_ERR,"[SQL] couldn't open DB\n");
+	    	syslog(LOG_ERR,"[SQL] couldn't open DB: %s\n", m_sDbName.c_str());
 	    	CloseDb();
 	    	return false;
 	    }
@@ -103,7 +103,7 @@ public:
 
 	    if(rc != SQLITE_OK)
 	    {
-	    	syslog(LOG_ERR,"[SQL] couldn't prepare 'insert event' statement\n");
+	    	syslog(LOG_ERR,"[SQL] couldn't prepare 'insert event' statement for: %s\n", m_sDbName.c_str());
 	    	CloseDb();
 	    	return false;
 	    }

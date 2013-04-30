@@ -21,7 +21,7 @@ class RitexDevice;
 class ComTrafficProcessor: public Thread {
 protected:
 	struct __tag_cmdParams {
-		unsigned char m_cmd;
+		unsigned short m_cmd;
 		unsigned short m_length;
 		int m_ack;
 	};
@@ -29,6 +29,12 @@ protected:
 protected:
 	enum eState {
 		STATE_INIT,
+		STATE_GET_INIT_WRITE_MODE,
+		STATE_GET_INIT_PASSWORDS,
+		STATE_SET_CURRENT_PASSWORD,
+		STATE_SET_MODE,
+		STATE_WAIT_MODE_SET,
+
 		STATE_WAIT_ACK,
 		STATE_WAIT_CMD,
 		STATE_CUSTOM_CMD,
@@ -39,6 +45,10 @@ protected:
     static __tag_cmdParams m_ackParams[];
 
     RitexDevice* m_pDevice;
+
+    std::queue<unsigned char> m_echoCancelFifo;
+
+    int m_writeMode;
 
 
 protected:
@@ -53,14 +63,20 @@ protected:
     DataPacket* ReadPacket(struct timeval* timeout, int &error);
     int Read(void* buffer, int length, struct timeval* timeout = NULL);
 
+    bool WritePacket(DataPacket* pPacket);
+
+
     DataPacket* WaitForKsuActivity(int timeout, int& error);
 
     //TODO: place under debug
     std::string GetErrorStr(int error);
+    std::string GetStateStr(eState state);
 
-    //CRC16
-    unsigned short Crc16(unsigned short crcInit, unsigned char byte);
-    unsigned short Crc16(unsigned short crcInit, unsigned char buffer[], int size);
+    void ChangeMode(unsigned short mode);
+    void SetSetting(unsigned char setting, unsigned short value);
+    void GetAllSettings();
+    void GetPasswords();
+    void SetPassword(unsigned short password);
 
 
 public:

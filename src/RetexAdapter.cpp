@@ -32,7 +32,9 @@ const char* RitexAdapter::m_commDevices[] = {
 	"/dev/ttySC3",
 	"/dev/ttySC4",
 	"/dev/tnt0",
-	"/dev/tnt1"
+	"/dev/tnt1",
+	"/dev/ttyUSB0",
+	"/dev/ttyUSB1"
 };
 
 

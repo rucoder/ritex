@@ -11,7 +11,7 @@
 #include <assert.h>
 
 RitexDevice::RitexDevice(IAdapter* pAdapter)
-	: Device(pAdapter)
+	: Device(pAdapter), m_writeMode(WRITE_MODE_0)
 {
 	AdapterParameter* p;
 	// add device channels

@@ -386,9 +386,9 @@ int Adapter::Run() {
 					assert(m_pDevice->getDeviceId() > 0);
 
 					//Update channels information from DB
-					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
+					//if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
 						//cannot continue. cleanup and exit
-					}
+					//}
 
 					//m_pDevice->SetParametrFilter();
 
@@ -400,18 +400,19 @@ int Adapter::Run() {
 					 *
 					 */
 
-					if(CreateLoggerFacility()) {
+					//if(CreateLoggerFacility()) {
 						/*
 						 * now create server socket and start listening. there must be a command alredy
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
 						 * so we go into command processing loop
 						 */
+						syslog(LOG_ERR, "Opening server socket.. ");
 						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
 						pServer->Create();
 						syslog(LOG_ERR, "Waiting for Server to complete");
 						pServer->Join();//stuck here till the end of daemon live
 						delete pServer;
-					}
+					//}
 					break;
 			}
 
@@ -426,6 +427,7 @@ int Adapter::Run() {
  */
 bool Adapter::UpdateParameterFilter(int devId)
 {
+	return true;
     sqlite3* pDb;
     char *zErrMsg = 0;
 
@@ -484,9 +486,16 @@ int Adapter::ParentLoop(bool isCommOk)
 
 bool Adapter::CreateLoggerFacility()
 {
+
+#if 0
 	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
 	m_pCmdLogger = new CmdLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+#else
+	m_pEventLogger = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
+	m_pDataLogger = new DataLoggerThread("/mnt/www/ControlServer/data/ic_data_value3.sdb");
+	m_pCmdLogger = new CmdLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
+#endif
 
 	if(m_pCmdLogger && m_pEventLogger && m_pDataLogger) {
 		if(m_pEventLogger->Create() && m_pDataLogger->Create() && m_pCmdLogger->Create()) {
@@ -506,7 +515,8 @@ bool Adapter::CreateLoggerFacility()
 		delete m_pCmdLogger;
 		m_pCmdLogger = NULL;
 	}
-	return false;
+	//return false;
+	return true;
 }
 
 bool Adapter::AddAdditionalParameter(std::string name, int a, int b)

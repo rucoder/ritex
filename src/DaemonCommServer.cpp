@@ -54,6 +54,9 @@ bool DaemonCommServer::Create(bool createDetached )
 
 	strncpy(&addr.sun_path[1], name, sizeof(addr.sun_path) - 2);
 
+	syslog(LOG_ERR, "Opening server socket.. [%s] ", name);
+
+
 	if (bind(m_connectSock, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
 		syslog(LOG_ERR, "bind");
 		//TODO: close(m_connectSock);
