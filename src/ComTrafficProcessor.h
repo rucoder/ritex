@@ -16,6 +16,13 @@
 //for timeval
 #include <sys/time.h>
 
+
+typedef struct {
+
+	DataPacket* m_pDataPacket;
+	DeviceCommand* m_pParentCommand;
+} custom_command_t;
+
 class RitexDevice;
 
 class ComTrafficProcessor: public Thread {
@@ -34,9 +41,9 @@ protected:
 		STATE_SET_CURRENT_PASSWORD,
 		STATE_SET_MODE,
 		STATE_WAIT_MODE_SET,
-
 		STATE_WAIT_ACK,
 		STATE_WAIT_CMD,
+
 		STATE_CUSTOM_CMD,
 		STATE_WAIT_CUSTOM_ACK
 	} m_state;
@@ -50,11 +57,19 @@ protected:
 
     int m_writeMode;
 
+    bool m_isDataCapture;
 
+    custom_command_t* m_pendingCmd;
+
+    pthread_mutex_t m_cmdMutex;
+
+
+    bool m_doRun;
+    pthread_mutex_t m_startMutex;
+    pthread_cond_t m_startCond;
 protected:
 	virtual void* Run();
     int OpenCommPort(std::string port, int speed);
-    bool isRunning() { return m_fd != -1; };
 
 
     bool isLengthMatches(unsigned char cmd, unsigned short length, int& type);
@@ -77,12 +92,23 @@ protected:
     void GetAllSettings();
     void GetPasswords();
     void SetPassword(unsigned short password);
+    void SetDataCaptureMode(bool isCapture = true) {
+    	m_isDataCapture = isCapture;
+    }
 
 
 public:
 	ComTrafficProcessor(RitexDevice* pDevice);
 	virtual ~ComTrafficProcessor();
-    virtual bool Create(std::string port, int speed);
+    virtual bool Create(std::string port, int speed, bool oneShot = false);
+    bool SendCustomCmd(custom_command_t* cmd);
+    bool isRunning() { return m_fd != -1; };
+    void Start() {
+    	pthread_mutex_lock(&m_startMutex);
+    	m_doRun = true;
+    	pthread_mutex_unlock(&m_startMutex);
+    	pthread_cond_signal(&m_startCond);
+    }
 };
 
 #endif /* COMTRAFFICPROCESSOR_H_ */

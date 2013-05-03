@@ -9,6 +9,9 @@
 
 #include <stdio.h>
 
+
+#include <execinfo.h>
+#include <stdlib.h>
 /*
  * Returns time in format YYYY-MM-DD HH:MM:SS
  */
@@ -39,4 +42,28 @@ unsigned short  Utils::Crc16(unsigned short crcInit, unsigned char buffer[], int
 	for (int i = 0; i < size; i++)
 		crcInit = Crc16(crcInit, buffer[i]);
 	return crcInit;
+}
+
+void Utils::_do_backtrace()
+{
+    int j, nptrs;
+	#define SIZE 100
+    void *buffer[100];
+    char **strings;
+
+    nptrs = backtrace(buffer, SIZE);
+    printf("backtrace() returned %d addresses\n", nptrs);
+
+    /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
+       would produce similar output to the following: */
+
+    strings = backtrace_symbols(buffer, nptrs);
+    if (strings == NULL) {
+        perror("backtrace_symbols");
+    }
+
+    for (j = 0; j < nptrs; j++)
+        printf("%s\n", strings[j]);
+
+    free(strings);
 }

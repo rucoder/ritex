@@ -27,6 +27,34 @@
 
 #define BD_MAX_CLOSE 8192
 
+static char const *priov[] = {
+"EMERG:",   "ALERT:",  "CRIT:", "ERR:", "WARNING:", "NOTICE:", "INFO:", "DEBUG:"
+};
+
+static __ssize_t writer(void *cookie, char const *data, size_t leng)
+{
+    (void)cookie;
+    int     p = LOG_DEBUG, len;
+    do len = strlen(priov[p]);
+    while (memcmp(data, priov[p], len) && --p >= 0);
+
+    if (p < 0) p = LOG_INFO;
+    else data += len, leng -= len;
+    while (*data == ' ') ++data, --leng;
+
+    syslog(p, "%.*s", leng, data);
+    return  leng;
+}
+
+//static int noop(void *cookie, char const *data, size_t leng) {return 0;}
+static cookie_io_functions_t log_fns = {
+    NULL, writer, NULL, NULL
+};
+
+void tolog(FILE **pfp)
+{
+    setvbuf(*pfp = fopencookie(NULL, "w", log_fns), NULL, _IOLBF, 0);
+}
 
 Adapter::Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser)
 	: m_adapterName(name), m_adapterVersion(version), m_adapterDescription(description),
@@ -194,12 +222,12 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		/* 'fd' should be 0 */
 		return CONTEXT_ERROR;
 	}
-	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
-		return CONTEXT_ERROR;
-	}
-	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
-		return CONTEXT_ERROR;
-	}
+//	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
+//	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
 
 #if 1
 	fd = open(m_pidFileName.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0);
@@ -382,13 +410,23 @@ int Adapter::Run() {
 					delete pCmdLineCommand;
 					delete pDevCmd;
 
+					tolog(&stderr);
+					tolog(&stdout);
+
+					printf("TEST FROM PRINTF\n");
+
+					syslog(LOG_ERR, "Starting daemon for devId=%d", m_pDevice->getDeviceId());
+
 					/************************ The work starts here ******************/
 					assert(m_pDevice->getDeviceId() > 0);
-
+					/*
+					 * 1. create comm server
+					 */
+#if 1
 					//Update channels information from DB
-					//if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
+					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
 						//cannot continue. cleanup and exit
-					//}
+					}
 
 					//m_pDevice->SetParametrFilter();
 
@@ -400,7 +438,7 @@ int Adapter::Run() {
 					 *
 					 */
 
-					//if(CreateLoggerFacility()) {
+					if(CreateLoggerFacility()) {
 						/*
 						 * now create server socket and start listening. there must be a command alredy
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
@@ -411,8 +449,10 @@ int Adapter::Run() {
 						pServer->Create();
 						syslog(LOG_ERR, "Waiting for Server to complete");
 						pServer->Join();//stuck here till the end of daemon live
+						syslog(LOG_ERR, "Server [DONE]");
 						delete pServer;
-					//}
+					}
+#endif
 					break;
 			}
 
@@ -427,15 +467,18 @@ int Adapter::Run() {
  */
 bool Adapter::UpdateParameterFilter(int devId)
 {
-	return true;
     sqlite3* pDb;
     char *zErrMsg = 0;
 
-    int rc = sqlite3_open_v2("/home/ruinmmal/ic_data/ic_data3.sdb", &pDb,SQLITE_OPEN_READONLY, NULL);
+    syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
+
+    std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
+
+    int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
 
     if(rc != SQLITE_OK)
     {
-    	syslog(LOG_ERR,"[SQL] couldn't open DB\n");
+    	syslog(LOG_ERR,"[SQL] couldn't open DB %s\n", dbPath.c_str());
     	sqlite3_close(pDb);
     	return false;
     }
@@ -456,13 +499,18 @@ bool Adapter::UpdateParameterFilter(int devId)
     		int cols = sqlite3_column_count(pStm);
     		syslog(LOG_ERR,"[SQL] cols=%d\n", cols);
     		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
-
+    			int paramId = sqlite3_column_int(pStm, 0);
+    			int channelId = sqlite3_column_int(pStm, 1);
+    			syslog(LOG_ERR, "Add channel to filter: P:%d C:%d", paramId, channelId);
     		}
     		sqlite3_finalize(pStm);
+    	} else {
+        	syslog(LOG_ERR,"[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     	}
     } else {
-    	syslog(LOG_ERR,"[SQL] error preparing %d %s\n", rc, sqlite3_errmsg(pDb));
+    	syslog(LOG_ERR,"[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     }
+    delete [] query;
     return true;
 }
 
@@ -488,9 +536,9 @@ bool Adapter::CreateLoggerFacility()
 {
 
 #if 0
-	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
-	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
-	m_pCmdLogger = new CmdLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+	m_pEventLogger = new EventLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_event3.sdb");
+	m_pDataLogger = new DataLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_value3.sdb");
+	m_pCmdLogger = new CmdLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_event3.sdb");
 #else
 	m_pEventLogger = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/mnt/www/ControlServer/data/ic_data_value3.sdb");
@@ -515,8 +563,7 @@ bool Adapter::CreateLoggerFacility()
 		delete m_pCmdLogger;
 		m_pCmdLogger = NULL;
 	}
-	//return false;
-	return true;
+	return false;
 }
 
 bool Adapter::AddAdditionalParameter(std::string name, int a, int b)

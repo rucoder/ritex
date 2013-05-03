@@ -12,8 +12,6 @@
 #include "Device.h"
 
 class HostCommandShowParameters : public DeviceCommand {
-protected:
-	HostCommandShowParameters();
 public:
 	HostCommandShowParameters(Device* device);
 	virtual ~HostCommandShowParameters();

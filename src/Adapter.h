@@ -17,6 +17,7 @@
 #include "EventLoggerThread.h"
 #include "DataLoggerThread.h"
 #include "CmdLoggerThread.h"
+#include "ParameterFilter.h"
 
 #define PID_FILE_PATH "/tmp/"
 
@@ -65,6 +66,8 @@ protected:
 
 	// supported parameters
 	std::map<std::string, struct additional_parameter_t*> m_additionalParameters;
+
+	ParameterFilter m_paramFilter;
 public:
 	Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
 	bool AddParameter(AdapterParameter* parameter);
@@ -88,6 +91,10 @@ public:
 	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
 	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
 	virtual std::map<std::string, struct additional_parameter_t*>& GetAdditionalParameterMap() {return m_additionalParameters;}
+	virtual const ParameterFilter& GetParameterFilter() const {
+		return m_paramFilter;
+	}
+
 
 };
 

@@ -7,16 +7,10 @@
 
 #include "CmdStartMeasurement.h"
 
-CmdStartMeasurement::CmdStartMeasurement()
-	: DeviceCommand(true), m_pDevice(NULL)
-{
-	m_cmdId = 2;
-}
-
 CmdStartMeasurement::CmdStartMeasurement(RitexDevice* p_device, std::string commport, int speed)
 	: DeviceCommand(true), m_commport(commport), m_speed(speed), m_pDevice(p_device)
 {
-	m_cmdId = 2;
+	//m_cmdId = 2;
 }
 
 CmdStartMeasurement::~CmdStartMeasurement() {
@@ -25,7 +19,9 @@ CmdStartMeasurement::~CmdStartMeasurement() {
 
 bool CmdStartMeasurement::Execute()
 {
-	return m_pDevice->StartMesurements(m_commport, m_speed);
+	bool result =  m_pDevice->StartMesurements(this, m_commport, m_speed);
+	NotifyResultReady();
+	return result;
 }
 
 

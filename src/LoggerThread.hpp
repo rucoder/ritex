@@ -103,7 +103,7 @@ public:
 
 	    if(rc != SQLITE_OK)
 	    {
-	    	syslog(LOG_ERR,"[SQL] couldn't prepare 'insert event' statement for: %s\n", m_sDbName.c_str());
+	    	syslog(LOG_ERR,"[SQL] couldn't prepare 'insert event' statement for: %s : error %s\n", m_sDbName.c_str(), sqlite3_errmsg(m_pDb));
 	    	CloseDb();
 	    	return false;
 	    }

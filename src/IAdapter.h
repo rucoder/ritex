@@ -12,6 +12,7 @@
 #include "DataLoggerThread.h"
 #include "CmdLoggerThread.h"
 #include <map>
+#include "ParameterFilter.h"
 
 enum eListValueType {
 	LIST_VALUE_INT,
@@ -57,7 +58,7 @@ public:
 	virtual EventLoggerThread* getEventLogger() = 0;
 	virtual DataLoggerThread* getDataLogger() = 0;
 	virtual additional_parameter_map_t& GetAdditionalParameterMap() = 0;
-
+	virtual const ParameterFilter& GetParameterFilter() const = 0;
 //protected:
 	virtual ~IAdapter() {};
 };

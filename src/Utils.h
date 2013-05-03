@@ -35,6 +35,7 @@ public:
     //CRC16
     static unsigned short Crc16(unsigned short crcInit, unsigned char byte);
     static unsigned short Crc16(unsigned short crcInit, unsigned char buffer[], int size);
+    static void _do_backtrace();
 
 };
 

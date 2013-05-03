@@ -8,18 +8,12 @@
 #include "ShowInfoHostCommand.h"
 #include <stdio.h>
 
-ShowInfoHostCommand::ShowInfoHostCommand()
-	: DeviceCommand(false), m_pDevice(NULL), m_pAdapter(NULL)
-{
-
-}
 
 ShowInfoHostCommand::ShowInfoHostCommand(Device* device, IAdapter* adapter)
 	: DeviceCommand(false), m_pDevice(device), m_pAdapter(adapter)
 {
-	m_cmdId = 3;
-}
 
+}
 
 ShowInfoHostCommand::~ShowInfoHostCommand() {
 	// TODO Auto-generated destructor stub

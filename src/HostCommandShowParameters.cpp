@@ -8,15 +8,9 @@
 #include "HostCommandShowParameters.h"
 #include <stdio.h>
 
-HostCommandShowParameters::HostCommandShowParameters() {
-	// TODO Auto-generated constructor stub
-
-}
-
 HostCommandShowParameters::HostCommandShowParameters(Device* pDevice)
 	: DeviceCommand(false), m_pDevice(pDevice)
 {
-	m_cmdId = 4;
 }
 
 HostCommandShowParameters::~HostCommandShowParameters() {

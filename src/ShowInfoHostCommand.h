@@ -15,7 +15,6 @@
 
 class ShowInfoHostCommand: public DeviceCommand {
 public:
-	ShowInfoHostCommand();
 	ShowInfoHostCommand(Device* device, IAdapter* adapter);
 	virtual ~ShowInfoHostCommand();
 	virtual bool Execute();

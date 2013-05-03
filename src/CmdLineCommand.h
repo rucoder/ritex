@@ -54,6 +54,7 @@ private:
 	bool CompileInt(std::string src, int& dst);
 	bool CompileFloat(std::string src, float& dst);
 	bool CompileMessage(std::string src, int& dst_name, float& dst_val);
+	bool IsParameterExists(std::string name);
 	bool HasRequiredParameters(eCommandType type);
 
 	bool GetCompiledParameter(std::string name, struct compiled_parameter& param);

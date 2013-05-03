@@ -7,8 +7,11 @@
 
 #include "RitexDevice.h"
 #include "CmdStartMeasurement.h"
+#include "CmdTestDevice.h"
 
 #include <assert.h>
+
+#include <stdio.h>
 
 RitexDevice::RitexDevice(IAdapter* pAdapter)
 	: Device(pAdapter), m_writeMode(WRITE_MODE_0)
@@ -62,21 +65,69 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 
 		return new CmdStartMeasurement(this, comm, speed);
 	}
+	case CMD_TEST_DEVICE:
+	{
+		//we need COM name and COM speed
+		std::string comm;
+		int speed;
+		cmd->GetParameter("comdevice", comm);
+		cmd->GetParameter("baudrate", speed);
 
+		syslog(LOG_ERR, "comdevice: %s", comm.c_str());
+		syslog(LOG_ERR, "baudrate: %d", speed);
+		return new CmdTestDevice(this, comm, speed);
+	}
 	default:
 		return Device::CreateCommand(cmd);
 	}
 }
 
 
-bool RitexDevice::StartMesurements(std::string com, int speed)
+void RitexDevice::CreateOffsetTable()
 {
+	ParameterFilter filter = m_pAdapter->GetParameterFilter();
+
+	for(int i = 0; i < filter.GetSize(); i++) {
+		int param = filter[i].m_paramId;
+
+
+
+	}
+}
+
+bool RitexDevice::StartMesurements(DeviceCommand* pCmd, std::string com, int speed)
+{
+	CreateOffsetTable();
 	return m_pProcessor->Create(com, speed);
 }
+
+/*
+ * cannot be called when data capture is in progress
+ */
+bool RitexDevice::TestDevice(DeviceCommand* pCmd, std::string com, int speed)
+{
+	if(m_pProcessor->isRunning())
+		return false;
+	bool result = m_pProcessor->Create(com, speed,true);
+
+	if(result) {
+		custom_command_t* pCustomCmd = new custom_command_t();
+		pCustomCmd->m_pDataPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_INFO_REQUEST_MODE_0, time(NULL));
+		pCustomCmd->m_pParentCommand = pCmd;
+		m_pProcessor->SendCustomCmd(pCustomCmd);
+		m_pProcessor->Start();
+	}
+
+	return result;
+}
+
 
 
 void RitexDevice::ReportDataPacket(DataPacket* packet)
 {
+	printf("Reporting packet\n");
+	DBDataPacket* event = new DBDataPacket();
+	m_pAdapter->getDataLogger()->EnqueData(event);
 	//Now get per-parameter data from packet
 }
 

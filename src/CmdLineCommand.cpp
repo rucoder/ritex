@@ -107,9 +107,24 @@ bool CmdLineCommand::CompileMessage(std::string src, int& dst_name, float& dst_v
 	return true;
 }
 
+
+bool CmdLineCommand::IsParameterExists(std::string name) {
+	return (m_additionalParameters.find(name) != m_additionalParameters.end());
+}
+
 bool CmdLineCommand::HasRequiredParameters(eCommandType type) {
 	//TODO: implement it
-	return true;
+	switch(type) {
+	case CMD_GET_MESUREMENTS:
+	case CMD_TEST_DEVICE:
+		return IsParameterExists("comdevice") && IsParameterExists("baudrate");
+	case CMD_COMMAND:
+		//TODO: define it
+		return true;
+	default:
+		return true;
+	}
+	return false;
 }
 
 bool CmdLineCommand::Compile(const additional_parameter_map_t& map)
@@ -200,7 +215,15 @@ bool CmdLineCommand::Compile(const additional_parameter_map_t& map)
 			return CompileInt(m_deviceIdRaw, m_deviceId) && CompileInt(m_cmdIdRaw, m_cmdId) &&
 					CompileMessage(m_messageRaw, m_msgName, m_msgVal) && HasRequiredParameters(m_cmdLineCommandType);
 		case CMD_TEST_DEVICE:
+		{
+			//need to create fake device Id
+			char s[32];
+			m_deviceId = rand();
+			snprintf(s,32,"%d", m_deviceId);
+			m_deviceIdRaw = s;
+			syslog(LOG_ERR, "Generate fake Device ID: m_deviceId = %d", m_deviceId);
 			return HasRequiredParameters(m_cmdLineCommandType);
+		}
 		default:
 			break;
 	}

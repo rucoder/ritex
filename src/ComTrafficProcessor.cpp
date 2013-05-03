@@ -30,15 +30,12 @@
 
 #include <assert.h>
 
+#define MAX_KSU_CHANCES 3
+#define KSU_INACTIVITY_TIMEOUT 1500 //1 sec
+
 #define WRITE_MODE_OFFSET 22
 
 
-#define ERROR_READ_NO_ERROR 0
-#define ERROR_READ_BAD_CRC  -1
-#define ERROR_READ_TIMEOUT  -2
-#define ERROR_READ_BAD_PACKET  -3
-#define ERROR_READ_OTHER     -4
-#define ERROR_OOM - 5
 
 
 //MUST be aligned with ComTrafficProcessor::m_ackParams array
@@ -89,7 +86,7 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
-	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0)
+	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true)
 {
 	// TODO Auto-generated constructor stub
 
@@ -263,8 +260,7 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	return pPacket;
 }
 
-#define MAX_KSU_CHANCES 3
-#define KSU_INACTIVITY_TIMEOUT 1500 //1 sec
+
 
 void ComTrafficProcessor::ChangeMode(unsigned short mode)
 {
@@ -305,22 +301,40 @@ void ComTrafficProcessor::SetPassword(unsigned short password) {
 	SetSetting(44, password);
 }
 
+bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
+{
+	pthread_mutex_lock(&m_cmdMutex);
+	m_pendingCmd = cmd;
+	pthread_mutex_unlock(&m_cmdMutex);
+	return true;
+}
+
 
 void* ComTrafficProcessor::Run()
 {
-
-	int type;
-	int number_of_ksu_failures = 3;
+	int number_of_ksu_failures = MAX_KSU_CHANCES;
 
 	unsigned char passwd_hi, passwd_lo;
 
 	m_state = STATE_INIT;
 
 	syslog(LOG_ERR, "Enter run...");
-	for(;;) {
+
+	if(!m_isDataCapture) {
+		syslog(LOG_ERR, "Waiting for start...");
+		pthread_mutex_lock(&m_startMutex);
+			while(!m_doRun) {
+				pthread_cond_wait(&m_startCond,&m_startMutex);
+		pthread_mutex_unlock(&m_startMutex);
+		}
+	}
+
+	syslog(LOG_ERR, "Now running...");
+
+
+	while(m_doRun) {
 		int error;
-		int currentCmd = -1;
-		DataPacket* packet;
+		DataPacket* packet = NULL;
 
 		syslog(LOG_ERR, "#### STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d", m_state, GetStateStr(m_state).c_str(), m_writeMode, number_of_ksu_failures);
 
@@ -338,6 +352,7 @@ void* ComTrafficProcessor::Run()
 
 					if(packet->GetType() == TYPE_CMD) {
 						syslog(LOG_ERR,"ERROR!!!!!");
+						m_state = STATE_INIT;
 					} else {
 						assert(packet->GetCmd() == ACK_ALL_SETTINGS);
 
@@ -362,6 +377,9 @@ void* ComTrafficProcessor::Run()
 				default:
 					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 					break;
+				}
+				if(packet)	{
+					delete packet;
 				}
 				break;
 			case STATE_GET_INIT_PASSWORDS:
@@ -404,7 +422,9 @@ void* ComTrafficProcessor::Run()
 					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 					break;
 				}
-
+				if(packet)	{
+					delete packet;
+				}
 				break;
 
 			case STATE_SET_CURRENT_PASSWORD:
@@ -441,6 +461,9 @@ void* ComTrafficProcessor::Run()
 						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 						break;
 				}
+				if(packet)	{
+					delete packet;
+				}
 				break;
 
 			case STATE_INIT:
@@ -475,6 +498,9 @@ void* ComTrafficProcessor::Run()
 					break;
 				}
 
+				if(packet)	{
+					delete packet;
+				}
 				break;
 			/*
 			 * the command was previously detected in the traffic so 'ПИУ'
@@ -498,32 +524,94 @@ void* ComTrafficProcessor::Run()
 						//1. report data
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 
+						/*
+						 * the window is open to send custom command
+						 * we can execute custom command in two different modes
+						 * 1. 'one-shot' -- no data capture. E.g. -t, -cmd without -r before it
+						 */
 
-						//if(pendingCommand ) m_state=CUSTOM_CMD
+						if (m_isDataCapture) {
+							m_pDevice->ReportDataPacket(packet);
+						}
 
-						m_state = STATE_SET_MODE;
+						pthread_mutex_lock(&m_cmdMutex);
+						if(m_pendingCmd) {
+							m_state = STATE_CUSTOM_CMD;
+						} else {
+							m_state = STATE_SET_MODE;
+						}
+						pthread_mutex_unlock(&m_cmdMutex);
+
 						break;
 					default:
 						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 						break;
 				}
+				if(packet)	{
+					delete packet;
+				}
 				break;
+			case STATE_CUSTOM_CMD:
+			{
+				syslog(LOG_ERR,"!!!!!!! Sending custom CMD 0x%X", m_pendingCmd->m_pDataPacket->GetCmd());
+
+				if(GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()) != m_writeMode) {
+					//need to change mode first
+					m_writeMode = (GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()) + 6) % 7;
+					m_state = STATE_SET_MODE;
+					break;
+				}
+
+				WritePacket(m_pendingCmd->m_pDataPacket);
+
+				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
+
+				switch(error) {
+				case ERROR_READ_TIMEOUT:
+					break;
+				case ERROR_READ_NO_ERROR:
+					syslog(LOG_ERR, "!!!!!!!! GOT REPLY FOR CUSTOM CMD: cmd=0x%X ack=0x%X", m_pendingCmd->m_pDataPacket->GetCmd(), packet->GetCmd());
+					break;
+				default:
+					break;
+				}
+
+				//TODO: log event
+
+
+				int s = pthread_mutex_lock(&m_cmdMutex);
+				if( s != 0) {
+					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+				}
+				m_pendingCmd->m_pParentCommand->SetReply(packet, error);
+				//TODO: call callback
+				m_pendingCmd = NULL;
+				s = pthread_mutex_unlock(&m_cmdMutex);
+				if( s != 0) {
+					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+				}
+
+
+				m_state = STATE_WAIT_CMD;
+
+				m_doRun = m_isDataCapture;
+				syslog(LOG_ERR, "#### NEED RUN? m_doRun = %d", m_doRun);
+				if(packet)	{
+					delete packet;
+				}
+
+			}
+			break;
 
 			case STATE_SET_MODE:
-//				if(m_writeMode == WRITE_MODE_6) {
-//					m_writeMode = WRITE_MODE_0;
-//				}
-				if(m_writeMode == 6) {
-					m_writeMode = 0;
-				}
-				ChangeMode(m_writeMode + 1);
+				//try to set next mode. update current mode on reply only
+				ChangeMode((m_writeMode+1) % 7);
 
 				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
 				switch(error) {
 					case ERROR_READ_TIMEOUT:
 						m_state = STATE_INIT;
 						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						//number_of_ksu_failures++;
 						break;
 					case ERROR_READ_NO_ERROR:
 					{
@@ -532,13 +620,13 @@ void* ComTrafficProcessor::Run()
 						//something bad happened. get error code
 						if(packet->GetCmd() == ACK_ACK) {
 							unsigned char* pData = packet->GetDataPtr();
-							syslog(LOG_ERR, "!!!! FIALED SET MODE %d: REASON: %d", m_writeMode + 1, pData[0]);
+							syslog(LOG_ERR, "!!!! FIALED SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
 							m_state = STATE_INIT;
 						} else {
 							assert(packet->GetCmd() == ACK_ALL_SETTINGS);
 
 							unsigned char* pData = packet->GetDataPtr();
-							if(m_writeMode == pData[WRITE_MODE_OFFSET]) {
+							if((m_writeMode+1) % 7 != pData[WRITE_MODE_OFFSET]) {
 								syslog(LOG_ERR,"WARNING: new mode is not reflected in reply");
 							}
 							m_writeMode = pData[WRITE_MODE_OFFSET];
@@ -552,7 +640,9 @@ void* ComTrafficProcessor::Run()
 						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 						break;
 				}
-
+				if(packet)	{
+					delete packet;
+				}
 
 				break;
 
@@ -562,22 +652,24 @@ void* ComTrafficProcessor::Run()
 					case ERROR_READ_TIMEOUT:
 						m_state = STATE_INIT;
 						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						//number_of_ksu_failures++;
 						break;
 					case ERROR_READ_NO_ERROR:
 						number_of_ksu_failures = MAX_KSU_CHANCES;
-
 						m_state = STATE_WAIT_ACK;
 						break;
 					default:
 						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 						break;
 				}
+				if(packet)	{
+					delete packet;
+				}
 				break;
 			default:
 				break;
 		}
 	}
+	m_pDevice->NotifyStatusChanged(DEVICE_STATUS_EXIT);
 	syslog(LOG_ERR, "Exit run...");
 	return NULL;
 }
@@ -773,13 +865,19 @@ bool ComTrafficProcessor::WritePacket(DataPacket* pPacket) {
 	return true;
 }
 
-bool ComTrafficProcessor::Create(std::string port, int speed)
+bool ComTrafficProcessor::Create(std::string port, int speed, bool oneShot)
 {
 	if(!isRunning()) {
 		m_fd = OpenCommPort(port, speed);
 		if (m_fd == -1) {
 			return false;
 		}
+		pthread_mutex_init(&m_cmdMutex, NULL);
+
+		pthread_mutex_init(&m_startMutex, NULL);
+	    pthread_cond_init(&m_startCond, NULL);
+		m_isDataCapture = !oneShot;
+		m_doRun = !oneShot;
 		return Thread::Create();
 	}
 	return true;

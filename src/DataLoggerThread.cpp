@@ -19,6 +19,7 @@ DataLoggerThread::DataLoggerThread(std::string db_name)
 
 bool DataLoggerThread::Insert(DBDataPacket* event)
 {
+	syslog(LOG_ERR, "[SQL] Inserting data...");
 	//bind parameters first
 	sqlite3_bind_int(m_pStm, 1, event->getChannelId());
 	sqlite3_bind_int(m_pStm, 2, event->getParamId());

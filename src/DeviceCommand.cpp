@@ -10,17 +10,8 @@
 
 #include <assert.h>
 
-DeviceCommand::DeviceCommand()
-	: m_isHWCommand(false), m_rawResult(NULL), m_rawResultLength(0),
-	  m_rawCommand(NULL), m_rawCommandLength(0), m_cmdId(-1)
-{
-	// TODO Auto-generated constructor stub
-
-}
-
 DeviceCommand::DeviceCommand(bool isHwCommand)
-	: m_isHWCommand(isHwCommand), m_rawResult(NULL), m_rawResultLength(0),
-	  m_rawCommand(NULL), m_rawCommandLength(0), m_cmdId(-1)
+	: m_isHWCommand(isHwCommand), m_rawResult(NULL), m_rawResultLength(0), m_pListener(NULL)
 {
 
 }
@@ -30,25 +21,15 @@ DeviceCommand::~DeviceCommand() {
 	// TODO Auto-generated destructor stub
 }
 
-unsigned char* DeviceCommand::getRawCommand()
+void DeviceCommand::NotifyResultReady()
 {
-	assert(m_isHWCommand);
-
-	if(m_rawCommandLength == 0) {
-		Serialize();
+	if(m_pListener) {
+		m_pListener->OnResultReady(this);
 	}
-	return m_rawCommand;
-};
-
-int DeviceCommand::getRawCommandLength()
-{
-	assert(m_isHWCommand);
-
-	if(m_rawCommandLength == 0) {
-		Serialize();
-	}
-	return m_rawCommandLength;
 }
+
+
+
 
 
 

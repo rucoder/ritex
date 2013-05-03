@@ -7,25 +7,41 @@
 
 #include "Thread.h"
 
+void Thread::thread_oncancel_function(void* param)
+{
+	Thread* pThread = reinterpret_cast<Thread*>(param);
+	pThread->OnCancel();
+}
+
+
 void* Thread::thread_function(void* param)
 {
 	Thread* pThread = reinterpret_cast<Thread*>(param);
-	return pThread->Run();
+	void * ret;
+	pthread_cleanup_push(thread_oncancel_function, param);
+	ret = pThread->Run();
+	pthread_cleanup_pop(0);
+	return ret;
 }
 
 
-Thread::Thread() {
-	// TODO Auto-generated constructor stub
-
+Thread::Thread()
+	: m_hHandle(-1), m_isJoinable(true)
+{
 }
+
+
 
 Thread::~Thread() {
-	// TODO Auto-generated destructor stub
+	Cancel();
+	Join();
 }
 
 bool Thread::Create(bool createDetached)
 {
 	pthread_attr_t* pAttr = NULL;
+
+	m_isJoinable = !createDetached;
 
 	if(createDetached) {
 		pthread_attr_t attr;
@@ -44,13 +60,22 @@ bool Thread::Create(bool createDetached)
 }
 bool Thread::Join()
 {
-	void* threadRetVal;
-	int retVal = pthread_join(m_hHandle, &threadRetVal);
-	return retVal == 0;
+	if(m_isJoinable) {
+		void* threadRetVal;
+		int retVal = pthread_join(m_hHandle, &threadRetVal);
+		return retVal == 0;
+	}
+	return false;
 }
 bool Thread::Cancel()
 {
-	return false;
+	pthread_cancel(m_hHandle);
+	return true;
+}
+
+void Thread::OnCancel()
+{
+
 }
 
 

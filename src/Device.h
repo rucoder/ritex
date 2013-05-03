@@ -17,6 +17,7 @@
 //#include "DeviceExecutableCommand.h"
 #include "DeviceCommand.h"
 #include "CmdLineCommand.h"
+#include "DeviceStatusListener.h"
 
 #include <list>
 
@@ -29,6 +30,9 @@ protected:
 	//link to interface to the world
 	IAdapter* m_pAdapter;
 	//virtual DeviceExecutableCommand* CreateExecutableCommand(DeviceCommand* cmd);
+
+	IDeviceStatusListener* m_pListener;
+
 public:
 	Device(){};
 	Device(IAdapter* pAdapter);
@@ -42,6 +46,17 @@ public:
 	void setDeviceId(int devId) { m_deviceId = devId; };
 	int getDeviceId() { return m_deviceId; };
     virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);
+
+    void SetDeviceStatusListener(IDeviceStatusListener* pListener) {
+    	m_pListener = pListener;
+    }
+
+	void NotifyStatusChanged(eDeviceStaus status) {
+		syslog(LOG_ERR, "DEVICE STATUS CHANGED: %d pListenet=0x%p", status, m_pListener);
+		if (m_pListener) {
+			m_pListener->OnDeviceStatusChanged(status);
+		}
+	}
 //	virtual DeviceCommand* CreateCommand(void* rawCommand, int length);
 //	virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);
 //
@@ -51,9 +66,57 @@ public:
 //	virtual bool Execute(DeviceCommand* pCommand) { return true; };
 
 
-	 void SetParameterFilter() {};
+//	 void SetParameterFilter() {};
 	 //bool Execute(DeviceCommand* pCommand) {};
 	 bool StartDataLogging() { return false; }
+public:
+#if 0
+	  class iterator; // Declaration required
+	  friend class iterator; // Make it a friend
+	  class iterator { // Now define it
+	    Device& device;
+	    int sensor;
+	    int channel;
+	  public:
+	    iterator(Device& dv): device(dv),sensor(0), channel(0) {}
+	    // To create the "end sentinel" iterator:
+//	    iterator(Device& st, bool)
+//	      : s(st), index(s.top) {}
+	    AdapterParameter operator*() const { return s.stack[index];}
+	    T operator++() { // Prefix form
+	      require(index < s.top,
+	        "iterator moved out of range");
+	      return s.stack[++index];
+	    }
+	    T operator++(int) { // Postfix form
+	      require(index < s.top,
+	        "iterator moved out of range");
+	      return s.stack[index++];
+	    }
+	    // Jump an iterator forward
+	    iterator& operator+=(int amount) {
+	      require(index + amount < s.top,
+	        " StackTemplate::iterator::operator+=() "
+	        "tried to move out of bounds");
+	      index += amount;
+	      return *this;
+	    }
+	    // To see if you're at the end:
+	    bool operator==(const iterator& rv) const {
+	      return index == rv.index;
+	    }
+	    bool operator!=(const iterator& rv) const {
+	      return index != rv.index;
+	    }
+	    friend std::ostream& operator<<(
+	      std::ostream& os, const iterator& it) {
+	      return os << *it;
+	    }
+	  };
+	  iterator begin() { return iterator(*this); }
+	  // Create the "end sentinel":
+	  iterator end() { return iterator(*this, true);}
+#endif
 };
 
 #endif /* DEVICE_H_ */

@@ -11,6 +11,16 @@
 #include "Device.h"
 #include "DataPacket.h"
 #include "ComTrafficProcessor.h"
+#include <vector>
+
+#define ERROR_READ_NO_ERROR 0
+#define ERROR_READ_BAD_CRC  -1
+#define ERROR_READ_TIMEOUT  -2
+#define ERROR_READ_BAD_PACKET  -3
+#define ERROR_READ_OTHER     -4
+#define ERROR_OOM - 5
+#define ERROR_READ_UNEXPECTED_PACKET -6
+
 
 #define KSU_ADDRESS 0x36
 
@@ -47,13 +57,15 @@
 #define REQ_SET_SPEED           0xA0
 #define REQ_PASSWORD_GET        0xA4
 
-#define ACK_INFO_MODE_0                (WRITE_MODE_0 | 0x0064)
-#define ACK_INFO_MODE_1                (WRITE_MODE_1 | 0x0064)
-#define ACK_INFO_MODE_2                (WRITE_MODE_2 | 0x0064)
-#define ACK_INFO_MODE_3                (WRITE_MODE_3 | 0x0064)
-#define ACK_INFO_MODE_4                (WRITE_MODE_4 | 0x0064)
-#define ACK_INFO_MODE_5                (WRITE_MODE_5 | 0x0064)
-#define ACK_INFO_MODE_6                (WRITE_MODE_6 | 0x0064)
+#define ACK_INFO                       0x64
+
+#define ACK_INFO_MODE_0                (WRITE_MODE_0 | ACK_INFO)
+#define ACK_INFO_MODE_1                (WRITE_MODE_1 | ACK_INFO)
+#define ACK_INFO_MODE_2                (WRITE_MODE_2 | ACK_INFO)
+#define ACK_INFO_MODE_3                (WRITE_MODE_3 | ACK_INFO)
+#define ACK_INFO_MODE_4                (WRITE_MODE_4 | ACK_INFO)
+#define ACK_INFO_MODE_5                (WRITE_MODE_5 | ACK_INFO)
+#define ACK_INFO_MODE_6                (WRITE_MODE_6 | ACK_INFO)
 
 
 #define ACK_STORED_INFO         0x68
@@ -69,12 +81,22 @@
 //for command without mode always return 0
 #define GET_MODE(x) ((x & MODE_MASK) >> MODE_SHIFT)
 
+struct offset_table_entry_t {
+	int m_paramId;
+	int m_channelId;
+	int m_cmd;
+	int offset;
+	int size;
+};
 
 class RitexDevice: public Device {
 protected:
 	RitexDevice();
 	ComTrafficProcessor* m_pProcessor;
 	int m_writeMode;
+	void CreateOffsetTable();
+
+	std::vector<struct offset_table_entry_t> m_offsetTable;
 public:
 	RitexDevice(IAdapter* pAdapter);
 	virtual ~RitexDevice();
@@ -85,7 +107,8 @@ public:
 	void ReportDataPacket(DataPacket* packet);
 
 	// command implementations
-	bool StartMesurements(std::string com, int speed);
+	bool StartMesurements(DeviceCommand* pCmd, std::string com, int speed);
+	bool TestDevice(DeviceCommand* pCmd, std::string com, int speed);
 };
 
 #endif /* RITEXDEVICE_H_ */

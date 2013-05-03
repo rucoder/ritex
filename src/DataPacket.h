@@ -35,7 +35,7 @@ public:
 	unsigned char* Allocate(unsigned short size);
 	unsigned char* GetDataPtr() const { return m_pData; }
 	unsigned short GetSize() const {return m_size; }
-	unsigned char GetCmd() const { return m_cmd; }
+	unsigned short GetCmd() const { return m_cmd; }
 	unsigned int GetType() const { return m_type; }
 	unsigned int GetAddress() const { return m_address; }
 	time_t& GetTimestamp() { return m_timestamp; }

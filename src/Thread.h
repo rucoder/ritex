@@ -13,9 +13,12 @@
 class Thread {
 private:
 	pthread_t m_hHandle;
+	bool m_isJoinable;
 	static void* thread_function(void* param);
+	static void  thread_oncancel_function(void* param);
 protected:
 	virtual void* Run() = 0;
+	virtual void OnCancel();
 public:
 	Thread();
 	virtual ~Thread();
