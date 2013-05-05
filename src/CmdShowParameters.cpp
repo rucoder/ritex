@@ -5,19 +5,19 @@
  *      Author: ruinmmal
  */
 
-#include "HostCommandShowParameters.h"
+#include "CmdShowParameters.h"
 #include <stdio.h>
 
-HostCommandShowParameters::HostCommandShowParameters(Device* pDevice)
+CmdShowParameters::CmdShowParameters(Device* pDevice)
 	: DeviceCommand(false), m_pDevice(pDevice)
 {
 }
 
-HostCommandShowParameters::~HostCommandShowParameters() {
+CmdShowParameters::~CmdShowParameters() {
 	// TODO Auto-generated destructor stub
 }
 
-bool HostCommandShowParameters::Execute()
+bool CmdShowParameters::Execute()
 {
 	// loop through device channels
 	Device* pDev = m_pDevice;

@@ -5,28 +5,28 @@
  *      Author: ruinmmal
  */
 
-#include "ShowInfoHostCommand.h"
+#include "CmdShowInfo.h"
 #include <stdio.h>
 
 
-ShowInfoHostCommand::ShowInfoHostCommand(Device* device, IAdapter* adapter)
+CmdShowInfo::CmdShowInfo(Device* device, IAdapter* adapter)
 	: DeviceCommand(false), m_pDevice(device), m_pAdapter(adapter)
 {
 
 }
 
-ShowInfoHostCommand::~ShowInfoHostCommand() {
+CmdShowInfo::~CmdShowInfo() {
 	// TODO Auto-generated destructor stub
 }
 
-void ShowInfoHostCommand::printParameter(AdapterParameter* pParam, bool isDeviceChannel)
+void CmdShowInfo::printParameter(AdapterParameter* pParam, bool isDeviceChannel)
 {
 	printf("%d|%s|%d|%d|%s|%d\n", pParam->GetId(), pParam->GetName().c_str(), isDeviceChannel ? 1 : 0,
 			pParam->isOverridable() ? 1 : 0, pParam->GetArgs().c_str(),  pParam->isEventDriven() ? 1:0);
 }
 
 
-bool ShowInfoHostCommand::Execute()
+bool CmdShowInfo::Execute()
 {
 
 	printf("\"%s\"|\"%s\"|\"%s\"\n", m_pAdapter->getName().c_str(), m_pAdapter->getVersion().c_str(),m_pAdapter->getDescription().c_str());

@@ -10,8 +10,8 @@
 #include <assert.h>
 
 
-#include "ShowInfoHostCommand.h"
-#include "HostCommandShowParameters.h"
+#include "CmdShowInfo.h"
+#include "CmdShowParameters.h"
 #include "CmdGetAdditionalParameters.h"
 
 Device::Device(IAdapter* pAdapter) :
@@ -43,9 +43,9 @@ DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
 	switch(cmd->m_cmdLineCommandType)
 	{
 	case CMD_SHOW_INFO:
-		return new ShowInfoHostCommand(this, m_pAdapter);
+		return new CmdShowInfo(this, m_pAdapter);
 	case CMD_GET_CONNECTED_DEVICE_INFO:
-		return new HostCommandShowParameters(this);
+		return new CmdShowParameters(this);
 	case CMD_GET_ADDITIONAL_PARAMETER_LIST:
 		return new CmdGetAdditionalParameters(m_pAdapter);
 	default:

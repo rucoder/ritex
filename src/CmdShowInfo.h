@@ -13,10 +13,10 @@
 #include "AdapterParameter.h"
 #include "IAdapter.h"
 
-class ShowInfoHostCommand: public DeviceCommand {
+class CmdShowInfo: public DeviceCommand {
 public:
-	ShowInfoHostCommand(Device* device, IAdapter* adapter);
-	virtual ~ShowInfoHostCommand();
+	CmdShowInfo(Device* device, IAdapter* adapter);
+	virtual ~CmdShowInfo();
 	virtual bool Execute();
 private:
 	void printParameter(AdapterParameter* pParam, bool isDeviceChannel);

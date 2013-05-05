@@ -11,10 +11,10 @@
 #include "DeviceCommand.h"
 #include "Device.h"
 
-class HostCommandShowParameters : public DeviceCommand {
+class CmdShowParameters : public DeviceCommand {
 public:
-	HostCommandShowParameters(Device* device);
-	virtual ~HostCommandShowParameters();
+	CmdShowParameters(Device* device);
+	virtual ~CmdShowParameters();
 	virtual bool Execute();
 private:
 	Device* m_pDevice;
