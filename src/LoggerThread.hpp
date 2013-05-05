@@ -61,7 +61,10 @@ protected:
 
 			//write data to DB
 			if(pData) {
-				Insert(pData);
+				if(!Insert(pData))
+				{
+					syslog(LOG_ERR, "[SQL] Failed to insert data!");
+				}
 				delete pData;
 			}
 		}

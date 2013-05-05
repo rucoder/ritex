@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <string.h>
 
-DataPacket::DataPacket(int type, unsigned char address, unsigned char cmd, time_t timestamp)
+DataPacket::DataPacket(int type, unsigned char address, unsigned short cmd, time_t timestamp)
 	: m_address(address), m_cmd(cmd), m_type(type), m_timestamp(timestamp), m_size(0), m_pData(NULL)
 {
 }

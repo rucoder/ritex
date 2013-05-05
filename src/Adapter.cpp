@@ -502,6 +502,7 @@ bool Adapter::UpdateParameterFilter(int devId)
     			int paramId = sqlite3_column_int(pStm, 0);
     			int channelId = sqlite3_column_int(pStm, 1);
     			syslog(LOG_ERR, "Add channel to filter: P:%d C:%d", paramId, channelId);
+    			m_paramFilter.AddItem(channelId, paramId);
     		}
     		sqlite3_finalize(pStm);
     	} else {

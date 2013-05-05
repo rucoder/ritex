@@ -55,6 +55,27 @@ DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
 }
 
 
+AdapterParameter* Device::FindGarameter(int paramId)
+{
+	// loop through device channels
+	for(std::list<DeviceChannel*>::const_iterator ch = getChannels().begin(); ch != getChannels().end(); ch++) {
+		AdapterParameter* pParam = (*ch)->GetParameter();
+		if(pParam->GetId() == paramId)
+			return pParam;
+	}
+
+	// loop through sensor's channels
+	for(std::list<Sensor*>::const_iterator sn = getSensors().begin(); sn != getSensors().end(); sn++) {
+		for(std::list<DeviceChannel*>::iterator ch = (*sn)->getChannels().begin(); ch != (*sn)->getChannels().end(); ch++) {
+			AdapterParameter* pParam = (*ch)->GetParameter();
+			if(pParam->GetId() == paramId)
+				return pParam;
+		}
+	}
+	return NULL;
+}
+
+
 
 
 

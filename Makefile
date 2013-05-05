@@ -22,7 +22,8 @@ OBJ_FILES = $(patsubst src/%.cpp,$(OUT)/%.o,$(CPP_FILES))
 all::dirs $(EXECUTABLE) Makefile
 
 $(EXECUTABLE): $(OBJ_FILES) 
-	$(CC) $(LD_FLAGS) -o $@ $^
+	@echo Linking $@
+	@$(CC) $(LD_FLAGS) -o $@ $^
 
 $(OUT)/%.o: src/%.cpp
 	@echo Compiling $^

@@ -41,6 +41,7 @@ public:
 	bool isEventDriven() { return m_bEventDriven; };
 	bool isOverridable() { return m_bIsOverridable; };
 	std::string GetArgs() { return m_paramArgs; };
+	void* getControllerData() { return m_ControllerData; }
 };
 
 #endif /* ADAPTERPARAMETER_H_ */

@@ -30,7 +30,7 @@ protected:
 	unsigned short m_size;
 	unsigned char* m_pData;
 public:
-	DataPacket(int type, unsigned char address, unsigned char cmd, time_t timestamp);
+	DataPacket(int type, unsigned char address, unsigned short cmd, time_t timestamp);
 	virtual ~DataPacket();
 	unsigned char* Allocate(unsigned short size);
 	unsigned char* GetDataPtr() const { return m_pData; }

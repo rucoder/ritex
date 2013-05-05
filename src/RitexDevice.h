@@ -85,8 +85,8 @@ struct offset_table_entry_t {
 	int m_paramId;
 	int m_channelId;
 	int m_cmd;
-	int offset;
-	int size;
+	int m_offset;
+	int m_size;
 };
 
 class RitexDevice: public Device {

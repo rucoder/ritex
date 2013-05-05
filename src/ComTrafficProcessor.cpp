@@ -310,6 +310,10 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 }
 
 
+//bool ComTrafficProcessor::HandleErrorForCustomCmd(eState state, int error) {
+//	m_doRun = m_isDataCapture;
+//}
+
 void* ComTrafficProcessor::Run()
 {
 	int number_of_ksu_failures = MAX_KSU_CHANCES;
@@ -584,7 +588,6 @@ void* ComTrafficProcessor::Run()
 					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
 				}
 				m_pendingCmd->m_pParentCommand->SetReply(packet, error);
-				//TODO: call callback
 				m_pendingCmd = NULL;
 				s = pthread_mutex_unlock(&m_cmdMutex);
 				if( s != 0) {

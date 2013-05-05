@@ -10,7 +10,7 @@
 CmdStartMeasurement::CmdStartMeasurement(RitexDevice* p_device, std::string commport, int speed)
 	: DeviceCommand(true), m_commport(commport), m_speed(speed), m_pDevice(p_device)
 {
-	//m_cmdId = 2;
+
 }
 
 CmdStartMeasurement::~CmdStartMeasurement() {

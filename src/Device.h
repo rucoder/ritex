@@ -57,6 +57,9 @@ public:
 			m_pListener->OnDeviceStatusChanged(status);
 		}
 	}
+
+	AdapterParameter* FindGarameter(int paramId);
+
 //	virtual DeviceCommand* CreateCommand(void* rawCommand, int length);
 //	virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);
 //

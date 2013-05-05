@@ -23,11 +23,11 @@ bool DataLoggerThread::Insert(DBDataPacket* event)
 	//bind parameters first
 	sqlite3_bind_int(m_pStm, 1, event->getChannelId());
 	sqlite3_bind_int(m_pStm, 2, event->getParamId());
-	sqlite3_bind_text(m_pStm, 3, Utils::TimeToString(event->getRegisterDate()).c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_pStm, 3, Utils::TimeToString(event->getRegisterDate()).c_str(), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_double(m_pStm, 4, event->getValue());
 
-	//now execute query
-
+	sqlite3_step(m_pStm);
+	return sqlite3_reset(m_pStm) == SQLITE_OK;
 }
 
 
