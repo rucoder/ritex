@@ -70,6 +70,11 @@ protected:
 		}
 		return NULL;
 	}
+
+	const char* getLastError() {
+		return sqlite3_errmsg(m_pDb);
+	}
+
 public:
 	virtual ~LoggerThread() {
 		Cancel();

@@ -33,8 +33,8 @@ public:
 	std::string m_msg;
 	int m_prio;
 	int m_devId;
-	std::string m_arrivalTime;
-	std::string m_finishedTime;
+	time_t m_arrivalTime;
+	time_t m_finishedTime;
 	std::string m_result;
 public:
 	DBEventCommand();

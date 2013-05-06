@@ -31,6 +31,8 @@ bool CmdExternal::Execute()
 void CmdExternal::SetReply(DataPacket* packet, int status)
 {
 
+	m_finishedTime = packet->GetTimestamp();
+
 	switch(status) {
 	case ERROR_READ_NO_ERROR:
 	{
