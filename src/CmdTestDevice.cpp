@@ -42,15 +42,12 @@ void CmdTestDevice::SetReply(DataPacket* packet, int status)
 		} else {
 			snprintf(m_rawResult, 1024, "7|Получен неизвестный ответ\n");
 		}
-	}  else if(status == ERROR_READ_BAD_CRC) {
-		snprintf(m_rawResult, 1024, "7|Ошибка в CRC\n");
-	} else if(status == ERROR_READ_TIMEOUT) {
-		snprintf(m_rawResult, 1024, "7|Станция не отвечает\n");
-	} else {
-		snprintf(m_rawResult, 1024, "7|Ошибка неизвестна: код %d\n", status);
+		m_rawResultLength = strlen(m_rawResult)  +1;
+		NotifyResultReady();
+
+	}  else {
+		DeviceCommand::SetReply(packet, status);
 	}
-	m_rawResultLength = strlen(m_rawResult)  +1;
-	NotifyResultReady();
 }
 
 

@@ -73,6 +73,15 @@
 #define ACK_ACK                 0x0B
 #define ACK_PASSWORDS           0x70
 
+// fromr 1.1
+#define VD_ON_START 0x0
+#define VD_ON_RESET 0x16
+#define VD_ON_TUNE  0x1
+
+// from appendix A
+#define VD_ROTATE_LEFT  0x0
+#define VD_ROTATE_RIGHT 0x4
+
 #define TYPE_CMD 0
 #define TYPE_ACK 1
 
@@ -80,6 +89,17 @@
 
 //for command without mode always return 0
 #define GET_MODE(x) ((x & MODE_MASK) >> MODE_SHIFT)
+
+
+
+struct cmd_template_t {
+	unsigned short m_cmd;
+	unsigned char m_param;
+	cmd_template_t(unsigned short cmd, unsigned char param = 0) {
+		m_cmd = cmd;
+		m_param = param;
+	}
+};
 
 struct offset_table_entry_t {
 	int m_paramId;
@@ -95,6 +115,7 @@ protected:
 	ComTrafficProcessor* m_pProcessor;
 	int m_writeMode;
 	void CreateOffsetTable();
+	DeviceCommand* CreateExternalCommand(CmdLineCommand* cmd);
 
 	std::vector<struct offset_table_entry_t> m_offsetTable;
 public:
@@ -109,6 +130,10 @@ public:
 	// command implementations
 	bool StartMesurements(DeviceCommand* pCmd, std::string com, int speed);
 	bool TestDevice(DeviceCommand* pCmd, std::string com, int speed);
+	bool ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int speed, unsigned char cmd, unsigned char p1, unsigned short p2);
+
+	//from ICmdResultReadyListener
+	virtual void OnResultReady(DeviceCommand* pCmd);
 };
 
 #endif /* RITEXDEVICE_H_ */

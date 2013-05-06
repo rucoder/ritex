@@ -10,6 +10,8 @@
 
 #include "DataPacket.h"
 #include "CmdResulReadytListener.h"
+#include <list>
+#include "CmdLineCommand.h"
 
 class DeviceCommand {
 private:
@@ -19,19 +21,25 @@ public:
 protected:
 	char* m_rawResult;
 	int m_rawResultLength;
-	ICmdResulReadytListener* m_pListener;
+	std::list<ICmdResulReadytListener*> m_Listeners;
+	CmdLineCommand* m_pParentCommand;
 	virtual void NotifyResultReady();
+	time_t m_arrivalTime;
+	time_t m_finishedTime;
 public:
-	DeviceCommand(bool isHw);
+	DeviceCommand(bool isHw, CmdLineCommand* parent = NULL);
 	virtual ~DeviceCommand();
 	bool isHWCommand() { return m_isHWCommand; };
 	char* getRawResult() { return m_rawResult; };
 	int getRawResultLength() { return m_rawResultLength; };
 	virtual bool Execute() = 0;
-	void SetResultListener(ICmdResulReadytListener* pListener) {
-		m_pListener = pListener;
+	void AddResultListener(ICmdResulReadytListener* pListener) {
+		m_Listeners.push_back(pListener);
 	}
-	virtual void SetReply(DataPacket* packet, int status) { NotifyResultReady(); };
+	virtual void SetReply(DataPacket* packet, int status);
+	CmdLineCommand* GetParentCmd() { return m_pParentCommand; }
+	time_t GetArrivalTime() { return m_arrivalTime; }
+	time_t GetFinishedTime() { return m_finishedTime; }
 };
 
 #endif /* DEVICECOMMAND_H_ */

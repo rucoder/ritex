@@ -47,6 +47,7 @@ public: //TODO: make protected and create setter/getter
 	//compiled values
 	int m_deviceId;
 	int m_cmdId;
+	int m_cmdType;
 	int m_msgName;
 	float m_msgVal;
 	std::map<std::string, struct compiled_parameter> m_additionalParameters; // -a list

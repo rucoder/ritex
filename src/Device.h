@@ -18,11 +18,12 @@
 #include "DeviceCommand.h"
 #include "CmdLineCommand.h"
 #include "DeviceStatusListener.h"
+#include "AdapterCommand.h"
 
 #include <list>
 
 //consists of channels and sensors. each sensor has its own channels
-class Device {
+class Device: public ICmdResulReadytListener {
 protected:
 	std::list<Sensor*> m_sensorList;
 	std::list<DeviceChannel*> m_deviceChannelList;
@@ -33,6 +34,8 @@ protected:
 
 	IDeviceStatusListener* m_pListener;
 
+	//supported commands
+	std::vector<AdapterCommand*> m_supportedCommands;
 public:
 	Device(){};
 	Device(IAdapter* pAdapter);
@@ -41,6 +44,13 @@ public:
 	bool AddChannel(DeviceChannel* pChannel);
 	const std::list<Sensor*>& getSensors() const { return m_sensorList; };
 	const std::list<DeviceChannel*>& getChannels() const { return m_deviceChannelList; };
+
+
+	void AddExternalCommand(AdapterCommand* pCmd) {
+		m_supportedCommands.push_back(pCmd);
+	}
+
+	std::vector<AdapterCommand*>& GetExternaCommandList() { return m_supportedCommands; }
 
 	//From IDevice
 	void setDeviceId(int devId) { m_deviceId = devId; };

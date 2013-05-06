@@ -56,7 +56,7 @@ unsigned char* DataPacket::CreateRawPacket(int& rawSize)
 	pRawPacket[RAW_PACKET_CRC16_LSB_OFFSET] = LSB(crc);
 
 	rawSize = m_size + RAW_PACKET_ENVELOPE_SIZE;
-#if 0
+#if 1
 	for(int i = 0; i < rawSize; i++)
 		syslog(LOG_ERR, "0x%X", pRawPacket[i]);
 

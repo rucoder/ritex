@@ -213,7 +213,8 @@ bool CmdLineCommand::Compile(const additional_parameter_map_t& map)
 			return CompileInt(m_deviceIdRaw, m_deviceId) && HasRequiredParameters(m_cmdLineCommandType);
 		case CMD_COMMAND:
 			return CompileInt(m_deviceIdRaw, m_deviceId) && CompileInt(m_cmdIdRaw, m_cmdId) &&
-					CompileMessage(m_messageRaw, m_msgName, m_msgVal) && HasRequiredParameters(m_cmdLineCommandType);
+					CompileMessage(m_messageRaw, m_msgName, m_msgVal) && CompileInt(m_cmdTypeRaw, m_cmdType)
+					&& HasRequiredParameters(m_cmdLineCommandType);
 		case CMD_TEST_DEVICE:
 		{
 			//need to create fake device Id

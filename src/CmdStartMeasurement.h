@@ -20,6 +20,10 @@ public:
 	CmdStartMeasurement(RitexDevice* p_device, std::string commport, int speed);
 	virtual ~CmdStartMeasurement();
 	virtual bool Execute();
+	virtual void SetReply(DataPacket* packet, int status) {
+		NotifyResultReady();
+	}
+
 private:
 	RitexDevice* m_pDevice;
 };

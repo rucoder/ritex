@@ -10,6 +10,8 @@
 
 #include <time.h>
 #include <string>
+#include <sstream>
+#include <vector>
 
 //need to swap byte if running on LE target (e.g. x86)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -26,6 +28,8 @@ static inline unsigned short swap16(unsigned short x)
 #endif
 
 
+
+
 class Utils {
 private:
 	Utils() {};
@@ -36,6 +40,22 @@ public:
     static unsigned short Crc16(unsigned short crcInit, unsigned char byte);
     static unsigned short Crc16(unsigned short crcInit, unsigned char buffer[], int size);
     static void _do_backtrace();
+
+    static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+        std::stringstream ss(s);
+        std::string item;
+        while (std::getline(ss, item, delim)) {
+            elems.push_back(item);
+        }
+        return elems;
+    }
+
+
+    static std::vector<std::string> split(const std::string &s, char delim) {
+        std::vector<std::string> elems;
+        split(s, delim, elems);
+        return elems;
+    }
 
 };
 

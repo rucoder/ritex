@@ -26,3 +26,6 @@ Ritex
 # test data bases
 data
 *.sdb
+
+*.pl
+*.txt

@@ -18,6 +18,7 @@
 #include "DataLoggerThread.h"
 #include "CmdLoggerThread.h"
 #include "ParameterFilter.h"
+#include "AdapterCommand.h"
 
 #define PID_FILE_PATH "/tmp/"
 
@@ -68,13 +69,17 @@ protected:
 	std::map<std::string, struct additional_parameter_t*> m_additionalParameters;
 
 	ParameterFilter m_paramFilter;
+
+
 public:
 	Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
-	bool AddParameter(AdapterParameter* parameter);
+	//bool AddParameter(AdapterParameter* parameter);
 	bool AddAdditionalParameter(std::string name, int a, int b);
 	bool AddAdditionalParameterFloat(std::string name, float a, float b);
 	bool AddAdditionalParameter(std::string name, std::string value);
 	bool AddAdditionalParameter(std::string name, const char* const list[], int size, eListValueType type);
+
+
 
 	virtual ~Adapter();
 	virtual int Run();

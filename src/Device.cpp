@@ -13,10 +13,12 @@
 #include "CmdShowInfo.h"
 #include "CmdShowParameters.h"
 #include "CmdGetAdditionalParameters.h"
+#include "CmdGetSupportedCommands.h"
 
 Device::Device(IAdapter* pAdapter) :
 	m_deviceId(-1), // make it invalid
-	m_pAdapter(pAdapter)
+	m_pAdapter(pAdapter),
+	m_pListener(NULL)
 {
 }
 
@@ -48,6 +50,8 @@ DeviceCommand* Device::CreateCommand(CmdLineCommand* cmd)
 		return new CmdShowParameters(this);
 	case CMD_GET_ADDITIONAL_PARAMETER_LIST:
 		return new CmdGetAdditionalParameters(m_pAdapter);
+	case CMD_LIST_COMMANDS:
+		return new CmdGetSupportedCommands(this);
 	default:
 		printf("WARNING: NOT SUPPORTED: cmdLineCommand.m_cmdLineCommandType == %d\n", cmd->m_cmdLineCommandType);
 		return NULL;

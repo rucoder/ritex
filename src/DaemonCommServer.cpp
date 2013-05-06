@@ -157,7 +157,7 @@ void* DaemonCommServer::Run() {
 								}
 
 
-								pDevCmd->SetResultListener(this);
+								pDevCmd->AddResultListener(this);
 								pDevCmd->Execute();
 								syslog(LOG_ERR, "Executing. WAIT->>");
 

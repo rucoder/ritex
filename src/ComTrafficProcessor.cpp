@@ -304,6 +304,7 @@ void ComTrafficProcessor::SetPassword(unsigned short password) {
 bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 {
 	pthread_mutex_lock(&m_cmdMutex);
+	syslog(LOG_ERR,"$$$$$$ CUSTOM_CMD sent!");
 	m_pendingCmd = cmd;
 	pthread_mutex_unlock(&m_cmdMutex);
 	return true;
@@ -583,16 +584,16 @@ void* ComTrafficProcessor::Run()
 				//TODO: log event
 
 
-				int s = pthread_mutex_lock(&m_cmdMutex);
-				if( s != 0) {
-					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
-				}
+//				int s = pthread_mutex_lock(&m_cmdMutex);
+//				if( s != 0) {
+//					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+//				}
 				m_pendingCmd->m_pParentCommand->SetReply(packet, error);
 				m_pendingCmd = NULL;
-				s = pthread_mutex_unlock(&m_cmdMutex);
-				if( s != 0) {
-					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
-				}
+//				s = pthread_mutex_unlock(&m_cmdMutex);
+//				if( s != 0) {
+//					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+//				}
 
 
 				m_state = STATE_WAIT_CMD;
