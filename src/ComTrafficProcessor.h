@@ -82,6 +82,7 @@ protected:
 
 
     DataPacket* WaitForKsuActivity(int timeout, int& error);
+    bool CheckAndReportFault(DataPacket* packet);
 
     //TODO: place under debug
     std::string GetErrorStr(int error);

@@ -310,6 +310,13 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 	return true;
 }
 
+bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
+	// one of INFO replys. bytes 0 and 1 has fault information
+	if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
+		syslog(LOG_ERR, "[ FAULT ]: VD state=%d ERROR=%d", packet->GetDataPtr()[0], packet->GetDataPtr()[1]);
+	}
+	return false;
+}
 
 //bool ComTrafficProcessor::HandleErrorForCustomCmd(eState state, int error) {
 //	m_doRun = m_isDataCapture;
@@ -352,6 +359,7 @@ void* ComTrafficProcessor::Run()
 				switch(error) {
 				case ERROR_READ_NO_ERROR:
 					assert(packet != NULL);
+					CheckAndReportFault(packet);
 
 					number_of_ksu_failures = MAX_KSU_CHANCES;
 
@@ -395,6 +403,7 @@ void* ComTrafficProcessor::Run()
 				switch(error) {
 				case ERROR_READ_NO_ERROR:
 					assert(packet != NULL);
+					CheckAndReportFault(packet);
 
 					number_of_ksu_failures = MAX_KSU_CHANCES;
 
@@ -444,6 +453,7 @@ void* ComTrafficProcessor::Run()
 						break;
 					case ERROR_READ_NO_ERROR:
 					{
+						CheckAndReportFault(packet);
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 
 						//somthing bad happened. get error code
@@ -477,6 +487,7 @@ void* ComTrafficProcessor::Run()
 				switch(error) {
 				case ERROR_READ_NO_ERROR:
 					assert(packet != NULL);
+					CheckAndReportFault(packet);
 
 					number_of_ksu_failures = MAX_KSU_CHANCES;
 
@@ -526,6 +537,7 @@ void* ComTrafficProcessor::Run()
 						m_state = STATE_INIT;
 						break;
 					case ERROR_READ_NO_ERROR:
+						CheckAndReportFault(packet);
 						//1. report data
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 
@@ -575,6 +587,7 @@ void* ComTrafficProcessor::Run()
 				case ERROR_READ_TIMEOUT:
 					break;
 				case ERROR_READ_NO_ERROR:
+					CheckAndReportFault(packet);
 					syslog(LOG_ERR, "!!!!!!!! GOT REPLY FOR CUSTOM CMD: cmd=0x%X ack=0x%X", m_pendingCmd->m_pDataPacket->GetCmd(), packet->GetCmd());
 					break;
 				default:
@@ -619,6 +632,7 @@ void* ComTrafficProcessor::Run()
 						break;
 					case ERROR_READ_NO_ERROR:
 					{
+						CheckAndReportFault(packet);
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 
 						//something bad happened. get error code
@@ -658,6 +672,7 @@ void* ComTrafficProcessor::Run()
 						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
 						break;
 					case ERROR_READ_NO_ERROR:
+						CheckAndReportFault(packet);
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 						m_state = STATE_WAIT_ACK;
 						break;
@@ -733,6 +748,11 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 #if 0
 					syslog(LOG_ERR, "### ECHO FIFO : FIFO=0x%X PORT=0x%X", echoByte, ((unsigned char*)buffer)[total_read]);
 #endif
+
+					if(echoByte != ((unsigned char*)buffer)[total_read]) {
+
+						syslog(LOG_ERR, "### ECHO FIFO : total_read=%d ret=%d size: %d FIFO=0x%X PORT=0x%X", total_read, ret, m_echoCancelFifo.size(), echoByte, ((unsigned char*)buffer)[total_read]);
+					}
 
 					assert(echoByte == ((unsigned char*)buffer)[total_read]);
 				}
@@ -864,7 +884,12 @@ bool ComTrafficProcessor::WritePacket(DataPacket* pPacket) {
 	for(int i = 0; i < rawSize; i++) {
 		m_echoCancelFifo.push(pRawPacket[i]);
 	}
-	write(m_fd, pRawPacket, rawSize);
+	int ret = write(m_fd, pRawPacket, rawSize);
+
+	if(ret != rawSize) {
+		syslog(LOG_ERR, "[[ ERROR ]]: WritePacket: ret=%d rawSize=%d", ret, rawSize);
+	}
+
 	delete [] pRawPacket;
 	return true;
 }

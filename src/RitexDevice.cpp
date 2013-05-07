@@ -267,7 +267,7 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 		CmdStartMeasurement* pCmd = new CmdStartMeasurement(this, comm, speed);
 
 		//FIXME: do we need to log this command?
-		pCmd->AddResultListener(this);
+		//pCmd->AddResultListener(this);
 
 		return pCmd;
 	}
