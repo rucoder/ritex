@@ -14,7 +14,7 @@ LIB_PATH = -L$(HOME)/termo/sqlite-3.6.22/.libs
 #for Release
 CC_FLAGS = -O3 -Wall $(INC_PATH)
 
-LD_FLAGS = -lpthread -lsqlite3 $(LIB_PATH) -rdynamic
+LD_FLAGS = -lpthread -lsqlite3 $(LIB_PATH) 
 
 CPP_FILES := $(wildcard src/*.cpp)
 OBJ_FILES = $(patsubst src/%.cpp,$(OUT)/%.o,$(CPP_FILES))

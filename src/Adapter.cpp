@@ -24,6 +24,7 @@
 #include <string>
 
 #include "DaemonCommServer.h"
+#include "Utils.h"
 
 #define BD_MAX_CLOSE 8192
 
@@ -59,8 +60,7 @@ void tolog(FILE **pfp)
 Adapter::Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser)
 	: m_adapterName(name), m_adapterVersion(version), m_adapterDescription(description),
 	  m_pCmdLineParser(parser), m_pDevice(NULL), m_pCommChannel(NULL),
-	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pDataLogger(NULL),
-	  m_pCmdLogger(NULL)
+	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pDataLogger(NULL)
 {
 	//generate base part of socket name
 	m_socket = name + "_socket";
@@ -175,7 +175,6 @@ int Adapter::LockPidFile(const char* pidfile) {
 
 Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	int maxfd, fd, pid_fd;
-	char pid_s[32];
 
 	switch (::fork()) {
 	case -1:
@@ -256,9 +255,11 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 
 	fchmod(fd, 0600);
 
-	snprintf(pid_s, 32, "%d\n", (int)getpid());
+
 	syslog(LOG_ERR, "PID: 0x%d", getpid());
-	write(fd, pid_s, strlen(pid_s));
+
+	std::string sPid = itoa(getpid());
+	write(fd, sPid.c_str(), sPid.length());
 #endif
 
 #if 0
@@ -304,7 +305,7 @@ int Adapter::Run() {
 	CmdLineCommand* pCmdLineCommand = m_pCmdLineParser->GetCommand();
 
 	if(pCmdLineCommand != NULL && pCmdLineCommand->Compile(GetAdditionalParameterMap())) {
-#if 1
+#ifdef STDIO_DEBUG
 		pCmdLineCommand->Dump();
 #endif
 
@@ -353,17 +354,22 @@ int Adapter::Run() {
 						if(m_pCommChannel != NULL) {
 							printf("opening channel socket %s\n", m_socket.c_str());
 							if(m_pCommChannel->open(m_socket) == 0) {
+#ifdef STDIO_DEBUG
 								printf("Channel opened on socket %s\n", m_socket.c_str());
+#endif
 								//send raw command line
 								std::string cmdLine = m_pCmdLineParser->GetCmdLine();
-
+#ifdef STDIO_DEBUG
 								printf("RAW::: %s\n", cmdLine.c_str());
+#endif
 
 								m_pCommChannel->send((unsigned char*)cmdLine.c_str(), cmdLine.length() + 1); //send sero terminated command line
 
 								unsigned length;
 								m_pCommChannel->recv(&length, 4); //length
+#ifdef STDIO_DEBUG
 								printf("Got reply length: %d\n", length);
+#endif
 
 								if (length > 0) {
 									unsigned char* resp = new unsigned char[length];
@@ -413,28 +419,27 @@ int Adapter::Run() {
 					tolog(&stderr);
 					tolog(&stdout);
 
-					printf("TEST FROM PRINTF\n");
-
-					syslog(LOG_ERR, "Starting daemon for devId=%d", m_pDevice->getDeviceId());
+					syslog(LOG_ERR, "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
 
 					/************************ The work starts here ******************/
 					assert(m_pDevice->getDeviceId() > 0);
 					/*
 					 * 1. create comm server
 					 */
-#if 1
+
 					//Update channels information from DB
 					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
 						//cannot continue. cleanup and exit
+						DaemonCleanup();
+						syslog(LOG_ERR, "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
+						break;
 					}
 
-					//m_pDevice->SetParametrFilter();
 
 					/*
 					 * Now create all necessary communication facilities:
 					 * - EventLogger
 					 * - DataLogger
-					 * - Command logger
 					 *
 					 */
 
@@ -444,15 +449,18 @@ int Adapter::Run() {
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
 						 * so we go into command processing loop
 						 */
-						syslog(LOG_ERR, "Opening server socket.. ");
+						syslog(LOG_ERR, "[DAEMON] Opening server socket.. ");
 						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
 						pServer->Create();
-						syslog(LOG_ERR, "Waiting for Server to complete");
+						syslog(LOG_ERR, "[DAEMON] Waiting for Server to complete");
 						pServer->Join();//stuck here till the end of daemon live
-						syslog(LOG_ERR, "Server [DONE]");
+						syslog(LOG_ERR, "[DAEMON] Server [DONE]");
 						delete pServer;
+						DaemonCleanup();
+					} else {
+						syslog(LOG_ERR, "[DAEMON] Couldn't create data loggers for devId=%d", m_pDevice->getDeviceId());
 					}
-#endif
+
 					break;
 			}
 
@@ -472,7 +480,12 @@ bool Adapter::UpdateParameterFilter(int devId)
 
     syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
 
+#if 1
+    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
+#else
     std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
+#endif
+
 
     int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
 
@@ -524,7 +537,7 @@ void Adapter::GeneratePidFileName(int deviceId)
 
 void Adapter::DeletePidFile()
 {
-	//TODO: implement
+	unlink(m_pidFileName.c_str());
 }
 
 int Adapter::ParentLoop(bool isCommOk)
@@ -536,18 +549,16 @@ int Adapter::ParentLoop(bool isCommOk)
 bool Adapter::CreateLoggerFacility()
 {
 
-#if 0
-	m_pEventLogger = new EventLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_event3.sdb");
-	m_pDataLogger = new DataLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_value3.sdb");
-	m_pCmdLogger = new CmdLoggerThread("/home/mmalyshe/workspace/ritex/data/ic_data_event3.sdb");
+#ifdef KSU_EMULATOR
+	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
 #else
 	m_pEventLogger = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/mnt/www/ControlServer/data/ic_data_value3.sdb");
-	m_pCmdLogger = new CmdLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
 #endif
 
-	if(m_pCmdLogger && m_pEventLogger && m_pDataLogger) {
-		if(m_pEventLogger->Create() && m_pDataLogger->Create() && m_pCmdLogger->Create()) {
+	if(m_pEventLogger && m_pDataLogger) {
+		if(m_pEventLogger->Create() && m_pDataLogger->Create()) {
 			return true;
 		}
 	}
@@ -559,10 +570,6 @@ bool Adapter::CreateLoggerFacility()
 	if(m_pDataLogger) {
 		delete m_pDataLogger;
 		m_pDataLogger = NULL;
-	}
-	if(m_pCmdLogger) {
-		delete m_pCmdLogger;
-		m_pCmdLogger = NULL;
 	}
 	return false;
 }
@@ -605,6 +612,19 @@ bool Adapter::AddAdditionalParameter(std::string name, const char* const list[],
 	param->type = PARAM_TYPE_LIST;
 	m_additionalParameters[name] = param;
 	return true;
+}
+
+void Adapter::DaemonCleanup() {
+	if (m_pDevice) {
+		delete m_pDevice;
+	}
+	if(m_pDataLogger) {
+		delete m_pDataLogger;
+	}
+	if(m_pEventLogger) {
+		delete m_pEventLogger;
+	}
+	DeletePidFile();
 }
 
 

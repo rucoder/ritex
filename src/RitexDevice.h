@@ -116,6 +116,7 @@ protected:
 	int m_writeMode;
 	void CreateOffsetTable();
 	DeviceCommand* CreateExternalCommand(CmdLineCommand* cmd);
+	std::string getFaultText(int code);
 
 	std::vector<struct offset_table_entry_t> m_offsetTable;
 public:
@@ -126,6 +127,7 @@ public:
 
 	//event/data reporting
 	void ReportDataPacket(DataPacket* packet);
+	void ReportFault(int code, time_t time);
 
 	// command implementations
 	bool StartMesurements(DeviceCommand* pCmd, std::string com, int speed);

@@ -38,6 +38,7 @@ protected:
 		STATE_INIT,
 		STATE_GET_INIT_WRITE_MODE,
 		STATE_GET_INIT_PASSWORDS,
+		STATE_GET_INIT_SETTINGS,
 		STATE_SET_CURRENT_PASSWORD,
 		STATE_SET_MODE,
 		STATE_WAIT_MODE_SET,
@@ -67,6 +68,11 @@ protected:
     bool m_doRun;
     pthread_mutex_t m_startMutex;
     pthread_cond_t m_startCond;
+
+    //fault and event reporting
+    bool m_isInFault;
+    int m_faultCode;
+    DataPacket* m_currentSettings;
 protected:
 	virtual void* Run();
     int OpenCommPort(std::string port, int speed);
@@ -83,6 +89,7 @@ protected:
 
     DataPacket* WaitForKsuActivity(int timeout, int& error);
     bool CheckAndReportFault(DataPacket* packet);
+    void CheckSettigsChanged(DataPacket* packet);
 
     //TODO: place under debug
     std::string GetErrorStr(int error);

@@ -86,7 +86,8 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
-	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true)
+	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
+	  m_isInFault(false), m_currentSettings(NULL)
 {
 	// TODO Auto-generated constructor stub
 
@@ -225,6 +226,8 @@ std::string ComTrafficProcessor::GetStateStr(eState state) {
 		return std::string("STATE_INIT");
 	case STATE_GET_INIT_WRITE_MODE:
 		return std::string("STATE_GET_INIT_WRITE_MODE");
+	case STATE_GET_INIT_SETTINGS:
+		return std::string("STATE_GET_INIT_SETTINGS");
 	case STATE_WAIT_ACK:
 		return std::string("STATE_WAIT_ACK");
 	case STATE_WAIT_CMD:
@@ -313,9 +316,38 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 	// one of INFO replys. bytes 0 and 1 has fault information
 	if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
-		syslog(LOG_ERR, "[ FAULT ]: VD state=%d ERROR=%d", packet->GetDataPtr()[0], packet->GetDataPtr()[1]);
+		unsigned char vd_state =  packet->GetDataPtr()[0];
+		unsigned char error_code = packet->GetDataPtr()[1];
+		syslog(LOG_ERR, "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, packet->GetDataPtr()[0], packet->GetDataPtr()[1]);
+		if(!m_isInFault) {
+			if (error_code > 0) {
+				m_faultCode = error_code;
+				m_isInFault = true;
+				m_pDevice->ReportFault(m_faultCode, packet->GetTimestamp());
+				//TODO: report event
+			}
+		} else {
+			//clear fault status
+			if (error_code == 0) {
+				m_isInFault = false;
+				m_faultCode = 0;
+
+				m_pDevice->ReportFault(m_faultCode, packet->GetTimestamp());
+			} else if (error_code != m_faultCode)  {//one more error detected
+				m_faultCode = error_code;
+				m_pDevice->ReportFault(m_faultCode, packet->GetTimestamp());
+			}
+		}
 	}
 	return false;
+}
+
+void ComTrafficProcessor::CheckSettigsChanged(DataPacket* packet) {
+	if(m_currentSettings == NULL) {
+		m_currentSettings = packet;
+	} else {
+		//check settings changed
+	}
 }
 
 //bool ComTrafficProcessor::HandleErrorForCustomCmd(eState state, int error) {
@@ -358,8 +390,13 @@ void* ComTrafficProcessor::Run()
 
 				switch(error) {
 				case ERROR_READ_NO_ERROR:
+					/*
+					 * do not delet packet here. keep it as current set of settings
+					 */
 					assert(packet != NULL);
 					CheckAndReportFault(packet);
+
+					CheckSettigsChanged(packet);
 
 					number_of_ksu_failures = MAX_KSU_CHANCES;
 
@@ -390,9 +427,6 @@ void* ComTrafficProcessor::Run()
 				default:
 					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 					break;
-				}
-				if(packet)	{
-					delete packet;
 				}
 				break;
 			case STATE_GET_INIT_PASSWORDS:
@@ -480,6 +514,10 @@ void* ComTrafficProcessor::Run()
 					delete packet;
 				}
 				break;
+
+//			case STATE_GET_INIT_SETTINGS:
+//				GetAllSettings();
+//				break;
 
 			case STATE_INIT:
 				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
@@ -881,9 +919,11 @@ bool ComTrafficProcessor::WritePacket(DataPacket* pPacket) {
 	int rawSize;
 	unsigned char* pRawPacket = pPacket->CreateRawPacket(rawSize);
 	//put bytes in echo cancellation FIFO
+#if  !defined(KSU_EMULATOR) && !defined(TTY_NO_ECHO)
 	for(int i = 0; i < rawSize; i++) {
 		m_echoCancelFifo.push(pRawPacket[i]);
 	}
+#endif
 	int ret = write(m_fd, pRawPacket, rawSize);
 
 	if(ret != rawSize) {

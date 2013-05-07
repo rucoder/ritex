@@ -72,6 +72,52 @@ static setting_t all_Settings[] = {
 
 #define NUMBER_OF_SETTINGS (sizeof(all_Settings) / sizeof(setting_t))
 
+
+typedef struct {
+	int m_code;
+	const char* m_text;
+} fault_code_t;
+
+static fault_code_t fault_codes[] = {
+	{0,"Авария устранена"},
+	{1,"Ошибка связи ПИУ-ЦУУ"},
+	{2,"Ошибка связи ЦУУ-ПЧ"},
+	{3,"Ошибка связи ЦУУ-ПЧ"},
+	{4,"Ошибка связи ЦУУ-ТМС"},
+	{20,"Ошибка ввода уставки"},
+	{21,"Не введен пароль"},
+	{22,"Ввод уставки запрещен"},
+	{30,"Защита по I GND (Аварийный останов для СУПН-М)"},
+	{31,"Защита по U макс."},
+	{32,"Защита драйвера ШИМ пли КОМ"},
+	{33,"Защита по I макс."},
+	{10,"Неисправность БЦУУ"},
+	{40,"Неисправность ПЧ"},
+	{41,"Неисправность вентиляторов ПЧ"},
+	{42,"Неисправность датчика Rиз"},
+	{43,"Неисправность ТМС"},
+	{44,"Неисправность ПИнС"},
+	{50,"Обрыв фазы"},
+	{51,"Напряжение сети ниже допуска"},
+	{52,"Напряжение сети выше допуска"},
+	{53,"Дисбаланс входных напряжений"},
+	{54,"Дисбаланс выходных напряжений"},
+	{55,"Дисбаланс выходных токов"},
+	{56,"Перегруз по току"},
+	{57,"Недогруз по току"},
+	{58,"Турбинное вращение"},
+	{59,"rиз ниже допуска"},
+	{60,"Давление на устье выше допуска"},
+	{61,"Давление на устье ниже допуска"},
+	{62,"Давление на приеме насоса ниже допуска"},
+	{63,"Температура двигателя выше допуска"},
+	{64,"Вибрация выше допуска"},
+	{65,"Программный сбой"}
+};
+
+#define NUMBER_OF_FAULT_CODES (sizeof(fault_codes) / sizeof(fault_code_t))
+
+
 struct controller_data_t {
 	int m_offset;
 	int m_size;
@@ -117,7 +163,7 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 
 	std::vector<AdapterCommandArgParam*> params;
 
-	for(int i = 0; i < NUMBER_OF_SETTINGS; i++) {
+	for(unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
 		params.push_back(new AdapterCommandArgParam(all_Settings[i].m_name, new cmd_template_t(REQ_SETTING_SET, all_Settings[i].m_id)));
 	}
 
@@ -384,25 +430,48 @@ void RitexDevice::ReportDataPacket(DataPacket* packet)
 
 }
 
+std::string RitexDevice::getFaultText(int code) {
+	for (unsigned int i = 0; i< NUMBER_OF_FAULT_CODES; i++) {
+		if(fault_codes[i].m_code == code)
+			return std::string(fault_codes[i].m_text);
+	}
+	return std::string("");
+}
+
+void RitexDevice::ReportFault(int code, time_t time) {
+	DBEventCommon* event = new DBEventCommon();
+	event->setChannelId(1024);
+	event->setRegisterTimeDate(time);
+	if (code == 0) {
+		event->setTypeId(25);
+		//event->setArgument1(); //TODO: set prev. erro
+	} else {
+		event->setTypeId(8);
+		event->setArgument1(getFaultText(code)); //error text
+		event->setArgument2(itoa(code)); //error code
+	}
+	m_pAdapter->getEventLogger()->EnqueData(event);
+}
+
 void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 {
 	syslog(LOG_ERR, "######### RitexDevice::OnResultReady");
 	// add event for HW commands only
 	if(pCmd->isHWCommand()) {
-		DBEventCommand* event = new DBEventCommand();
-
-		event->m_arrivalTime = pCmd->GetArrivalTime();
-		event->m_finishedTime = pCmd->GetFinishedTime();
-		event->m_cmdId = 0; //FIXME????
-		event->m_devId = getDeviceId();
-		event->m_msg = pCmd->GetParentCmd()->m_messageRaw;
-		event->m_prio = 0; //FIXME???
-		event->m_result = pCmd->getRawResult();
-		event->m_src = pCmd->GetParentCmd()->m_sourceRaw;
-		event->m_state = 0; //FIXME???
-		event->m_type = pCmd->GetParentCmd()->m_cmdType;
-
-		m_pAdapter->getCmdLogger()->EnqueData(event);
+//		DBEventCommand* event = new DBEventCommand();
+//
+//		event->m_arrivalTime = pCmd->GetArrivalTime();
+//		event->m_finishedTime = pCmd->GetFinishedTime();
+//		event->m_cmdId = 0; //FIXME????
+//		event->m_devId = getDeviceId();
+//		event->m_msg = pCmd->GetParentCmd()->m_messageRaw;
+//		event->m_prio = 0; //FIXME???
+//		event->m_result = pCmd->getRawResult();
+//		event->m_src = pCmd->GetParentCmd()->m_sourceRaw;
+//		event->m_state = 0; //FIXME???
+//		event->m_type = pCmd->GetParentCmd()->m_cmdType;
+//
+//		//m_pAdapter->getCmdLogger()->EnqueData(event);
 	}
 }
 

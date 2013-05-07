@@ -27,6 +27,7 @@ static inline unsigned short swap16(unsigned short x)
 #define MSB(x) ((x) & 0xFF)
 #endif
 
+std::string itoa(int i);
 
 
 

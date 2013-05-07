@@ -12,6 +12,14 @@
 
 #include <execinfo.h>
 #include <stdlib.h>
+
+std::string itoa(int i) {
+    std::ostringstream oss;
+    oss << i;
+    return oss.str();
+}
+
+
 /*
  * Returns time in format YYYY-MM-DD HH:MM:SS
  */

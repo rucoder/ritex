@@ -84,20 +84,14 @@ int DaemonCommChannel::send(void* buffer, int length)
 		return -1;
 	::memcpy(envelope, &length, sizeof(int));
 	::memcpy(envelope + sizeof(int), buffer, length);
-	return ::send(m_fd,envelope,length + sizeof(int),0);
+	int res = ::send(m_fd,envelope,length + sizeof(int),0);
+	delete [] envelope;
+	return res;
 }
 
 int DaemonCommChannel::recv(void* buffer, int length)
 {
 	assert(isOpened());
-#if 0
-	unsigned char* envelope = new unsigned char[length + sizeof(int)];
-	if (envelope == NULL)
-		return -1;
-	::memcpy(envelope, &length, sizeof(int));
-	::memcpy(envelope + sizeof(int), buffer, length);
-	::send(m_fd,envelope,length + sizeof(int),0);
-#endif
 	return ::recv(m_fd, buffer, length, 0);
 }
 

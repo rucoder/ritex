@@ -16,7 +16,6 @@
 #include "DaemonCommChannel.h"
 #include "EventLoggerThread.h"
 #include "DataLoggerThread.h"
-#include "CmdLoggerThread.h"
 #include "ParameterFilter.h"
 #include "AdapterCommand.h"
 
@@ -62,13 +61,14 @@ protected:
 	// logging facilities
 	EventLoggerThread* m_pEventLogger;
 	DataLoggerThread* m_pDataLogger;
-	CmdLoggerThread* m_pCmdLogger;
 	bool CreateLoggerFacility();
 
 	// supported parameters
 	std::map<std::string, struct additional_parameter_t*> m_additionalParameters;
 
 	ParameterFilter m_paramFilter;
+
+	virtual void DaemonCleanup();
 
 
 public:
@@ -92,7 +92,6 @@ public:
 	const std::string& getName() { return m_adapterName; };
 	const std::string& getVersion() { return m_adapterVersion; };
 	const std::string& getDescription() { return m_adapterDescription; };
-	virtual CmdLoggerThread* getCmdLogger() { return m_pCmdLogger; };
 	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
 	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
 	virtual std::map<std::string, struct additional_parameter_t*>& GetAdditionalParameterMap() {return m_additionalParameters;}
