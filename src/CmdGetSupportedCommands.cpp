@@ -24,7 +24,7 @@ bool CmdGetSupportedCommands::Execute()
 {
 	std::vector<AdapterCommand*>& list = m_pDevice->GetExternaCommandList();
 
-	for(int i = 0; i < list.size(); i++) {
+	for(unsigned int i = 0; i < list.size(); i++) {
 		AdapterCommand* pCmd = list[i];
 
 		//printf("%d|%s|%s\n", i, pCmd->m_name.c_str(), );
@@ -32,7 +32,7 @@ bool CmdGetSupportedCommands::Execute()
 
 		std::vector<AdapterCommandArg*>& args = pCmd->GetAgrList();
 
-		for(int j = 0; j < args.size(); j++) {
+		for(unsigned int j = 0; j < args.size(); j++) {
 			std::cout << "~" << (j + 1) << "|" << args[j]->m_name;
 			switch(args[j]->m_type) {
 			case ARG_TYPE_INT:
@@ -43,7 +43,7 @@ bool CmdGetSupportedCommands::Execute()
 				break;
 			case ARG_TYPE_LIST:
 				std::cout<<"|list";
-				for(int k = 0; k < args[j]->m_list_val.size(); k++) {
+				for(unsigned int k = 0; k < args[j]->m_list_val.size(); k++) {
 					std::cout<<"|" << (k+1) << "~" << args[j]->m_list_val[k]->m_name;
 				}
 				break;
@@ -52,10 +52,6 @@ bool CmdGetSupportedCommands::Execute()
 			}
 			std::cout << std::endl;
 		}
-
-
 	}
-
-
 	return false;
 }

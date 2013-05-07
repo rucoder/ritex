@@ -576,6 +576,7 @@ void* ComTrafficProcessor::Run()
 						break;
 					case ERROR_READ_NO_ERROR:
 						CheckAndReportFault(packet);
+						m_pDevice->CheckAndReportTimeDiviation(packet);
 						//1. report data
 						number_of_ksu_failures = MAX_KSU_CHANCES;
 

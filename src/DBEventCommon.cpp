@@ -7,7 +7,9 @@
 
 #include "DBEventCommon.h"
 
-DBEventCommon::DBEventCommon() {
+DBEventCommon::DBEventCommon()
+	: m_channelId(1024), m_sArgument1("X"), m_sArgument2("X"), m_sArgument3("X"), m_sArgument4("X")
+{
 	// TODO Auto-generated constructor stub
 
 }

@@ -53,6 +53,7 @@ RitexAdapter::RitexAdapter(std::string name, std::string version, std::string de
 	AddAdditionalParameter("baudrate", m_commSpeed, sizeof(m_commSpeed)/ sizeof(char*), LIST_VALUE_INT);
 	AddAdditionalParameter("debug",0,1);
 	AddAdditionalParameter("address","54");
+	AddAdditionalParameter("sync_time", 0, 60);
 }
 
 bool RitexAdapter::isDaemonRunning() {

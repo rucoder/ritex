@@ -131,7 +131,7 @@ struct controller_data_t {
 };
 
 RitexDevice::RitexDevice(IAdapter* pAdapter)
-	: Device(pAdapter), m_writeMode(WRITE_MODE_0)
+	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION)
 {
 	// add device channels
 	AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
@@ -306,6 +306,8 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 		int speed;
 		cmd->GetParameter("comdevice", comm);
 		cmd->GetParameter("baudrate", speed);
+		if(cmd->GetParameter("sync_time", m_timeDiviation))
+			m_timeDiviation*=60; //parameter is given in min. we operate in sec.
 
 		syslog(LOG_ERR, "comdevice: %s", comm.c_str());
 		syslog(LOG_ERR, "baudrate: %d", speed);
@@ -451,6 +453,44 @@ void RitexDevice::ReportFault(int code, time_t time) {
 		event->setArgument2(itoa(code)); //error code
 	}
 	m_pAdapter->getEventLogger()->EnqueData(event);
+}
+
+void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
+{
+
+	time_t system_time = time(NULL);
+
+	syslog(LOG_ERR, "[TIME] Local time: %s. epoch=%lu", Utils::TimeToString(system_time).c_str(), system_time);
+
+	//only this packet has KSU time
+	if(packet->GetCmd() == ACK_INFO_MODE_0) {
+		unsigned char* p = packet->GetDataPtr();
+
+		int year = p[21] << 8 | p[22];
+
+		//TODO: introduce #define's
+		struct tm tm;
+		tm.tm_year = year - 1900;
+		tm.tm_sec = 0;
+		tm.tm_min = p[24];
+		tm.tm_hour = p[23];
+		tm.tm_mday = p[19];
+		tm.tm_mon = p[20] - 1;
+		tm.tm_isdst = 0;
+
+		time_t timestamp = mktime(&tm);
+
+		syslog(LOG_ERR, "[TIME] KSU time: %d-%d-%d %d:%d:%d . epoch=%lu Diviation [%d] sec", year, p[20],p[19], p[23],p[24],0, timestamp, system_time - timestamp);
+
+		if(abs(system_time - timestamp) > m_timeDiviation) {
+			DBEventCommon* event = new DBEventCommon();
+			event->setChannelId(1024); //FIXME: temporrary workaround
+			event->setTypeId(6);
+			event->setRegisterTimeDate(system_time);
+			event->setArgument1(itoa(abs(system_time - timestamp) / 60) );
+			m_pAdapter->getEventLogger()->EnqueData(event);
+		}
+	}
 }
 
 void RitexDevice::OnResultReady(DeviceCommand* pCmd)

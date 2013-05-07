@@ -90,7 +90,8 @@
 //for command without mode always return 0
 #define GET_MODE(x) ((x & MODE_MASK) >> MODE_SHIFT)
 
-
+//default value for -sync_time parameter
+#define DEFAULT_TIME_DIVIATION (5*60) //300 seconds
 
 struct cmd_template_t {
 	unsigned short m_cmd;
@@ -119,6 +120,8 @@ protected:
 	std::string getFaultText(int code);
 
 	std::vector<struct offset_table_entry_t> m_offsetTable;
+
+	int m_timeDiviation;
 public:
 	RitexDevice(IAdapter* pAdapter);
 	virtual ~RitexDevice();
@@ -128,6 +131,7 @@ public:
 	//event/data reporting
 	void ReportDataPacket(DataPacket* packet);
 	void ReportFault(int code, time_t time);
+	void CheckAndReportTimeDiviation(DataPacket* packet);
 
 	// command implementations
 	bool StartMesurements(DeviceCommand* pCmd, std::string com, int speed);

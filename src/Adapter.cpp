@@ -480,7 +480,7 @@ bool Adapter::UpdateParameterFilter(int devId)
 
     syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
 
-#if 1
+#if KSU_EMULATOR
     std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
 #else
     std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
