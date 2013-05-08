@@ -23,7 +23,35 @@ Device::Device(IAdapter* pAdapter) :
 }
 
 Device::~Device() {
-	// TODO Auto-generated destructor stub
+	// loop through device channels
+	for(std::list<DeviceChannel*>::const_iterator ch = getChannels().begin(); ch != getChannels().end(); ch++) {
+		AdapterParameter* pParam = (*ch)->GetParameter();
+
+		if(pParam) {
+			delete pParam;
+		}
+
+		delete(*ch);
+
+	}
+
+	// loop through sensor's channels
+	for(std::list<Sensor*>::const_iterator sn = getSensors().begin(); sn != getSensors().end(); sn++) {
+		for(std::list<DeviceChannel*>::iterator ch = (*sn)->getChannels().begin(); ch != (*sn)->getChannels().end(); ch++) {
+			AdapterParameter* pParam = (*ch)->GetParameter();
+			if(pParam) {
+				delete pParam;
+			}
+
+			delete(*ch);
+		}
+		delete *sn;
+	}
+
+	//delete external commands
+	for(unsigned int i = 0; i < m_supportedCommands.size(); i++) {
+		delete m_supportedCommands[i];
+	}
 }
 
 bool Device::AddSensor(Sensor* pSensor)

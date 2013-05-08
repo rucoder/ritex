@@ -29,6 +29,7 @@ public:
 	{
 
 	}
+
 };
 
 class AdapterCommandArg
@@ -56,6 +57,11 @@ public:
 		m_name = name;
 		m_list_val = val;
 		m_type = ARG_TYPE_LIST;
+	}
+	virtual ~AdapterCommandArg() {
+		for(unsigned int i = 0; i < m_list_val.size(); i++) {
+			delete m_list_val[i];
+		}
 	}
 };
 

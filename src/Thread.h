@@ -14,6 +14,7 @@ class Thread {
 private:
 	pthread_t m_hHandle;
 	bool m_isJoinable;
+	bool m_isCreated;
 	static void* thread_function(void* param);
 	static void  thread_oncancel_function(void* param);
 protected:

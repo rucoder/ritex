@@ -26,7 +26,7 @@ void* Thread::thread_function(void* param)
 
 
 Thread::Thread()
-	: m_hHandle(-1), m_isJoinable(true)
+	: m_hHandle(-1), m_isJoinable(true), m_isCreated(false)
 {
 }
 
@@ -56,11 +56,11 @@ bool Thread::Create(bool createDetached)
 		pthread_attr_destroy(pAttr);
 	}
 
-	return retVal == 0;
+	return m_isCreated = (retVal == 0);
 }
 bool Thread::Join()
 {
-	if(m_isJoinable) {
+	if(m_isJoinable && m_isCreated) {
 		void* threadRetVal;
 		int retVal = pthread_join(m_hHandle, &threadRetVal);
 		return retVal == 0;
@@ -69,7 +69,9 @@ bool Thread::Join()
 }
 bool Thread::Cancel()
 {
-	pthread_cancel(m_hHandle);
+	if(m_isCreated) {
+		pthread_cancel(m_hHandle);
+	}
 	return true;
 }
 

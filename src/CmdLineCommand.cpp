@@ -12,13 +12,22 @@
 #include <string.h>
 #include <string>
 
+#include "Utils.h"
+
 CmdLineCommand::CmdLineCommand() {
 	// TODO Auto-generated constructor stub
 
 }
 
 CmdLineCommand::~CmdLineCommand() {
-	// TODO Auto-generated destructor stub
+	for(std::map<std::string, struct compiled_parameter>::iterator itr = m_additionalParameters.begin(); itr != m_additionalParameters.end(); itr++) {
+		if(itr->second.type == PARAM_TYPE_STRING) {
+			if(itr->second.v.s) {
+				delete [] itr->second.v.s;
+			}
+		}
+	}
+	m_additionalParameters.clear();
 }
 
 void CmdLineCommand::AddParameter(std::string name, std::string value)
@@ -218,10 +227,8 @@ bool CmdLineCommand::Compile(const additional_parameter_map_t& map)
 		case CMD_TEST_DEVICE:
 		{
 			//need to create fake device Id
-			char s[32];
 			m_deviceId = rand();
-			snprintf(s,32,"%d", m_deviceId);
-			m_deviceIdRaw = s;
+			m_deviceIdRaw = std::string(itoa(m_deviceId));
 			syslog(LOG_ERR, "Generate fake Device ID: m_deviceId = %d", m_deviceId);
 			return HasRequiredParameters(m_cmdLineCommandType);
 		}

@@ -193,8 +193,10 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 }
 
 RitexDevice::~RitexDevice() {
-	//delete topology
-	//TODO:
+	if(m_pProcessor) {
+		delete m_pProcessor;
+		m_pProcessor = NULL;
+	}
 }
 
 DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)

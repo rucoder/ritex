@@ -15,6 +15,9 @@ AdapterCommand::AdapterCommand(int id, std::string name, std::string description
 }
 
 AdapterCommand::~AdapterCommand() {
-	// TODO Auto-generated destructor stub
+	//delete args
+	for(int i = 0; i < m_args.size(); i++) {
+		delete m_args[i];
+	}
 }
 

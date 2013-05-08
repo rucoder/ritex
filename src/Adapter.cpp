@@ -67,6 +67,19 @@ Adapter::Adapter(std::string name, std::string version, std::string description,
 }
 
 Adapter::~Adapter() {
+	if (m_pDevice) {
+		delete m_pDevice;
+		m_pDevice = NULL;
+	}
+	if (m_pCommChannel) {
+		delete m_pCommChannel;
+		m_pCommChannel = NULL;
+	}
+
+	for(std::map<std::string, struct additional_parameter_t*>::iterator itr = m_additionalParameters.begin(); itr != m_additionalParameters.end(); itr++) {
+		delete itr->second;
+	}
+	m_additionalParameters.clear();
 }
 
 
@@ -394,6 +407,7 @@ int Adapter::Run() {
 
 						if(m_pCommChannel) {
 							delete m_pCommChannel;
+							m_pCommChannel = NULL;
 						}
 						delete pCmdLineCommand;
 						delete pDevCmd;
