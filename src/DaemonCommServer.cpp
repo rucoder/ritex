@@ -94,18 +94,26 @@ void* DaemonCommServer::Run() {
 		 *socket, 'm_clientSock'; the listening socket ('m_connectSock') remains open
 		 *and can be used to accept further connections.
 		 */
+#ifndef KSU_EMULATOR
 		syslog(LOG_ERR, "Waitign for client connection...");
 		m_clientSock = accept(m_connectSock, NULL, NULL);
 		if (m_clientSock == -1) {
 			syslog(LOG_ERR, "accept");
 			return NULL;
 		}
+#endif
 
 		/*
 		 * Command handling loop
 		 */
 		syslog(LOG_ERR, "Client connected. m_clientSock=0x%X", m_clientSock);
 		do {
+#ifdef KSU_EMULATOR
+			int length;
+			numRead =4;
+			length = 4;
+			char* rawData = new char[1024];;
+#else
 			int length;
 			unsigned char* rawData;
 			numRead = recv(m_clientSock, &length, 4, 0); //get the length
@@ -116,10 +124,16 @@ void* DaemonCommServer::Run() {
 				m_clientSock = -1;
 				break;
 			}
+#endif
 
 			if(numRead == 4) {
+#ifdef KSU_EMULATOR
+				printf("input command>");
+				gets(rawData);
+#else
 				rawData = new unsigned char[length];
 				numRead = recv(m_clientSock, rawData, length, 0); //get the data
+#endif
 
 				syslog(LOG_ERR, "Got packet data read. =%d expected=%d", numRead, length);
 
@@ -175,7 +189,9 @@ void* DaemonCommServer::Run() {
 
 								syslog(LOG_ERR, "Executing. WAIT-<<");
 
-								delete pDevCmd;
+
+								//delete pDevCmd;
+								syslog(LOG_ERR, "Executing. WAIT 1-<<");
 							}
 						}
 					}
@@ -222,14 +238,16 @@ void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
 	syslog(LOG_ERR, "Calling send(): locked");
 
 	m_canProcessCommands = true;
+
+	syslog(LOG_ERR, "Calling send(): unlocked");
+	pthread_cond_signal(&m_canProcessCommandsCond);
+	syslog(LOG_ERR, "Calling send(): after 1");
+
 	s = pthread_mutex_unlock(&m_mutex);
 	if( s != 0) {
 		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
 	}
 
-	syslog(LOG_ERR, "Calling send(): unlocked");
-	pthread_cond_signal(&m_canProcessCommandsCond);
-	syslog(LOG_ERR, "Calling send(): after 1");
 
 	syslog(LOG_ERR,"DaemonCommServer::OnResultReady-<<");
 }

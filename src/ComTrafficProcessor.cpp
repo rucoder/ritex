@@ -16,7 +16,11 @@
 #include <fcntl.h>
 
 //syslog
+#ifdef KSU_EMULATOR
+#define syslog(x, y, ...) printf(#y"\n", ## __VA_ARGS__)
+#else
 #include <syslog.h>
+#endif
 
 //memset
 #include <string.h>
@@ -87,7 +91,7 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
 	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
-	  m_isInFault(false), m_currentSettings(NULL)
+	  m_isInFault(false), m_currentSettings(NULL), m_number_of_ksu_failures(MAX_KSU_CHANCES)
 {
 	// TODO Auto-generated constructor stub
 
@@ -196,7 +200,7 @@ int ComTrafficProcessor::GetAckForCmd(int cmd, bool primary){
 	if (index == -1)
 		return -1;
 
-	return m_ackParams[index].m_ack;
+	return m_ackParams[index].m_cmd;
 
 }
 
@@ -314,17 +318,16 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 }
 
 bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
-	// one of INFO replys. bytes 0 and 1 has fault information
+	// one of INFO replies. bytes 0 and 1 has fault information
 	if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
-		unsigned char vd_state =  packet->GetDataPtr()[0];
+		unsigned char vd_state =  packet->GetDataPtr()[VD_STATUS_OFFSET];
 		unsigned char error_code = packet->GetDataPtr()[1];
-		syslog(LOG_ERR, "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, packet->GetDataPtr()[0], packet->GetDataPtr()[1]);
+		syslog(LOG_ERR, "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, vd_state, error_code);
 		if(!m_isInFault) {
 			if (error_code > 0) {
 				m_faultCode = error_code;
 				m_isInFault = true;
 				m_pDevice->ReportFault(m_faultCode, packet->GetTimestamp());
-				//TODO: report event
 			}
 		} else {
 			//clear fault status
@@ -343,23 +346,54 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 }
 
 void ComTrafficProcessor::CheckSettigsChanged(DataPacket* packet) {
-	if(m_currentSettings == NULL) {
-		m_currentSettings = packet;
-	} else {
-		//check settings changed
-	}
+	//TODO:
 }
 
-//bool ComTrafficProcessor::HandleErrorForCustomCmd(eState state, int error) {
-//	m_doRun = m_isDataCapture;
-//}
+bool ComTrafficProcessor::HandleError(int error) {
+	syslog(LOG_ERR, "HandleError ->>");
+	switch(error) {
+	case ERROR_OOM:
+	case ERROR_READ_BAD_CRC:
+	case ERROR_READ_BAD_PACKET:
+	case ERROR_READ_OTHER:
+	case ERROR_READ_UNEXPECTED_PACKET:
+	case ERROR_READ_TIMEOUT:
+		//we failed to do what we want for MAX_KSU_CHANSES times is a row.
+		// now either end processing or reset to INIT state
+		if(--m_number_of_ksu_failures == 0) {
+			m_number_of_ksu_failures = MAX_KSU_CHANCES;
+			syslog(LOG_ERR, "KSU failed %d times in a row", MAX_KSU_CHANCES);
+			pthread_mutex_lock(&m_cmdMutex);
+			if(m_pendingCmd) {
+				m_pendingCmd->m_pParentCommand.SetReply(NULL, error);
+				delete m_pendingCmd;
+				m_pendingCmd = NULL;
+			}
+			pthread_mutex_unlock(&m_cmdMutex);
+
+			m_state = STATE_INIT;
+			break;
+		} else {
+			//we have a chance to repeat command if any
+			pthread_mutex_lock(&m_cmdMutex);
+			if (m_pendingCmd && m_state == STATE_CUSTOM_CMD) {
+				WritePacket(m_pendingCmd->m_pDataPacket);
+			}
+			pthread_mutex_unlock(&m_cmdMutex);
+			//TODO: how to do his correctly???
+		}
+		syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
+		break;
+	}
+	//either in capture mode or custom command is being executed
+	m_doRun = m_isDataCapture || (m_pendingCmd != NULL);
+	syslog(LOG_ERR, "HandleError -<<");
+
+	return true;
+}
 
 void* ComTrafficProcessor::Run()
 {
-	int number_of_ksu_failures = MAX_KSU_CHANCES;
-
-	unsigned char passwd_hi, passwd_lo;
-
 	m_state = STATE_INIT;
 
 	syslog(LOG_ERR, "Enter run...");
@@ -375,358 +409,235 @@ void* ComTrafficProcessor::Run()
 
 	syslog(LOG_ERR, "Now running...");
 
-
-	while(m_doRun) {
+	while (m_doRun) {
 		int error;
 		DataPacket* packet = NULL;
 
-		syslog(LOG_ERR, "#### STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d", m_state, GetStateStr(m_state).c_str(), m_writeMode, number_of_ksu_failures);
+		syslog(LOG_ERR, "#### STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d", m_state, GetStateStr(m_state).c_str(), m_writeMode, m_number_of_ksu_failures);
+		packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
 
-		switch (m_state) {
-			case STATE_GET_INIT_WRITE_MODE:
-				GetAllSettings();
-
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-
-				switch(error) {
-				case ERROR_READ_NO_ERROR:
-					/*
-					 * do not delet packet here. keep it as current set of settings
-					 */
-					assert(packet != NULL);
-					CheckAndReportFault(packet);
-
-					CheckSettigsChanged(packet);
-
-					number_of_ksu_failures = MAX_KSU_CHANCES;
-
-					if(packet->GetType() == TYPE_CMD) {
-						syslog(LOG_ERR,"ERROR!!!!!");
-						m_state = STATE_INIT;
-					} else {
-						assert(packet->GetCmd() == ACK_ALL_SETTINGS);
-
-						unsigned char* pData = packet->GetDataPtr();
-						m_writeMode = pData[WRITE_MODE_OFFSET];
-						//syslog(LOG_ERR,"<<<<<<<< CURRENT WRITE_MODE=%d", m_writeMode);
-						m_state = STATE_GET_INIT_PASSWORDS;
-
-					}
-					break;
-				case ERROR_READ_TIMEOUT:
-					if(--number_of_ksu_failures == 0) {
-						//TODO: check logic. How many times we need to report event?
-						number_of_ksu_failures = MAX_KSU_CHANCES;
-						//TODO: report event here
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-					}
-					break;
-				case ERROR_READ_BAD_CRC:
-					// TODO: report event
-					break;
-				default:
-					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-					break;
-				}
-				break;
-			case STATE_GET_INIT_PASSWORDS:
-				GetPasswords();
-
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-
-				switch(error) {
-				case ERROR_READ_NO_ERROR:
-					assert(packet != NULL);
-					CheckAndReportFault(packet);
-
-					number_of_ksu_failures = MAX_KSU_CHANCES;
-
-					if(packet->GetType() == TYPE_CMD) {
-						syslog(LOG_ERR,"ERROR!!!!!");
-					} else {
-						assert(packet->GetCmd() == ACK_PASSWORDS);
-
-						unsigned char* pData = packet->GetDataPtr();
-						//m_writeMode = pData[20];
-						syslog(LOG_ERR,"<<<<<<<< CURRENT PASSWORDS=0x%X 0x%X 0x%X 0x%X", pData[0], pData[1], pData[2], pData[3]);
-						passwd_hi = pData[2];
-						passwd_lo = pData[3];
-						//m_state = STATE_WAIT_CMD;
-						m_state = STATE_SET_CURRENT_PASSWORD;
-					}
-					break;
-				case ERROR_READ_TIMEOUT:
-					if(--number_of_ksu_failures == 0) {
-						//TODO: check logic. How many times we need to report event?
-						number_of_ksu_failures = MAX_KSU_CHANCES;
-						//TODO: report event here
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-					}
-					break;
-				case ERROR_READ_BAD_CRC:
-					// TODO: report event
-					break;
-				default:
-					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-					break;
-				}
-				if(packet)	{
-					delete packet;
-				}
-				break;
-
-			case STATE_SET_CURRENT_PASSWORD:
-				SetPassword((unsigned short)passwd_hi << 8 | passwd_lo);
-
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-				switch(error) {
-					case ERROR_READ_TIMEOUT:
-						m_state = STATE_INIT;
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						//number_of_ksu_failures++;
-						break;
-					case ERROR_READ_NO_ERROR:
-					{
-						CheckAndReportFault(packet);
-						number_of_ksu_failures = MAX_KSU_CHANCES;
-
-						//somthing bad happened. get error code
-						if(packet->GetCmd() == ACK_ACK) {
-							unsigned char* pData = packet->GetDataPtr();
-							syslog(LOG_ERR, "!!!! FIALED SET PASSWORD %d: REASON: %d", passwd_hi << 8 | passwd_lo, pData[0]);
-							m_state = STATE_INIT;
-						} else {
-							assert(packet->GetCmd() == ACK_ALL_SETTINGS);
-
-							unsigned char* pData = packet->GetDataPtr();
-							m_writeMode = pData[WRITE_MODE_OFFSET];
-							//syslog(LOG_ERR,"<<<<<<<< CURRENT WRITE_MODE=%d", m_writeMode);
-							m_state = STATE_WAIT_CMD;
-						}
-					}
-					break;
-
-					default:
-						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-						break;
-				}
-				if(packet)	{
-					delete packet;
-				}
-				break;
-
-//			case STATE_GET_INIT_SETTINGS:
-//				GetAllSettings();
-//				break;
+		switch(m_state) {
 
 			case STATE_INIT:
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-
-				switch(error) {
-				case ERROR_READ_NO_ERROR:
-					assert(packet != NULL);
-					CheckAndReportFault(packet);
-
-					number_of_ksu_failures = MAX_KSU_CHANCES;
-
-					if(packet->GetType() == TYPE_CMD) {
-						//wait for ACK. stay in the state
-					} else {
-						//we got ACK. ask for settings
-						m_state = STATE_GET_INIT_WRITE_MODE;
+			{
+				if(error == ERROR_READ_NO_ERROR) {
+					if(packet->GetType() == TYPE_ACK) {
+						GetPasswords();
+						m_state = STATE_GET_INIT_PASSWORDS;
 					}
-					break;
-				case ERROR_READ_TIMEOUT:
-					if(--number_of_ksu_failures == 0) {
-						//TODO: check logic. How many times we need to report event?
-						number_of_ksu_failures = MAX_KSU_CHANCES;
-						//TODO: report event here
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-					}
-					break;
-				case ERROR_READ_BAD_CRC:
-					// TODO: report event
-					break;
-				default:
-					syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-					break;
 				}
-
-				if(packet)	{
+				HandleError(error);
+				if(packet)
 					delete packet;
+			}
+			break;
+
+			case STATE_GET_INIT_PASSWORDS:
+			{
+				if(error == ERROR_READ_NO_ERROR) {
+					if(packet->GetCmd() == ACK_PASSWORDS) {
+						unsigned char passwd_hi, passwd_lo;
+						unsigned char* pData = packet->GetDataPtr();
+						syslog(LOG_ERR,"CURRENT PASSWORDS=0x%X 0x%X 0x%X 0x%X", pData[0], pData[1], pData[2], pData[3]);
+						passwd_hi = pData[2];
+						passwd_lo = pData[3];
+						SetPassword((unsigned short)passwd_hi << 8 | passwd_lo);
+						m_state = STATE_SET_CURRENT_PASSWORD;
+					} else {
+						error = ERROR_READ_UNEXPECTED_PACKET;
+					}
 				}
-				break;
-			/*
-			 * the command was previously detected in the traffic so 'ПИУ'
-			 * expects ACK within KSU_INACTIVITY_TIMEOUT so do we
-			 * 1. if timeout happens 'ПИУ' will repeat the command so we need to go to INIT
-			 * 2. if ACK has gotten then report data and wait for the next CMD
-			 */
-			case STATE_WAIT_ACK:
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-				switch(error) {
-					case ERROR_READ_TIMEOUT:
-						if(--number_of_ksu_failures == 0) {
-							//TODO: check logic. How many times we need to report event?
-							number_of_ksu_failures = MAX_KSU_CHANCES;
-							//TODO: report event here
-							syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						}
+				HandleError(error);
+				if(packet)
+					delete packet;
+			}
+			break;
+
+			case STATE_SET_CURRENT_PASSWORD:
+			{
+				if(error == ERROR_READ_NO_ERROR) {
+					//something bad happened. get error code
+					if(packet->GetCmd() == ACK_ACK) {
+						unsigned char* pData = packet->GetDataPtr();
+						syslog(LOG_ERR, "[ERROR] FIALED SET PASSWORD. REASON: %d", pData[0]);
 						m_state = STATE_INIT;
-						break;
-					case ERROR_READ_NO_ERROR:
+						//FIXME?????
+					} else if(packet->GetCmd() == ACK_ALL_SETTINGS) {
+						// got all current settings in response
+						unsigned char* pData = packet->GetDataPtr();
+						m_writeMode = pData[WRITE_MODE_OFFSET];
+						if(m_currentSettings) {
+							delete m_currentSettings;
+						}
+						m_currentSettings = packet;
+						m_state = STATE_WAIT_CMD;
+						/*
+						 * at this point we have all we need:
+						 * 1. current settings array
+						 * 2. current write mode
+						 * 3. password successfully set
+						 * we can go not to the main loop
+						 */
+						break; //do brake so the packet will not be deleted
+					} else {
+						error = ERROR_READ_UNEXPECTED_PACKET;
+					}
+				}
+				HandleError(error);
+				if(packet)
+					delete packet;
+			}
+			break;
+
+			case STATE_WAIT_CMD:
+			{
+				if (error == ERROR_READ_NO_ERROR) {
+					if(GET_CMD(packet->GetCmd()) == REQ_INFO) {
+						m_state = STATE_WAIT_ACK;
+					} else {
+						error = ERROR_READ_UNEXPECTED_PACKET;
+					}
+				}
+				HandleError(error);
+				if(packet)
+					delete packet;
+			}
+			break;
+			case STATE_WAIT_ACK:
+			{
+				if (error == ERROR_READ_NO_ERROR)
+				{
+					if(GET_CMD(packet->GetCmd()) == ACK_INFO)
+					{
+
 						CheckAndReportFault(packet);
 						m_pDevice->CheckAndReportTimeDiviation(packet);
-						//1. report data
-						number_of_ksu_failures = MAX_KSU_CHANCES;
 
-						/*
-						 * the window is open to send custom command
-						 * we can execute custom command in two different modes
-						 * 1. 'one-shot' -- no data capture. E.g. -t, -cmd without -r before it
-						 */
-
-						if (m_isDataCapture) {
+						if (m_isDataCapture)
+						{
 							m_pDevice->ReportDataPacket(packet);
 						}
 
 						pthread_mutex_lock(&m_cmdMutex);
-						if(m_pendingCmd) {
+						if(m_pendingCmd)
+						{
+							WritePacket(m_pendingCmd->m_pDataPacket);
 							m_state = STATE_CUSTOM_CMD;
 						} else {
-							m_state = STATE_SET_MODE;
+							/*
+							 * we cannot change mode if the engine is ON
+							 */
+#if 0
+							unsigned char* pData = packet->GetDataPtr();
+
+							if((pData[VD_STATUS_OFFSET] & VD_ON_MASK) ||
+									(pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK)) {
+								m_state = STATE_WAIT_CMD;
+								//FIXME: is this true?
+								//m_writeMode = 0; //the mode is reset to 0
+							} else {
+#endif
+								ChangeMode((m_writeMode+1) % 7);
+								m_state = STATE_SET_MODE;
+#if 0
+							}
+#endif
 						}
 						pthread_mutex_unlock(&m_cmdMutex);
 
-						break;
-					default:
-						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-						break;
+					}
+				    else
+					{
+						error = ERROR_READ_UNEXPECTED_PACKET;
+					}
 				}
-				if(packet)	{
+				HandleError(error);
+				if(packet)
 					delete packet;
-				}
-				break;
-			case STATE_CUSTOM_CMD:
+			}
+			break;
+			case STATE_SET_MODE:
 			{
-				syslog(LOG_ERR,"!!!!!!! Sending custom CMD 0x%X", m_pendingCmd->m_pDataPacket->GetCmd());
+				if(error == ERROR_READ_NO_ERROR) {
 
-				if(GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()) != m_writeMode) {
-					//need to change mode first
-					m_writeMode = (GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()) + 6) % 7;
-					m_state = STATE_SET_MODE;
-					break;
+					unsigned char* pData = packet->GetDataPtr();
+
+					if(GET_CMD(packet->GetCmd()) == ACK_ALL_SETTINGS) {
+						//get new mode
+						if((m_writeMode+1) % 7 != pData[WRITE_MODE_OFFSET]) {
+							syslog(LOG_ERR,"[WARNING]: new mode is not reflected in reply");
+						}
+						m_writeMode = pData[WRITE_MODE_OFFSET];
+						syslog(LOG_ERR,"CURRENT WRITE_MODE=%d", m_writeMode);
+						m_state = STATE_WAIT_CMD;
+
+						if(m_currentSettings) {
+							CheckSettigsChanged(packet);
+							delete m_currentSettings;
+						}
+						m_currentSettings = packet;
+						break; //keep packet
+					//couldn't set mode
+					} else if (GET_CMD(packet->GetCmd()) ==  ACK_ACK ){
+						syslog(LOG_ERR, "[ERROR]: FIALED TO SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
+						m_state = STATE_INIT;
+						//FIXME: ????? to INIT???
+					} else {
+						error = ERROR_READ_UNEXPECTED_PACKET;
+					}
 				}
-
-				WritePacket(m_pendingCmd->m_pDataPacket);
-
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-
-				switch(error) {
-				case ERROR_READ_TIMEOUT:
-					break;
-				case ERROR_READ_NO_ERROR:
-					CheckAndReportFault(packet);
-					syslog(LOG_ERR, "!!!!!!!! GOT REPLY FOR CUSTOM CMD: cmd=0x%X ack=0x%X", m_pendingCmd->m_pDataPacket->GetCmd(), packet->GetCmd());
-					break;
-				default:
-					break;
-				}
-
-				//TODO: log event
-
-
-//				int s = pthread_mutex_lock(&m_cmdMutex);
-//				if( s != 0) {
-//					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
-//				}
-				m_pendingCmd->m_pParentCommand->SetReply(packet, error);
-				m_pendingCmd = NULL;
-//				s = pthread_mutex_unlock(&m_cmdMutex);
-//				if( s != 0) {
-//					syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
-//				}
-
-
-				m_state = STATE_WAIT_CMD;
-
-				m_doRun = m_isDataCapture;
-				syslog(LOG_ERR, "#### NEED RUN? m_doRun = %d", m_doRun);
-				if(packet)	{
+				HandleError(error);
+				if(packet)
 					delete packet;
-				}
-
 			}
 			break;
 
-			case STATE_SET_MODE:
-				//try to set next mode. update current mode on reply only
-				ChangeMode((m_writeMode+1) % 7);
+			case STATE_CUSTOM_CMD:
+			{
+				if (error == ERROR_READ_NO_ERROR) {
+					if(GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd()) == packet->GetCmd() ||
+							GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd(), false) == packet->GetCmd()){
+						// report result
+						m_pendingCmd->m_pParentCommand.SetReply(packet, error);
 
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-				switch(error) {
-					case ERROR_READ_TIMEOUT:
-						m_state = STATE_INIT;
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						break;
-					case ERROR_READ_NO_ERROR:
-					{
-						CheckAndReportFault(packet);
-						number_of_ksu_failures = MAX_KSU_CHANCES;
+						delete m_pendingCmd;
+						m_pendingCmd = NULL;
 
-						//something bad happened. get error code
-						if(packet->GetCmd() == ACK_ACK) {
-							unsigned char* pData = packet->GetDataPtr();
-							syslog(LOG_ERR, "!!!! FIALED SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
-							m_state = STATE_INIT;
-						} else {
-							assert(packet->GetCmd() == ACK_ALL_SETTINGS);
+						m_state = STATE_WAIT_CMD;
 
-							unsigned char* pData = packet->GetDataPtr();
-							if((m_writeMode+1) % 7 != pData[WRITE_MODE_OFFSET]) {
-								syslog(LOG_ERR,"WARNING: new mode is not reflected in reply");
+						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
+							if(m_currentSettings) {
+								CheckSettigsChanged(packet);
+								delete m_currentSettings;
 							}
-							m_writeMode = pData[WRITE_MODE_OFFSET];
-							syslog(LOG_ERR,"<<<<<<<< CURRENT WRITE_MODE=%d", m_writeMode);
-							m_state = STATE_WAIT_CMD;
+							m_currentSettings = packet;
 						}
+						break;
+					} else {
+						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
-					break;
-
-					default:
-						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-						break;
 				}
-				if(packet)	{
+				HandleError(error);
+				if(packet)
 					delete packet;
-				}
 
-				break;
-
-			case STATE_WAIT_CMD:
-				packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
-				switch(error) {
-					case ERROR_READ_TIMEOUT:
-						m_state = STATE_INIT;
-						syslog(LOG_ERR, "KSU not responding %d sec. Reporting", KSU_INACTIVITY_TIMEOUT * MAX_KSU_CHANCES);
-						break;
-					case ERROR_READ_NO_ERROR:
-						CheckAndReportFault(packet);
-						number_of_ksu_failures = MAX_KSU_CHANCES;
-						m_state = STATE_WAIT_ACK;
-						break;
-					default:
-						syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
-						break;
-				}
-				if(packet)	{
-					delete packet;
-				}
-				break;
-			default:
-				break;
+			}
+			break;
 		}
+		syslog(LOG_ERR, "DORUN======%d", m_doRun);
 	}
+
+	//clean up
+	if(m_currentSettings) {
+		delete m_currentSettings;
+		m_currentSettings = NULL;
+	}
+
+	if(m_pendingCmd) {
+		delete m_pendingCmd;
+		m_pendingCmd = NULL;
+	}
+
 	m_pDevice->NotifyStatusChanged(DEVICE_STATUS_EXIT);
 	syslog(LOG_ERR, "Exit run...");
 	return NULL;
@@ -748,6 +659,7 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 
 	do {
 		ret = read(m_fd, (unsigned char*)buffer + total_read, length - total_read);
+
 
 		if(ret < 0) {
 			if(errno == EWOULDBLOCK) {
@@ -906,6 +818,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		for(int i = 0; i < packet->GetSize(); i++) {
 			syslog(LOG_ERR, "0x%X", p[i]);
 		}
+		syslog(LOG_ERR, "CRC: 0x%X", crc16);
 #endif
 
 		error = ERROR_READ_NO_ERROR;

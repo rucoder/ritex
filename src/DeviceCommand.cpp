@@ -20,7 +20,12 @@ DeviceCommand::DeviceCommand(bool isHwCommand, CmdLineCommand* parent)
 
 
 DeviceCommand::~DeviceCommand() {
-	// TODO Auto-generated destructor stub
+	syslog(LOG_ERR, "[DESTRUCTOR] ~DeviceCommand() : result=%s", m_rawResult);
+	m_Listeners.clear();
+	if(m_rawResult) {
+		delete [] m_rawResult;
+		m_rawResult = NULL;
+	}
 }
 
 void DeviceCommand::NotifyResultReady()

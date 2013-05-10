@@ -22,6 +22,7 @@ Ritex
 
 #gedit backup files
 *~
+.settings
 
 # test data bases
 data

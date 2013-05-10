@@ -251,8 +251,7 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 bool RitexDevice::ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int speed, unsigned char cmd, unsigned char p1, unsigned short p2) {
 
 	bool result = true;
-	custom_command_t* pCustomCmd = new custom_command_t();
-	pCustomCmd->m_pParentCommand = pCmd;
+	custom_command_t* pCustomCmd = new custom_command_t(*pCmd);
 	pCustomCmd->m_pDataPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, cmd, time(NULL));
 
 	switch(cmd) {
@@ -391,9 +390,8 @@ bool RitexDevice::TestDevice(DeviceCommand* pCmd, std::string com, int speed)
 	bool result = m_pProcessor->Create(com, speed,true);
 
 	if(result) {
-		custom_command_t* pCustomCmd = new custom_command_t();
+		custom_command_t* pCustomCmd = new custom_command_t(*pCmd);
 		pCustomCmd->m_pDataPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_INFO_REQUEST_MODE_0, time(NULL));
-		pCustomCmd->m_pParentCommand = pCmd;
 		m_pProcessor->SendCustomCmd(pCustomCmd);
 		m_pProcessor->Start();
 	}

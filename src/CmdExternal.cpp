@@ -12,12 +12,10 @@
 CmdExternal::CmdExternal(RitexDevice* device, std::string commport, int speed, CmdLineCommand* cmd, unsigned short cmdId, unsigned char param1, unsigned short param2)
 	: DeviceCommand(true, cmd), m_pDevice(device), m_cmdId(cmdId), m_param1(param1), m_param2(param2), m_commport(commport), m_speed(speed)
 {
-	// TODO Auto-generated constructor stub
 
 }
 
 CmdExternal::~CmdExternal() {
-	// TODO Auto-generated destructor stub
 }
 
 bool CmdExternal::Execute()
@@ -31,11 +29,12 @@ bool CmdExternal::Execute()
 void CmdExternal::SetReply(DataPacket* packet, int status)
 {
 
-	m_finishedTime = packet->GetTimestamp();
+	m_finishedTime = time(NULL); //FIXME:
 
 	switch(status) {
 	case ERROR_READ_NO_ERROR:
 	{
+		m_finishedTime = packet->GetTimestamp();
 		m_rawResult = new char[1024];
 		bzero(m_rawResult,1024);
 

@@ -187,6 +187,9 @@ int Adapter::LockPidFile(const char* pidfile) {
 }
 
 Adapter::eExecutionContext Adapter::BecomeDaemon() {
+#ifdef KSU_EMULATOR
+	return CONTEXT_DAEMON;
+#else
 	int maxfd, fd, pid_fd;
 
 	switch (::fork()) {
@@ -234,14 +237,13 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		/* 'fd' should be 0 */
 		return CONTEXT_ERROR;
 	}
-//	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
-//		return CONTEXT_ERROR;
-//	}
-//	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
-//		return CONTEXT_ERROR;
-//	}
+	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
+		return CONTEXT_ERROR;
+	}
+	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
+		return CONTEXT_ERROR;
+	}
 
-#if 1
 	fd = open(m_pidFileName.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0);
 	if (fd < 0) {
 		syslog(LOG_ERR, "Cannot open PID file exclusivly %s\n", m_pidFileName.c_str());
@@ -273,36 +275,9 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 
 	std::string sPid = itoa(getpid());
 	write(fd, sPid.c_str(), sPid.length());
-#endif
 
-#if 0
-	//syslog(LOG_ERR, "PID: pint 15 %d",getpid());
-	ptry(pthread_mutex_lock(&lock));
-
-	if((pid_fd = LockPidFile(PID_FILE)) == -1 ) {
-		//syslog(LOG_ERR, "Cannot lock PID file %s errno=%d\n", PID_FILE, errno);
-		//syslog(LOG_ERR, "Cannot lock PID file %s errno=%d\n", PID_FILE, errno);
-		if(errno == EWOULDBLOCK) {//cannot lock the file so we are running
-			syslog(LOG_ERR, "Already running as daemon.Exiting...\n");
-			_exit(EXIT_SUCCESS);
-		}
-	}
-	/* Store our pid */
-//	syslog(LOG_ERR, "PID: pint 16 %d",getpid());
-
-	snprintf(pid_s, 32, "%d\n", (int)getpid());
-//	syslog(LOG_ERR, "PID: pint 17 %d",getpid());
-
-	if (write(pid_fd, pid_s, strlen(pid_s)) != strlen(pid_s))
-	{
-		//syslog(LOG_ERR, "PID: pint 18 %d",getpid());
-		//daemon_close();
-		return CONTEXT_ERROR;
-	}
-//	syslog(LOG_ERR, "PID: pint 19 %d",getpid());
-	ptry(pthread_mutex_unlock(&lock));
-#endif
 	return CONTEXT_DAEMON;
+#endif
 }
 
 int Adapter::Run() {
@@ -326,7 +301,7 @@ int Adapter::Run() {
 		DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCmdLineCommand);
 
 		if (pDevCmd == NULL) {
-			printf("ERROR: couldn't create  DeviceCommand()\n");
+			syslog(LOG_ERR, "ERROR: couldn't create  DeviceCommand()\n");
 			return -1;
 		}
 
@@ -342,7 +317,7 @@ int Adapter::Run() {
 		{
 			//set device ID first so daemon will know it. It cannot be changed until daemon restart
 			if(pCmdLineCommand->m_deviceId < 0) {
-				printf("ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
+				syslog(LOG_ERR, "ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
 				delete pCmdLineCommand;
 				delete pDevCmd;
 				return -1;
@@ -354,18 +329,20 @@ int Adapter::Run() {
 			GeneratePidFileName(pCmdLineCommand->m_deviceId);
 			//TODO: how to handle -a params the best way?
 
-			printf("PID FILE: %s\n", m_pidFileName.c_str());
+			syslog(LOG_ERR, "PID FILE: %s\n", m_pidFileName.c_str());
 
 			switch (BecomeDaemon()) {
 				case CONTEXT_ERROR: //error. may happen from either child or parent so call syslog
-					::syslog(LOG_ERR, "Couldn't run daemon. Exiting");
+					syslog(LOG_ERR, "Couldn't run daemon. Exiting");
 					_exit(EXIT_FAILURE);
 					break;
 				case CONTEXT_PARENT: //we are in parent. wait for daemon init compleate and run command if neccessary
 					{
 						m_pCommChannel = new DaemonCommChannel();
 						if(m_pCommChannel != NULL) {
+#ifdef STDIO_DEBUG
 							printf("opening channel socket %s\n", m_socket.c_str());
+#endif
 							if(m_pCommChannel->open(m_socket) == 0) {
 #ifdef STDIO_DEBUG
 								printf("Channel opened on socket %s\n", m_socket.c_str());
@@ -394,10 +371,10 @@ int Adapter::Run() {
 								}
 
 							} else {
-								printf("Error connecting to daemon on %s\n", m_socket.c_str());
+								syslog(LOG_ERR, "Error connecting to daemon on %s\n", m_socket.c_str());
 							}
 						} else {
-							printf("OOM creating DaemonCommChannel\n");
+							syslog(LOG_ERR, "OOM creating DaemonCommChannel\n");
 							delete pCmdLineCommand;
 							delete pDevCmd;
 							return -1;
@@ -430,8 +407,8 @@ int Adapter::Run() {
 					delete pCmdLineCommand;
 					delete pDevCmd;
 
-					tolog(&stderr);
-					tolog(&stdout);
+					//tolog(&stderr);
+					//tolog(&stdout);
 
 					syslog(LOG_ERR, "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
 
@@ -494,7 +471,7 @@ bool Adapter::UpdateParameterFilter(int devId)
 
     syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
 
-#if KSU_EMULATOR
+#ifdef KSU_EMULATOR
     std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
 #else
     std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
@@ -505,7 +482,7 @@ bool Adapter::UpdateParameterFilter(int devId)
 
     if(rc != SQLITE_OK)
     {
-    	syslog(LOG_ERR,"[SQL] couldn't open DB %s\n", dbPath.c_str());
+    	syslog(LOG_ERR, "[SQL] couldn't open DB %s\n", dbPath.c_str());
     	sqlite3_close(pDb);
     	return false;
     }
@@ -515,7 +492,7 @@ bool Adapter::UpdateParameterFilter(int devId)
     char* query = new char[1024];
 
     if (query == NULL) {
-    	syslog(LOG_ERR,"[SQL] OOM creating query\n");
+    	syslog(LOG_ERR, "[SQL] OOM creating query\n");
     	sqlite3_close(pDb);
     	return false;
     }
@@ -524,7 +501,7 @@ bool Adapter::UpdateParameterFilter(int devId)
     if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
     	if (pStm != NULL) {
     		int cols = sqlite3_column_count(pStm);
-    		syslog(LOG_ERR,"[SQL] cols=%d\n", cols);
+    		syslog(LOG_ERR, "[SQL] cols=%d\n", cols);
     		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
     			int paramId = sqlite3_column_int(pStm, 0);
     			int channelId = sqlite3_column_int(pStm, 1);
@@ -533,10 +510,10 @@ bool Adapter::UpdateParameterFilter(int devId)
     		}
     		sqlite3_finalize(pStm);
     	} else {
-        	syslog(LOG_ERR,"[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    		syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     	}
     } else {
-    	syslog(LOG_ERR,"[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    	syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     }
     delete [] query;
     return true;
@@ -631,12 +608,15 @@ bool Adapter::AddAdditionalParameter(std::string name, const char* const list[],
 void Adapter::DaemonCleanup() {
 	if (m_pDevice) {
 		delete m_pDevice;
+		m_pDevice = NULL;
 	}
 	if(m_pDataLogger) {
 		delete m_pDataLogger;
+		m_pDataLogger = NULL;
 	}
 	if(m_pEventLogger) {
 		delete m_pEventLogger;
+		m_pEventLogger = NULL;
 	}
 	DeletePidFile();
 }

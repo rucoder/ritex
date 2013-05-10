@@ -17,10 +17,21 @@
 #include <sys/time.h>
 
 
-typedef struct {
+typedef struct _tag_custom_command_t{
 
 	DataPacket* m_pDataPacket;
-	DeviceCommand* m_pParentCommand;
+	DeviceCommand& m_pParentCommand;
+	_tag_custom_command_t(DeviceCommand& parent)
+		: m_pParentCommand(parent)
+	{
+		m_pDataPacket = NULL;
+	}
+	~_tag_custom_command_t() {
+		if(m_pDataPacket) {
+			delete m_pDataPacket;
+			m_pDataPacket = NULL;
+		}
+	}
 } custom_command_t;
 
 class RitexDevice;
@@ -73,6 +84,7 @@ protected:
     bool m_isInFault;
     int m_faultCode;
     DataPacket* m_currentSettings;
+    int m_number_of_ksu_failures;
 protected:
 	virtual void* Run();
     int OpenCommPort(std::string port, int speed);
@@ -90,6 +102,8 @@ protected:
     DataPacket* WaitForKsuActivity(int timeout, int& error);
     bool CheckAndReportFault(DataPacket* packet);
     void CheckSettigsChanged(DataPacket* packet);
+    bool HandleError(int error);
+
 
     //TODO: place under debug
     std::string GetErrorStr(int error);

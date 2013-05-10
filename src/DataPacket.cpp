@@ -32,6 +32,7 @@ unsigned char* DataPacket::Allocate(unsigned short size) {
 DataPacket::~DataPacket() {
 	if (m_pData) {
 		delete [] m_pData;
+		m_pData = NULL;
 	}
 }
 
