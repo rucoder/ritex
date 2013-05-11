@@ -52,19 +52,28 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.288458335.690597515" name="/" resourcePath="src">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.1902038351" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug" unusedChildren="">
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1040906124" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1234320582"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1474751435" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.822591223">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.844600281" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.288458335.1235047850" name="/" resourcePath="src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.1635543235" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug" unusedChildren="">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1115011182" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1234320582"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.62705900" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.822591223">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1769748273" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="KSU_EMULATOR=1"/>
+									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1553925035" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1309817038" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1840732906" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1230826636" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.419381805" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="KSU_EMULATOR=1"/>
+									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1565926673" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1029212704" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2138567821"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.480139364" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1048090934"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.394647858" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug.24497996">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1931904885" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1300004524" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug.2138567821"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.761458890" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1048090934"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1893794450" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug.24497996">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.887601014" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -112,6 +121,10 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1631914359" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1321265709" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
+								<option id="gnu.cpp.link.option.libs.1125351414" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sqlite3"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.351195664" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -122,19 +135,26 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.558612726.2107345297" name="/" resourcePath="src">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1226087093" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release" unusedChildren="">
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1273336238" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.196175037"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1032252604" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2142869270">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.53750899" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.558612726.950695758" name="/" resourcePath="src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1205612698" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release" unusedChildren="">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.836746429" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.196175037"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.714968715" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2142869270">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1150086692" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="KSU_EMULATOR=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.992251581" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1231527816" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release.963760463">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1170064334" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.378420180" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release.963760463">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.2080648201" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="KSU_EMULATOR=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1275050378" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1075846778" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release.1631914359"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1807918546" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1321265709"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.593918412" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release.578814321">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1331047186" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.576534017" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release.1631914359"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.56558619" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1321265709"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1558335715" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release.578814321">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1319468661" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -169,7 +189,7 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.864203463" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1778430204" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
-									<listOptionValue builtIn="false" value="RS485_ADAPTOR=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1673760896" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -178,6 +198,7 @@
 								<option id="gnu.c.compiler.exe.debug.option.debugging.level.1179264933" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1810104328" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.382770805" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -199,14 +220,21 @@
 					</folderInfo>
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.288458335.120606551.1423924100" name="/" resourcePath="src">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.81645505" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug" unusedChildren="">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.2117958957" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.403251391"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2073191900" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1541670342">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.24705733" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTOR=1"/>
+									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.72460142" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1529493385" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1508034775">
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1617759859" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1617759859" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
 									<listOptionValue builtIn="false" value="RS485_ADAPTOR=1"/>
+									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.354664656" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -214,6 +242,91 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.2060638693" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.730188245"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.1888611476" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug.1820909274">
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1360469503" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+		<cconfiguration id="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671" moduleId="org.eclipse.cdt.core.settings" name="release-485">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release configuration for RS485-USB" id="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671" name="release-485" parent="cdt.managedbuild.config.gnu.exe.release">
+					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1333591925" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.988621485" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
+							<builder buildPath="${workspace_loc:/ritex}/Release" id="cdt.managedbuild.target.gnu.builder.exe.release.435373227" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.965951845" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1851581727" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
+								<option id="gnu.cpp.compiler.exe.release.option.optimization.level.1017116244" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1958947451" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.29694675" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
+									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.772757707" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1271132711" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
+								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.1490506674" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
+								<option id="gnu.c.compiler.exe.release.option.debugging.level.368606620" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.406434424" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
+									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.963886430" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.142745963" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.776623229" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
+								<option id="gnu.cpp.link.option.libs.1838246681" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sqlite3"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.375080316" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.2137534674" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1876069228" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.src" name="/" resourcePath="src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1275193935" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release" unusedChildren="">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.1565595619" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1765780320" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.965951845"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.294730429" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1851581727">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.477290846" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1958225681" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.965504480" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1271132711">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.173156226" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1279589893" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.806740496" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release.142745963"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.634444052" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.776623229"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1963793716" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release.2137534674">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1010836061" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -233,7 +346,13 @@
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/ritex"/>
 		</configuration>
+		<configuration configurationName="debug-485">
+			<resource resourceType="PROJECT" workspacePath="/ritex"/>
+		</configuration>
 		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/ritex"/>
+		</configuration>
+		<configuration configurationName="release-485">
 			<resource resourceType="PROJECT" workspacePath="/ritex"/>
 		</configuration>
 	</storageModule>
@@ -243,13 +362,19 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335.120606551;cdt.managedbuild.config.gnu.exe.debug.288458335.120606551.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1508034775;cdt.managedbuild.tool.gnu.c.compiler.input.382770805">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067;cdt.managedbuild.tool.gnu.c.compiler.input.1320822451">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726;cdt.managedbuild.config.gnu.exe.release.558612726.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.963760463;cdt.managedbuild.tool.gnu.c.compiler.input.1270517585">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067;cdt.managedbuild.tool.gnu.c.compiler.input.1320822451">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671;cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1271132711;cdt.managedbuild.tool.gnu.c.compiler.input.963886430">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726;cdt.managedbuild.config.gnu.exe.release.558612726.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2142869270;cdt.managedbuild.tool.gnu.cpp.compiler.input.1363384166">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671;cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1851581727;cdt.managedbuild.tool.gnu.cpp.compiler.input.772757707">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.822591223;cdt.managedbuild.tool.gnu.cpp.compiler.input.1913659722">

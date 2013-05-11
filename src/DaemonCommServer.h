@@ -26,6 +26,7 @@ private:
 protected:
 	virtual void* Run();
 	virtual void OnCancel();
+	void SendResponseToClient(const std::string& response);
 public:
 	DaemonCommServer(Device* pDevice, IAdapter* pAdapter);
 	virtual ~DaemonCommServer();

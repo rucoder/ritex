@@ -17,33 +17,6 @@ DeviceChannel::DeviceChannel(int chId, bool isEventDriven, AdapterParameter* par
 {
 
 }
-//bool DeviceChannel::SetValueRange(std::string name, float value)
-//{
-//	m_ValueRangeMap[name] = value;
-//	return true;
-//}
-//
-//bool DeviceChannel::GetValueRange(std::string name, float& value)
-//{
-//	std::map<std::string, float>::iterator it = m_ValueRangeMap.find(name);
-//
-//	if (it == m_ValueRangeMap.end())
-//		return false;
-//
-//	value = it->second;
-//
-//	return true;
-//}
-//
-//DeviceChannel*  DeviceChannel::CreateChannelFromString(std::string str)
-//{
-//	//TODO: parse script response
-//	return NULL;
-//}
-//
-//std::string DeviceChannel::GetSerialKey(int devId)
-//{
-//	return "";
-//}
+
 
 

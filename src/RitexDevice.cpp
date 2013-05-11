@@ -308,21 +308,28 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	unsigned short param2 = 0;
 	std::vector<AdapterCommand*>& list = GetExternaCommandList();
 
+#ifdef __DEBUG__
 	printf( "List size: %lu\n",list.size());
+#endif
 
 	assert((cmd->m_cmdType > 0) && (cmd->m_cmdType -1 < list.size()));
 
 	AdapterCommand* pCmd = list[cmd->m_cmdType-1];
 
+#ifdef __DEBUG__
 	printf( "Param count: %lu\n",pCmd->m_args.size());
+#endif
+
 	//now parse "message". it must have the same number of arguments
-	std::vector<std::string> params = Utils::split(cmd->m_messageRaw, '~');
+	std::vector<std::string> params = split(cmd->m_messageRaw, '~');
 
 	assert(pCmd->m_args.size() == params.size());
 
 	//the first item in 'params' is a command.
 
+#ifdef __DEBUG__
 	printf("First arg: %s\n", pCmd->m_args[0]->m_list_val[atoi(params[0].c_str()) - 1]->m_name.c_str());
+#endif
 
 	// setting number or command number
 	cmd_template_t* tm = (cmd_template_t*)(pCmd->m_args[0]->m_list_val[atoi(params[0].c_str()) - 1]->m_deviceData);
@@ -497,7 +504,9 @@ bool RitexDevice::TestDevice(DeviceCommand* pCmd, std::string com, int speed)
 
 void RitexDevice::ReportDataPacket(DataPacket* packet)
 {
+#ifdef __DEBUG__
 	printf("Reporting packet\n");
+#endif
 
 	for(unsigned int i = 0; i < m_offsetTable.size(); i++) {
 		// parameter value is stored in this packet
@@ -554,7 +563,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 
 	time_t system_time = time(NULL);
 
-	syslog(LOG_ERR, "[TIME] Local time: %s. epoch=%lu", Utils::TimeToString(system_time).c_str(), system_time);
+	syslog(LOG_ERR, "[TIME] Local time: %s. epoch=%lu", TimeToString(system_time).c_str(), system_time);
 
 	//only this packet has KSU time
 	if(packet->GetCmd() == ACK_INFO_MODE_0) {

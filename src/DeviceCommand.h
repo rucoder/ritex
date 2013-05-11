@@ -19,8 +19,7 @@ private:
 public:
 
 protected:
-	char* m_rawResult;
-	int m_rawResultLength;
+	std::string m_rawResult;
 	std::list<ICmdResulReadytListener*> m_Listeners;
 	CmdLineCommand* m_pParentCommand;
 	virtual void NotifyResultReady();
@@ -30,8 +29,7 @@ public:
 	DeviceCommand(bool isHw, CmdLineCommand* parent = NULL);
 	virtual ~DeviceCommand();
 	bool isHWCommand() { return m_isHWCommand; };
-	char* getRawResult() { return m_rawResult; };
-	int getRawResultLength() { return m_rawResultLength; };
+	const std::string& getRawResult() const { return m_rawResult; }
 	virtual bool Execute() = 0;
 	void AddResultListener(ICmdResulReadytListener* pListener) {
 		m_Listeners.push_back(pListener);

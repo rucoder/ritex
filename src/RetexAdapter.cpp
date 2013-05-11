@@ -9,21 +9,9 @@
 #include "RitexDevice.h"
 
 #include <sys/file.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <syslog.h>
-#include <stdlib.h>
-#include <unistd.h>
 
-#include <signal.h>
-
-//pthread
-#include <pthread.h>
 
 const char* RitexAdapter::m_commDevices[] = {
 	"/dev/ttySC0",
@@ -31,10 +19,14 @@ const char* RitexAdapter::m_commDevices[] = {
 	"/dev/ttySC2",
 	"/dev/ttySC3",
 	"/dev/ttySC4",
+#ifdef KSU_EMULATOR
 	"/dev/tnt0",
 	"/dev/tnt1",
+#endif
+#ifdef RS485_ADAPTER
 	"/dev/ttyUSB0",
 	"/dev/ttyUSB1"
+#endif
 };
 
 
@@ -48,7 +40,9 @@ RitexAdapter::RitexAdapter(std::string name, std::string version, std::string de
 {
 	//populate device tree structure
 	m_pDevice = new RitexDevice(this);
+#ifdef __DEBUG__
 	AddAdditionalParameterFloat("test1", 0.4, 8.55555789);
+#endif
 	AddAdditionalParameter("comdevice", m_commDevices, sizeof(m_commDevices)/ sizeof(char*), LIST_VALUE_STRING);
 	AddAdditionalParameter("baudrate", m_commSpeed, sizeof(m_commSpeed)/ sizeof(char*), LIST_VALUE_INT);
 	AddAdditionalParameter("debug",0,1);
@@ -87,10 +81,11 @@ int RitexAdapter::DaemonLoop() {
 
 
 
-#include "EventLoggerThread.h"
 int RitexAdapter::ParentLoop(bool isCommOk) {
+#ifdef __DEBUG__
 	printf("We are in parent process PID: %d\n", ::getpid());
 	printf("Exiting parent: PID: %d\n", ::getpid());
+#endif
 	return 0;
 }
 

@@ -17,9 +17,7 @@ class DeviceChannel {
 protected:
 	int m_channelId;
 	AdapterParameter* m_param;
-	//int m_sensorId;
-	//int m_sensorChannelId;
-	//bool m_isDeviceChannel;
+
 	bool m_isEventDriven;
 	std::string m_interfaceArg1;
 	std::string m_interfaceArg2;
@@ -33,13 +31,6 @@ public:
 	DeviceChannel(int chId, bool isEventDriven, AdapterParameter* param);
 	AdapterParameter* GetParameter() { return m_param; };
 	int GetId() {return m_channelId; };
-	//bool SetValueRange(std::string name, float value);
-
-	///bool GetValueRange(std::string name, float& value);
-
-	//static DeviceChannel* CreateChannelFromString(std::string str);
-
-	std::string GetSerialKey(int devId);
 };
 
 #endif /* DEVICECHANNEL_H_ */

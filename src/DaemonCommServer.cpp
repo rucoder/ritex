@@ -56,17 +56,17 @@ bool DaemonCommServer::Create(bool createDetached )
 
 	strncpy(&addr.sun_path[1], name, sizeof(addr.sun_path) - 2);
 
-	syslog(LOG_ERR, "Opening server socket.. [%s] ", name);
+	syslog(LOG_ERR, "DaemonCommServer: Opening server socket.. [%s] ", name);
 
 
 	if (bind(m_connectSock, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
-		syslog(LOG_ERR, "bind");
+		syslog(LOG_ERR, "DaemonCommServer: bind() error");
 		close(m_connectSock);
 		m_connectSock = -1;
 		return false;
 	}
 	if (listen(m_connectSock, 5) == -1) {
-		syslog(LOG_ERR, "listen");
+		syslog(LOG_ERR, "DaemonCommServer listen() error");
 		close(m_connectSock);
 		m_connectSock = -1;
 		return false;
@@ -94,10 +94,10 @@ void* DaemonCommServer::Run() {
 		 *and can be used to accept further connections.
 		 */
 #ifndef KSU_EMULATOR
-		syslog(LOG_ERR, "Waitign for client connection...");
+		syslog(LOG_ERR, "DaemonCommServer: Waitign for client connection...");
 		m_clientSock = accept(m_connectSock, NULL, NULL);
 		if (m_clientSock == -1) {
-			syslog(LOG_ERR, "accept");
+			syslog(LOG_ERR, "DaemonCommServer: accept() error");
 			return NULL;
 		}
 #endif
@@ -105,7 +105,7 @@ void* DaemonCommServer::Run() {
 		/*
 		 * Command handling loop
 		 */
-		syslog(LOG_ERR, "Client connected. m_clientSock=0x%X", m_clientSock);
+		syslog(LOG_ERR, "DaemonCommServer: Client connected. m_clientSock=0x%X", m_clientSock);
 		do {
 #ifdef KSU_EMULATOR
 			int length;
@@ -117,7 +117,7 @@ void* DaemonCommServer::Run() {
 			unsigned char* rawData;
 			numRead = recv(m_clientSock, &length, 4, 0); //get the length
 
-			syslog(LOG_ERR, "Got packet. length=%d", length);
+			syslog(LOG_ERR, "DaemonCommServer: Got packet. length=%d", length);
 
 			if(numRead < 0) {
 				m_clientSock = -1;
@@ -134,29 +134,43 @@ void* DaemonCommServer::Run() {
 				numRead = recv(m_clientSock, rawData, length, 0); //get the data
 #endif
 
-				syslog(LOG_ERR, "Got packet data read. =%d expected=%d", numRead, length);
 
-				syslog(LOG_ERR, "data: %s", rawData);
+#ifdef __DEBUG__
+				syslog(LOG_ERR, "DaemonCommServer: Got packet data read. =%d expected=%d", numRead, length);
+#endif
+
+				syslog(LOG_ERR, "DaemonCommServer: command line from client: %s", rawData);
 
 
 				//good packet
 				if(numRead == length) {
+
+#ifdef __DEBUG__
 					syslog(LOG_ERR, "--- 0");
+#endif
 					pParser->SetCmdLine((char*)rawData);
+#ifdef __DEBUG__
 					syslog(LOG_ERR, "--- 0.1");
+#endif
 
 					//valid command line ?
 					if (pParser->Parse()) {
+#ifdef __DEBUG__
 						syslog(LOG_ERR, "--- 1");
+#endif
 						CmdLineCommand* pCommand = pParser->GetCommand();
 						if(pCommand && pCommand->Compile(m_pAdapter->GetAdditionalParameterMap())) {
+#ifdef __DEBUG__
 							syslog(LOG_ERR, "--- 2");
+#endif
 							DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCommand);
 							if (pDevCmd) {
 								int s;
+#ifdef __DEBUG__
 								syslog(LOG_ERR, "--- 3");
+#endif
 
-								syslog(LOG_ERR, "Executing...");
+								syslog(LOG_ERR, "DaemonCommServer: Executing external command...");
 
 								s = pthread_mutex_lock(&m_mutex);
 								if( s != 0) {
@@ -171,25 +185,28 @@ void* DaemonCommServer::Run() {
 
 
 								pDevCmd->AddResultListener(this);
-								pDevCmd->Execute();
-								syslog(LOG_ERR, "Executing. WAIT->>");
+								if(pDevCmd->Execute()) {
+									syslog(LOG_ERR, "DaemonCommServer: Executing. WAIT->>");
 
-								s = pthread_mutex_lock(&m_mutex);
-								syslog(LOG_ERR, "Executing. WAIT: locked %d", s);
+									s = pthread_mutex_lock(&m_mutex);
+									syslog(LOG_ERR, "DaemonCommServer: Executing. WAIT: locked %d", s);
 
-								while(!m_canProcessCommands) {
-									syslog(LOG_ERR, "Executing. WAIT: wait on cond");
-									pthread_cond_wait(&m_canProcessCommandsCond, &m_mutex);
+									while(!m_canProcessCommands) {
+										syslog(LOG_ERR, "Executing. WAIT: wait on cond");
+										pthread_cond_wait(&m_canProcessCommandsCond, &m_mutex);
+									}
+									s = pthread_mutex_unlock(&m_mutex);
+									if( s != 0) {
+										syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+									}
+
+									syslog(LOG_ERR, "Executing. WAIT-<<");
+								} else {
+									syslog(LOG_ERR, "[ERROR] Executing. ");
+									SendResponseToClient("7|Не могу начать выполнение команды. Внутренняя ошибка\n");
 								}
-								s = pthread_mutex_unlock(&m_mutex);
-								if( s != 0) {
-									syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
-								}
 
-								syslog(LOG_ERR, "Executing. WAIT-<<");
-
-
-								//delete pDevCmd;
+								delete pDevCmd;
 								syslog(LOG_ERR, "Executing. WAIT 1-<<");
 							}
 						}
@@ -207,27 +224,29 @@ void* DaemonCommServer::Run() {
 	return NULL;
 }
 
-void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
-{
-	syslog(LOG_ERR,"DaemonCommServer::OnResultReady->>");
+void DaemonCommServer::SendResponseToClient(const std::string& response) {
 
-	int length = pCmd->getRawResultLength();
+	int length = response.length() + 1;
 
-	syslog(LOG_ERR, "Sending result: length: %d", length);
+	syslog(LOG_ERR, "DaemonCommServer: Sending result: length: %d", length);
 
-	unsigned char* envelope = new unsigned char[length + sizeof(int)];
-	//if (envelope == NULL)
-	//	return -1;
+	unsigned char* envelope = new unsigned char[response.length()+1 + sizeof(int)];
+
 	::memcpy(envelope, &length, sizeof(int));
 	if(length > 0) {
-		::memcpy(envelope + sizeof(int), pCmd->getRawResult(), length);
+		::memcpy(envelope + sizeof(int), response.c_str(), length);
 	}
 
 	syslog(LOG_ERR, "Calling send()");
 	send(m_clientSock,envelope,length + sizeof(int),0);
 	delete [] envelope;
-	//delete pCmd;
-	syslog(LOG_ERR, "Calling send(): afetr");
+}
+
+void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
+{
+	syslog(LOG_ERR,"DaemonCommServer::OnResultReady->>");
+
+	SendResponseToClient(pCmd->getRawResult());
 
 	int s = pthread_mutex_lock(&m_mutex);
 	if( s != 0) {
@@ -246,7 +265,6 @@ void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
 	if( s != 0) {
 		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
 	}
-
 
 	syslog(LOG_ERR,"DaemonCommServer::OnResultReady-<<");
 }

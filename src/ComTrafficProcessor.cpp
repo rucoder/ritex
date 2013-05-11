@@ -142,7 +142,6 @@ int ComTrafficProcessor::OpenCommPort(std::string port, int speed)
     tios.c_cflag = speed | CS8 | CLOCAL | CREAD;
     tios.c_iflag = IGNPAR;
     tios.c_oflag = 0;
-    //tios.c_lflag &= ~(ICANON | ECHO | ISIG);
     /* set input mode (non-canonical, no echo,...) */
     tios.c_lflag = 0;
 
@@ -251,11 +250,15 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	to.tv_sec = timeout / 1000;
 	to.tv_usec = (timeout % 1000) * 1000000; //waiting for line activity with timeout
 
+#ifdef __DEBUG__
 	syslog(LOG_ERR, "[KSU] waiting for activity: sec:=%d usec=%lu", to.tv_sec, to.tv_usec);
+#endif
 
 	pPacket = ReadPacket(&to, error);
 
+#ifdef __DEBUG__
 	syslog(LOG_ERR, "[Run] Activity detected: %s", GetErrorStr(error).c_str());
+#endif
 
 	return pPacket;
 }
@@ -268,7 +271,9 @@ void ComTrafficProcessor::ChangeMode(unsigned short mode)
 }
 
 void ComTrafficProcessor::SetSetting(unsigned char setting, unsigned short value) {
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"SetSetting(%d, %d) -->>", setting, value);
+#endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_SETTING_SET, time(NULL));
 	unsigned char* pData = pPacket->Allocate(3);
 	pData[0] = setting;
@@ -276,24 +281,34 @@ void ComTrafficProcessor::SetSetting(unsigned char setting, unsigned short value
 	pData[2] = LSB(value);
 	WritePacket(pPacket);
 	delete pPacket;
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"SetSetting(%d, %d) --<<", setting, value);
+#endif
 }
 
 void ComTrafficProcessor::GetAllSettings() {
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"GetAllSettings() -->>");
+#endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_SETTING_ALL_GET, time(NULL));
 	WritePacket(pPacket);
 	delete pPacket;
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"GetAllSettings() --<<");
+#endif
 }
 
 
 void ComTrafficProcessor::GetPasswords() {
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"GetPasswords() -->>");
+#endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_PASSWORD_GET, time(NULL));
 	WritePacket(pPacket);
 	delete pPacket;
+#ifdef __DEBUG__
 	syslog(LOG_ERR,"GetPasswords() --<<");
+#endif
 
 }
 
@@ -346,7 +361,9 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 }
 
 bool ComTrafficProcessor::HandleError(int error) {
+#ifdef __DEBUG__
 	syslog(LOG_ERR, "HandleError ->>");
+#endif
 	switch(error) {
 	case ERROR_READ_NO_ERROR:
 		m_number_of_ksu_failures = MAX_KSU_CHANCES;
@@ -378,7 +395,10 @@ bool ComTrafficProcessor::HandleError(int error) {
 	}
 	//either in capture mode or custom command is being executed
 	m_doRun = m_isDataCapture || (m_pendingCmd != NULL);
+
+#ifdef __DEBUG__
 	syslog(LOG_ERR, "HandleError -<<");
+#endif
 
 	return true;
 }
@@ -389,10 +409,10 @@ void* ComTrafficProcessor::Run()
 	unsigned char passwd_hi, passwd_lo;
 
 
-	syslog(LOG_ERR, "Enter run...");
+	syslog(LOG_ERR, "ComTrafficProcessor: Enter run()...");
 
 	if(!m_isDataCapture) {
-		syslog(LOG_ERR, "Waiting for start...");
+		syslog(LOG_ERR, "ComTrafficProcessor: Waiting for start...");
 		pthread_mutex_lock(&m_startMutex);
 			while(!m_doRun) {
 				pthread_cond_wait(&m_startCond,&m_startMutex);
@@ -400,7 +420,7 @@ void* ComTrafficProcessor::Run()
 		}
 	}
 
-	syslog(LOG_ERR, "Now running...");
+	syslog(LOG_ERR, "ComTrafficProcessor: Now running...");
 
 	unsigned long delta;
 	struct timeval state_run_start;
@@ -658,7 +678,9 @@ void* ComTrafficProcessor::Run()
 			}
 			break;
 		}
+#ifdef __DEBUG__
 		syslog(LOG_ERR, "DORUN======%d", m_doRun);
+#endif
 	}
 
 	//clean up
@@ -730,7 +752,7 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 					unsigned char echoByte = m_echoCancelFifo.front();
 					m_echoCancelFifo.pop();
 					total_read--;
-#if 1
+#ifdef __DEBUG__
 					syslog(LOG_ERR, "### ECHO FIFO : FIFO=0x%X PORT=0x%X", echoByte, ((unsigned char*)buffer)[total_read]);
 #endif
 
@@ -769,7 +791,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		timeout->tv_usec = 100 * 1000  * 1000;
 	}
 
-	calculatedCrc16 = Utils::Crc16(calculatedCrc16, address);
+	calculatedCrc16 = Crc16(calculatedCrc16, address);
 
 	numRead = Read(&length, 2, timeout);
 	if(numRead < 0) {
@@ -777,7 +799,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		return NULL;
 	}
 
-	calculatedCrc16 = Utils::Crc16(calculatedCrc16, (unsigned char*)&length, 2);
+	calculatedCrc16 = Crc16(calculatedCrc16, (unsigned char*)&length, 2);
 
 	length = swap16(length);
 
@@ -787,7 +809,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		return NULL;
 	}
 
-	calculatedCrc16 = Utils::Crc16(calculatedCrc16, cmd);
+	calculatedCrc16 = Crc16(calculatedCrc16, cmd);
 
 	//syslog(LOG_ERR, "GOT: CMD=0x%X LEN=%d", cmd, length);
 
@@ -823,7 +845,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 				error = numRead;
 				return NULL;
 			}
-			calculatedCrc16 = Utils::Crc16(calculatedCrc16, packet->GetDataPtr(), length);
+			calculatedCrc16 = Crc16(calculatedCrc16, packet->GetDataPtr(), length);
 		}
 
 		// read CRC16
@@ -846,7 +868,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 
 		syslog(LOG_ERR, "Packet: addr: 0x%X cmd 0x%X length 0x%X", packet->GetAddress(), packet->GetCmd(), packet->GetSize());
 
-#if 0
+#ifdef __DEBUG__
 		//print packet data
 		unsigned char* p = packet->GetDataPtr();
 		for(int i = 0; i < packet->GetSize(); i++) {

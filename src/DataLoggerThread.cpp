@@ -20,7 +20,7 @@ DataLoggerThread::DataLoggerThread(std::string db_name)
 bool DataLoggerThread::Insert(DBDataPacket* event)
 {
 	syslog(LOG_ERR, "[SQL] Inserting data: chId=%d, paramId=%d, td=%lu %s val=%g",event->getChannelId(), event->getParamId(),
-	 event->getRegisterDate(), Utils::TimeToString(event->getRegisterDate()).c_str(), event->getValue());
+	 event->getRegisterDate(), TimeToString(event->getRegisterDate()).c_str(), event->getValue());
 	//bind parameters first
 	if(sqlite3_bind_int(m_pStm, 1, event->getChannelId()) != SQLITE_OK) {
 		syslog(LOG_ERR, "[SQL] Failed to bind int 1");
@@ -31,7 +31,7 @@ bool DataLoggerThread::Insert(DBDataPacket* event)
 		syslog(LOG_ERR, "[SQL] Failed to bind int 2");
 		return false;
 	}
-	if(sqlite3_bind_text(m_pStm, 3, Utils::TimeToString(event->getRegisterDate()).c_str(), -1, SQLITE_TRANSIENT)!= SQLITE_OK) {
+	if(sqlite3_bind_text(m_pStm, 3, TimeToString(event->getRegisterDate()).c_str(), -1, SQLITE_TRANSIENT)!= SQLITE_OK) {
 		syslog(LOG_ERR, "[SQL] Failed to bind text");
 		return false;
 	}

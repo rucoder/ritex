@@ -91,7 +91,7 @@ bool EventLoggerThread::Insert(DBEventCommon* event)
 	//bind parameters first
 	sqlite3_bind_int(m_pStm, 1, event->getTypeId());
 	sqlite3_bind_int(m_pStm, 2, event->getChannelId());
-	sqlite3_bind_text(m_pStm, 3, Utils::TimeToString(event->getRegisterTimeDate()).c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(m_pStm, 3, TimeToString(event->getRegisterTimeDate()).c_str(), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(m_pStm, 4, event->getArgument1().c_str(), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(m_pStm, 5, event->getArgument2().c_str(), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_text(m_pStm, 6, event->getArgument3().c_str(), -1, SQLITE_TRANSIENT);

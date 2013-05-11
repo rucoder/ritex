@@ -30,19 +30,15 @@ bool CmdTestDevice::Execute() {
 
 void CmdTestDevice::SetReply(DataPacket* packet, int status)
 {
-	m_rawResult = new char[1024];
-	bzero(m_rawResult,1024);
-
 	if(status == ERROR_READ_NO_ERROR) {
 		if(packet->GetCmd() == ACK_INFO_MODE_0) {
 			unsigned short tm;
 			memcpy(&tm, packet->GetDataPtr() + 33, 2);
 			tm = swap16(tm);
-			snprintf(m_rawResult, 1024, "8|Ответ получен. Наработка %d часов\n", tm);
+			m_rawResult = "8|Ответ получен. Наработка " + itoa(tm) + " часов\n";
 		} else {
-			snprintf(m_rawResult, 1024, "7|Получен неизвестный ответ\n");
+			m_rawResult = "7|Получен неизвестный ответ\n";
 		}
-		m_rawResultLength = strlen(m_rawResult)  +1;
 		NotifyResultReady();
 
 	}  else {

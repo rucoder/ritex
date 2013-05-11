@@ -11,21 +11,18 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include "Utils.h"
 
 DeviceCommand::DeviceCommand(bool isHwCommand, CmdLineCommand* parent)
-	: m_isHWCommand(isHwCommand), m_rawResult(NULL), m_rawResultLength(0), m_pParentCommand(parent), m_arrivalTime(0), m_finishedTime(0)
+	: m_isHWCommand(isHwCommand), m_pParentCommand(parent), m_arrivalTime(0), m_finishedTime(0)
 {
 	m_arrivalTime = time(NULL);
 }
 
 
 DeviceCommand::~DeviceCommand() {
-	syslog(LOG_ERR, "[DESTRUCTOR] ~DeviceCommand() : result=%s", m_rawResult);
+	syslog(LOG_ERR, "[DESTRUCTOR] ~DeviceCommand() : result=%s", m_rawResult.c_str());
 	m_Listeners.clear();
-	if(m_rawResult) {
-		delete [] m_rawResult;
-		m_rawResult = NULL;
-	}
 }
 
 void DeviceCommand::NotifyResultReady()
@@ -37,17 +34,14 @@ void DeviceCommand::NotifyResultReady()
 
 void DeviceCommand::SetReply(DataPacket* packet, int status)
 {
-	m_rawResult = new char[1024];
-	bzero(m_rawResult,1024);
-
 	if(status == ERROR_READ_BAD_CRC) {
-		snprintf(m_rawResult, 1024, "7|Ошибка в CRC\n");
+		m_rawResult = "7|Ошибка в CRC\n";
 	} else if(status == ERROR_READ_TIMEOUT) {
-		snprintf(m_rawResult, 1024, "7|Станция не отвечает\n");
+		m_rawResult = "7|Станция не отвечает\n";
 	} else {
-		snprintf(m_rawResult, 1024, "7|Ошибка неизвестна: код %d\n", status);
+		m_rawResult = "7|Ошибка неизвестна: код " + itoa(status) + "\n";
 	}
-	m_rawResultLength = strlen(m_rawResult)  +1;
+
 	NotifyResultReady();
 }
 

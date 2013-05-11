@@ -16,6 +16,7 @@
 Debug
 Release
 debug-*
+release-*
 
 # ARM target out directory and executable
 arm_obj

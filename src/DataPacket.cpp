@@ -48,20 +48,21 @@ unsigned char* DataPacket::CreateRawPacket(int& rawSize)
 	if(m_size > 0) {
 		memcpy(&pRawPacket[RAW_PACKET_DATA_OFFSET], m_pData, m_size);
 	}
-	unsigned short crc = Utils::Crc16(0, pRawPacket, m_size + RAW_PACKET_HEADER_SIZE);
+	unsigned short crc = Crc16(0, pRawPacket, m_size + RAW_PACKET_HEADER_SIZE);
 
+#ifdef __DEBUG__
 	syslog(LOG_ERR, "PACKET CREATED CRC=0x%X", crc);
+#endif
 
 
 	pRawPacket[RAW_PACKET_CRC16_MSB_OFFSET] = MSB(crc);
 	pRawPacket[RAW_PACKET_CRC16_LSB_OFFSET] = LSB(crc);
 
 	rawSize = m_size + RAW_PACKET_ENVELOPE_SIZE;
-#if 1
+
+#ifdef __DEBUG__
 	for(int i = 0; i < rawSize; i++)
 		syslog(LOG_ERR, "0x%X", pRawPacket[i]);
-
-
 #endif
 
 	return pRawPacket;

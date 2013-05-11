@@ -19,11 +19,26 @@ std::string itoa(int i) {
     return oss.str();
 }
 
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+        std::stringstream ss(s);
+        std::string item;
+        while (std::getline(ss, item, delim)) {
+            elems.push_back(item);
+        }
+        return elems;
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+        std::vector<std::string> elems;
+        split(s, delim, elems);
+        return elems;
+}
+
 
 /*
  * Returns time in format YYYY-MM-DD HH:MM:SS
  */
-std::string Utils::TimeToString(time_t time)
+std::string TimeToString(time_t time)
 {
 	char buffer[32];
 	struct tm* tm = localtime(&time);
@@ -31,7 +46,7 @@ std::string Utils::TimeToString(time_t time)
 	return std::string(buffer);
 }
 
-unsigned short  Utils::Crc16(unsigned short crcInit, unsigned char byte) {
+unsigned short  Crc16(unsigned short crcInit, unsigned char byte) {
 	  unsigned short lb = byte;
 	  int i;
 	  crcInit ^= lb << 8;
@@ -46,13 +61,14 @@ unsigned short  Utils::Crc16(unsigned short crcInit, unsigned char byte) {
 }
 
 
-unsigned short  Utils::Crc16(unsigned short crcInit, unsigned char buffer[], int size) {
+unsigned short  Crc16(unsigned short crcInit, unsigned char buffer[], int size) {
 	for (int i = 0; i < size; i++)
 		crcInit = Crc16(crcInit, buffer[i]);
 	return crcInit;
 }
 
-void Utils::_do_backtrace()
+#ifdef __DEBUG__
+void _do_backtrace()
 {
     int j, nptrs;
 	#define SIZE 100
@@ -75,3 +91,4 @@ void Utils::_do_backtrace()
 
     free(strings);
 }
+#endif
