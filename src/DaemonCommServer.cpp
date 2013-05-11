@@ -34,7 +34,6 @@ DaemonCommServer::DaemonCommServer(Device* pDevice, IAdapter* pAdapter)
 }
 
 DaemonCommServer::~DaemonCommServer() {
-	OnCancel();
 }
 
 bool DaemonCommServer::Create(bool createDetached )

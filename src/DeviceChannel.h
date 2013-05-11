@@ -28,7 +28,6 @@ protected:
 
 	std::map<std::string, float> m_ValueRangeMap;
 public:
-	DeviceChannel();
 	virtual ~DeviceChannel();
 
 	DeviceChannel(int chId, bool isEventDriven, AdapterParameter* param);

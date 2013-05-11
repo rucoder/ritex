@@ -47,18 +47,14 @@ protected:
 protected:
 	enum eState {
 		STATE_INIT,
-		STATE_GET_INIT_WRITE_MODE,
 		STATE_GET_INIT_PASSWORDS,
-		STATE_GET_INIT_SETTINGS,
 		STATE_SET_CURRENT_PASSWORD,
 		STATE_SET_MODE,
-		STATE_WAIT_MODE_SET,
 		STATE_WAIT_ACK,
 		STATE_WAIT_CMD,
 
 		STATE_CUSTOM_CMD,
-		STATE_WAIT_CUSTOM_ACK
-	} m_state;
+	} m_state, m_nextState;
 	int m_fd;
     static __tag_cmdParams m_cmdParams[];
     static __tag_cmdParams m_ackParams[];
@@ -101,7 +97,6 @@ protected:
 
     DataPacket* WaitForKsuActivity(int timeout, int& error);
     bool CheckAndReportFault(DataPacket* packet);
-    void CheckSettigsChanged(DataPacket* packet);
     bool HandleError(int error);
 
 

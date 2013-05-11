@@ -14,10 +14,6 @@
 
 #include "Utils.h"
 
-CmdLineCommand::CmdLineCommand() {
-	// TODO Auto-generated constructor stub
-
-}
 
 CmdLineCommand::~CmdLineCommand() {
 	for(std::map<std::string, struct compiled_parameter>::iterator itr = m_additionalParameters.begin(); itr != m_additionalParameters.end(); itr++) {

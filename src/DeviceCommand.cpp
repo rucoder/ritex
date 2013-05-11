@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 DeviceCommand::DeviceCommand(bool isHwCommand, CmdLineCommand* parent)
-	: m_isHWCommand(isHwCommand), m_rawResult(NULL), m_rawResultLength(0), m_pParentCommand(parent)
+	: m_isHWCommand(isHwCommand), m_rawResult(NULL), m_rawResultLength(0), m_pParentCommand(parent), m_arrivalTime(0), m_finishedTime(0)
 {
 	m_arrivalTime = time(NULL);
 }

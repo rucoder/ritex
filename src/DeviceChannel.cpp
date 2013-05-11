@@ -8,11 +8,6 @@
 #include "DeviceChannel.h"
 #include <stdlib.h>
 
-DeviceChannel::DeviceChannel() {
-	// TODO Auto-generated constructor stub
-
-}
-
 DeviceChannel::~DeviceChannel() {
 	// TODO Auto-generated destructor stub
 }

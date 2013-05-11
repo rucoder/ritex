@@ -16,7 +16,6 @@ private:
 	static const char* m_commDevices[];
 	static const char* m_commSpeed[];
 public:
-	RitexAdapter() {};
 	RitexAdapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
 	virtual ~RitexAdapter();
 	bool isDaemonRunning();

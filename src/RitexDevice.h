@@ -132,6 +132,7 @@ protected:
 	std::vector<struct offset_table_entry_t> m_offsetTable;
 
 	int m_timeDiviation;
+	bool m_isDiviationReported;
 public:
 	RitexDevice(IAdapter* pAdapter);
 	virtual ~RitexDevice();
@@ -142,6 +143,8 @@ public:
 	void ReportDataPacket(DataPacket* packet);
 	void ReportFault(int code, time_t time);
 	void CheckAndReportTimeDiviation(DataPacket* packet);
+	void CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings);
+
 
 	// command implementations
 	bool StartMesurements(DeviceCommand* pCmd, std::string com, int speed);

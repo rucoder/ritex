@@ -90,15 +90,14 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
-	: m_state(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
-	  m_isInFault(false), m_currentSettings(NULL), m_number_of_ksu_failures(MAX_KSU_CHANCES)
+	: m_state(STATE_INIT), m_nextState(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
+	  m_isInFault(false), m_faultCode(-1), m_currentSettings(NULL), m_number_of_ksu_failures(MAX_KSU_CHANCES)
 {
-	// TODO Auto-generated constructor stub
 
 }
 
 ComTrafficProcessor::~ComTrafficProcessor() {
-	// TODO Auto-generated destructor stub
+
 }
 
 int ComTrafficProcessor::OpenCommPort(std::string port, int speed)
@@ -219,6 +218,8 @@ std::string ComTrafficProcessor::GetErrorStr(int error)
 			return std::string("ERROR_READ_TIMEOUT");
 		case ERROR_OOM:
 			return std::string("ERROR_OOM");
+		case ERROR_READ_UNEXPECTED_PACKET:
+			return std::string("ERROR_READ_UNEXPECTED_PACKET");
 		default:
 			return std::string("ERROR_XXX: UNHANDLED!!!!");
 	}
@@ -228,22 +229,14 @@ std::string ComTrafficProcessor::GetStateStr(eState state) {
 	switch(state) {
 	case STATE_INIT:
 		return std::string("STATE_INIT");
-	case STATE_GET_INIT_WRITE_MODE:
-		return std::string("STATE_GET_INIT_WRITE_MODE");
-	case STATE_GET_INIT_SETTINGS:
-		return std::string("STATE_GET_INIT_SETTINGS");
 	case STATE_WAIT_ACK:
 		return std::string("STATE_WAIT_ACK");
 	case STATE_WAIT_CMD:
 		return std::string("STATE_WAIT_CMD");
 	case STATE_CUSTOM_CMD:
 		return std::string("STATE_CUSTOM_CMD");
-	case STATE_WAIT_CUSTOM_ACK:
-		return std::string("STATE_WAIT_CUSTOM_ACK");
 	case STATE_SET_MODE:
 		return std::string("STATE_SET_MODE");
-	case STATE_WAIT_MODE_SET:
-		return std::string("STATE_WAIT_MODE_SET");
 	case STATE_GET_INIT_PASSWORDS:
 		return std::string("STATE_GET_INIT_PASSWORDS");
 	case STATE_SET_CURRENT_PASSWORD:
@@ -255,10 +248,10 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	struct timeval to;
 	DataPacket* pPacket;
 	//reset timeout
-	to.tv_sec = 0;
-	to.tv_usec = timeout * 1000; //1 sec ms waiting for line activity
+	to.tv_sec = timeout / 1000;
+	to.tv_usec = (timeout % 1000) * 1000000; //waiting for line activity with timeout
 
-	syslog(LOG_ERR, "[KSU] waiting for activity");
+	syslog(LOG_ERR, "[KSU] waiting for activity: sec:=%d usec=%lu", to.tv_sec, to.tv_usec);
 
 	pPacket = ReadPacket(&to, error);
 
@@ -319,6 +312,13 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 
 bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 	// one of INFO replies. bytes 0 and 1 has fault information
+	/*
+	 * FIXME: workaround for mode 1. error is set to 0 in this mode for some reason
+	 */
+	if(packet->GetCmd() == ACK_INFO_MODE_1)
+		return false;
+
+
 	if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
 		unsigned char vd_state =  packet->GetDataPtr()[VD_STATUS_OFFSET];
 		unsigned char error_code = packet->GetDataPtr()[1];
@@ -345,13 +345,12 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 	return false;
 }
 
-void ComTrafficProcessor::CheckSettigsChanged(DataPacket* packet) {
-	//TODO:
-}
-
 bool ComTrafficProcessor::HandleError(int error) {
 	syslog(LOG_ERR, "HandleError ->>");
 	switch(error) {
+	case ERROR_READ_NO_ERROR:
+		m_number_of_ksu_failures = MAX_KSU_CHANCES;
+		break;
 	case ERROR_OOM:
 	case ERROR_READ_BAD_CRC:
 	case ERROR_READ_BAD_PACKET:
@@ -364,23 +363,15 @@ bool ComTrafficProcessor::HandleError(int error) {
 			m_number_of_ksu_failures = MAX_KSU_CHANCES;
 			syslog(LOG_ERR, "KSU failed %d times in a row", MAX_KSU_CHANCES);
 			pthread_mutex_lock(&m_cmdMutex);
-			if(m_pendingCmd) {
+			if(m_pendingCmd && m_state == STATE_CUSTOM_CMD) {
 				m_pendingCmd->m_pParentCommand.SetReply(NULL, error);
 				delete m_pendingCmd;
 				m_pendingCmd = NULL;
 			}
 			pthread_mutex_unlock(&m_cmdMutex);
 
-			m_state = STATE_INIT;
+			m_nextState = STATE_INIT;
 			break;
-		} else {
-			//we have a chance to repeat command if any
-			pthread_mutex_lock(&m_cmdMutex);
-			if (m_pendingCmd && m_state == STATE_CUSTOM_CMD) {
-				WritePacket(m_pendingCmd->m_pDataPacket);
-			}
-			pthread_mutex_unlock(&m_cmdMutex);
-			//TODO: how to do his correctly???
 		}
 		syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 		break;
@@ -394,7 +385,9 @@ bool ComTrafficProcessor::HandleError(int error) {
 
 void* ComTrafficProcessor::Run()
 {
-	m_state = STATE_INIT;
+	m_nextState = m_state = STATE_INIT;
+	unsigned char passwd_hi, passwd_lo;
+
 
 	syslog(LOG_ERR, "Enter run...");
 
@@ -409,11 +402,27 @@ void* ComTrafficProcessor::Run()
 
 	syslog(LOG_ERR, "Now running...");
 
+	unsigned long delta;
+	struct timeval state_run_start;
+	struct timeval state_run_end;
+
 	while (m_doRun) {
 		int error;
 		DataPacket* packet = NULL;
 
-		syslog(LOG_ERR, "#### STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d", m_state, GetStateStr(m_state).c_str(), m_writeMode, m_number_of_ksu_failures);
+
+
+		state_run_end.tv_sec-=state_run_start.tv_sec;
+		state_run_end.tv_usec-=state_run_start.tv_usec;
+
+		delta = state_run_end.tv_sec*1000 + state_run_end.tv_usec/1000;
+
+		gettimeofday(&state_run_start, NULL);
+
+		syslog(LOG_ERR, "#### NEW_STATE=%s | STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d: took: %lu",GetStateStr(m_nextState).c_str(), m_state, GetStateStr(m_state).c_str(), m_writeMode, m_number_of_ksu_failures, delta);
+
+		m_state = m_nextState;
+
 		packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
 
 		switch(m_state) {
@@ -421,14 +430,16 @@ void* ComTrafficProcessor::Run()
 			case STATE_INIT:
 			{
 				if(error == ERROR_READ_NO_ERROR) {
-					if(packet->GetType() == TYPE_ACK) {
+					// wait for 0x64
+					if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
 						GetPasswords();
-						m_state = STATE_GET_INIT_PASSWORDS;
+						m_nextState = STATE_GET_INIT_PASSWORDS;
 					}
 				}
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
 			}
 			break;
 
@@ -436,13 +447,12 @@ void* ComTrafficProcessor::Run()
 			{
 				if(error == ERROR_READ_NO_ERROR) {
 					if(packet->GetCmd() == ACK_PASSWORDS) {
-						unsigned char passwd_hi, passwd_lo;
 						unsigned char* pData = packet->GetDataPtr();
 						syslog(LOG_ERR,"CURRENT PASSWORDS=0x%X 0x%X 0x%X 0x%X", pData[0], pData[1], pData[2], pData[3]);
 						passwd_hi = pData[2];
 						passwd_lo = pData[3];
 						SetPassword((unsigned short)passwd_hi << 8 | passwd_lo);
-						m_state = STATE_SET_CURRENT_PASSWORD;
+						m_nextState = STATE_SET_CURRENT_PASSWORD;
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
@@ -450,27 +460,31 @@ void* ComTrafficProcessor::Run()
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
+
 			}
 			break;
 
 			case STATE_SET_CURRENT_PASSWORD:
 			{
+
 				if(error == ERROR_READ_NO_ERROR) {
 					//something bad happened. get error code
 					if(packet->GetCmd() == ACK_ACK) {
 						unsigned char* pData = packet->GetDataPtr();
 						syslog(LOG_ERR, "[ERROR] FIALED SET PASSWORD. REASON: %d", pData[0]);
-						m_state = STATE_INIT;
+						m_nextState = STATE_INIT;
 						//FIXME?????
 					} else if(packet->GetCmd() == ACK_ALL_SETTINGS) {
 						// got all current settings in response
 						unsigned char* pData = packet->GetDataPtr();
 						m_writeMode = pData[WRITE_MODE_OFFSET];
 						if(m_currentSettings) {
+							m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
 							delete m_currentSettings;
 						}
 						m_currentSettings = packet;
-						m_state = STATE_WAIT_CMD;
+						m_nextState = STATE_WAIT_CMD;
 						/*
 						 * at this point we have all we need:
 						 * 1. current settings array
@@ -478,14 +492,20 @@ void* ComTrafficProcessor::Run()
 						 * 3. password successfully set
 						 * we can go not to the main loop
 						 */
+						gettimeofday(&state_run_end, NULL);
+
 						break; //do brake so the packet will not be deleted
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
+						//retry
+						SetPassword((unsigned short)passwd_hi << 8 | passwd_lo);
 					}
 				}
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
+
 			}
 			break;
 
@@ -493,7 +513,7 @@ void* ComTrafficProcessor::Run()
 			{
 				if (error == ERROR_READ_NO_ERROR) {
 					if(GET_CMD(packet->GetCmd()) == REQ_INFO) {
-						m_state = STATE_WAIT_ACK;
+						m_nextState = STATE_WAIT_ACK;
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
@@ -501,6 +521,8 @@ void* ComTrafficProcessor::Run()
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
+
 			}
 			break;
 			case STATE_WAIT_ACK:
@@ -509,7 +531,6 @@ void* ComTrafficProcessor::Run()
 				{
 					if(GET_CMD(packet->GetCmd()) == ACK_INFO)
 					{
-
 						CheckAndReportFault(packet);
 						m_pDevice->CheckAndReportTimeDiviation(packet);
 
@@ -522,7 +543,7 @@ void* ComTrafficProcessor::Run()
 						if(m_pendingCmd)
 						{
 							WritePacket(m_pendingCmd->m_pDataPacket);
-							m_state = STATE_CUSTOM_CMD;
+							m_nextState = STATE_CUSTOM_CMD;
 						} else {
 							/*
 							 * we cannot change mode if the engine is ON
@@ -532,13 +553,13 @@ void* ComTrafficProcessor::Run()
 
 							if((pData[VD_STATUS_OFFSET] & VD_ON_MASK) ||
 									(pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK)) {
-								m_state = STATE_WAIT_CMD;
+								m_nextState = STATE_WAIT_CMD;
 								//FIXME: is this true?
 								//m_writeMode = 0; //the mode is reset to 0
 							} else {
 #endif
 								ChangeMode((m_writeMode+1) % 7);
-								m_state = STATE_SET_MODE;
+								m_nextState = STATE_SET_MODE;
 #if 0
 							}
 #endif
@@ -554,6 +575,8 @@ void* ComTrafficProcessor::Run()
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
+
 			}
 			break;
 			case STATE_SET_MODE:
@@ -569,26 +592,32 @@ void* ComTrafficProcessor::Run()
 						}
 						m_writeMode = pData[WRITE_MODE_OFFSET];
 						syslog(LOG_ERR,"CURRENT WRITE_MODE=%d", m_writeMode);
-						m_state = STATE_WAIT_CMD;
+						m_nextState = STATE_WAIT_CMD;
 
 						if(m_currentSettings) {
-							CheckSettigsChanged(packet);
+							m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
 							delete m_currentSettings;
 						}
 						m_currentSettings = packet;
+						gettimeofday(&state_run_end, NULL);
+
 						break; //keep packet
 					//couldn't set mode
 					} else if (GET_CMD(packet->GetCmd()) ==  ACK_ACK ){
 						syslog(LOG_ERR, "[ERROR]: FIALED TO SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
-						m_state = STATE_INIT;
+						m_nextState = STATE_INIT;
 						//FIXME: ????? to INIT???
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
+						//resend
+						ChangeMode((m_writeMode+1) % 7);
 					}
 				}
 				HandleError(error);
 				if(packet)
 					delete packet;
+				gettimeofday(&state_run_end, NULL);
+
 			}
 			break;
 
@@ -603,24 +632,29 @@ void* ComTrafficProcessor::Run()
 						delete m_pendingCmd;
 						m_pendingCmd = NULL;
 
-						m_state = STATE_WAIT_CMD;
+						m_nextState = STATE_WAIT_CMD;
 
 						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
 							if(m_currentSettings) {
-								CheckSettigsChanged(packet);
+								m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
 								delete m_currentSettings;
 							}
 							m_currentSettings = packet;
 						}
+						gettimeofday(&state_run_end, NULL);
+
 						break;
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
+						//retry
+						WritePacket(m_pendingCmd->m_pDataPacket);
 					}
 				}
 				HandleError(error);
 				if(packet)
 					delete packet;
 
+				gettimeofday(&state_run_end, NULL);
 			}
 			break;
 		}
@@ -696,7 +730,7 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 					unsigned char echoByte = m_echoCancelFifo.front();
 					m_echoCancelFifo.pop();
 					total_read--;
-#if 0
+#if 1
 					syslog(LOG_ERR, "### ECHO FIFO : FIFO=0x%X PORT=0x%X", echoByte, ((unsigned char*)buffer)[total_read]);
 #endif
 
@@ -732,7 +766,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		//we got activity on the line so decrease timeout
 		timeout->tv_sec = 0;
 		//TODO: IMPORTANT: get the right value
-		timeout->tv_usec = 100 * 1000;
+		timeout->tv_usec = 100 * 1000  * 1000;
 	}
 
 	calculatedCrc16 = Utils::Crc16(calculatedCrc16, address);
@@ -833,11 +867,23 @@ bool ComTrafficProcessor::WritePacket(DataPacket* pPacket) {
 	int rawSize;
 	unsigned char* pRawPacket = pPacket->CreateRawPacket(rawSize);
 	//put bytes in echo cancellation FIFO
-#if  !defined(KSU_EMULATOR) && !defined(TTY_NO_ECHO)
+#if !defined(KSU_EMULATOR) && !defined(TTY_NO_ECHO)
 	for(int i = 0; i < rawSize; i++) {
 		m_echoCancelFifo.push(pRawPacket[i]);
 	}
 #endif
+
+	struct timespec tm;
+
+	/*
+	 * this is an ugly workaround since we do not have CTS
+	 * signal on the port. just wait for 100 ms.
+	 */
+	tm.tv_sec = 0;
+	tm.tv_nsec = 100 * 1000000;
+
+	nanosleep(&tm,NULL);
+
 	int ret = write(m_fd, pRawPacket, rawSize);
 
 	if(ret != rawSize) {

@@ -24,50 +24,51 @@ struct setting_t {
 	const char* m_suffix;
 	int m_id;
 	int m_offset;
+	int m_size;
 	bool m_isVisible;
 };
 
 static setting_t all_Settings[] = {
-	{"Частота вращения", " об/мин", 31, 0, true},
-	{"Ток ВД при перегрузе", " А", 32, 0, true},
-	{"Защита по перегрузу", " %", 33, 0, true},
-	{"Время блокировки защиты", " сек", 34, 0, true},
-	{"Время блокировки АПВ", " мин", 35, 0, true},
-	{"Количество перезапусков", "", 36, 0, true},
-	{"Время, в течение которого разрешены перезапуски", " мин", 37, 0, true},
-	{"Ток ВД при недогрузе", " А", 38, 0, true},
-	{"Защита по недогрузу", " %", 39, 0, true},
-	{"Время блокировки защиты", " сек", 40, 0, true},
-	{"Время блокировки АПВ", " мин", 41, 0, true},
-	{"Куст", " №", 42, 0, true},
-	{"Скважина", " №", 43, 0, true},
-	{"Пароль", "", 44, 0, true},
-	{"Служебный режим", "", 45, 0, true},
-	{"Время работы", " мин", 46, 0, true},
-	{"Время паузы", " мин", 47, 0, true},
-	{"Шаг регистрации параметров", " сек", 48, 0, true},
-	{"Текущее время (часы", " минуты)", 49, 0, true},
-	{"Текущая дата (число", " месяц)", 50, 0, true},
-	{"Текущая дата (год)", "", 51, 0, true},
-	{"Напряжение вторичной обмотки трансформатора", " В", 52, 0, true},
-	{"Время блокировки запуска после включения питания", " мин", 53, 0, true},
-	{"Защита по Rиз: 0 – включена", " 1 – выключена", 54, 0, true},
-	{"Дисбаланс по U вх.   лин.", "", 55, 0, true},
-	{"Время срабатывания защиты по дисбалансу U вх.  лин.", "", 56, 0, true},
-	{"Дисбаланс по U вых. лин.", "", 57, 0, true},
-	{"Время срабатывания защиты по дисбалансу U вых. лин.", "", 58, 0, true},
-	{"Дисбаланс по  I  вых. фаз.", "", 59, 0, true},
-	{"Время срабатывания защиты по дисбалансу I  вых. фаз", "", 60, 0, true},
-	{"Дополнительная настройка", "", 61, 0, true},
-	{"Работа с ТМС", "", 62, 0, true},
-	{"Предельная температура ВД ", "", 63, 0, true},
-	{"Давление жидкости на приеме насоса ", "", 64, 0, true},
-	{"Изменение скорости вращения ВД при регулировании по давлению жидкости на приеме насоса", "", 65, 0, true},
-	{"Предел снижения скорости вращения ВД **", "", 66, 0, true},
-	{"Смена пароля инженера", "", 67, 0, true},
-	{"Смена пароля инженера–наладчика", "", 68, 0, true},
-	{"Тест станции", "", 69, 0, true},
-	{"Восстановление заводских уставок", "", 70, 0, true},
+	{"Частота вращения", " об/мин", 31, 0, 2, true},
+	{"Ток ВД при перегрузе", " А", 32, 0, 0,true},
+	{"Защита по перегрузу", " %", 33, 0,  0,true},
+	{"Время блокировки защиты", " сек", 34, 0,  0,true},
+	{"Время блокировки АПВ", " мин", 35, 0,  0,true},
+	{"Количество перезапусков", "", 36, 0,  0,true},
+	{"Время, в течение которого разрешены перезапуски", " мин", 37, 0,  0,true},
+	{"Ток ВД при недогрузе", " А", 38, 0,  0,true},
+	{"Защита по недогрузу", " %", 39, 0,  0,true},
+	{"Время блокировки защиты", " сек", 40, 0,  0,true},
+	{"Время блокировки АПВ", " мин", 41, 0,  0,true},
+	{"Куст", " №", 42, 0,  0,true},
+	{"Скважина", " №", 43, 0,  0,true},
+	{"Пароль", "", 44, 0,  0,true},
+	{"Служебный режим", "", 45, 0,  0,true},
+	{"Время работы", " мин", 46, 0,  0,true},
+	{"Время паузы", " мин", 47, 0,  0,true},
+	{"Шаг регистрации параметров", " сек", 48, 0, 0, true},
+	{"Текущее время (часы", " минуты)", 49, 0,  0,true},
+	{"Текущая дата (число", " месяц)", 50, 0,  0,true},
+	{"Текущая дата (год)", "", 51, 0,  0,true},
+	{"Напряжение вторичной обмотки трансформатора", " В", 52, 0,  0,true},
+	{"Время блокировки запуска после включения питания", " мин", 53, 0,  0,true},
+	{"Защита по Rиз: 0 – включена", " 1 – выключена", 54, 0,  0,true},
+	{"Дисбаланс по U вх.   лин.", "", 55, 0,  0,true},
+	{"Время срабатывания защиты по дисбалансу U вх.  лин.", "", 56, 0,  0,true},
+	{"Дисбаланс по U вых. лин.", "", 57, 0,  0,true},
+	{"Время срабатывания защиты по дисбалансу U вых. лин.", "", 58, 0,  0,true},
+	{"Дисбаланс по  I  вых. фаз.", "", 59, 0,  0,true},
+	{"Время срабатывания защиты по дисбалансу I  вых. фаз", "", 60, 0,  0,true},
+	{"Дополнительная настройка", "", 61, 0,  0,true},
+	{"Работа с ТМС", "", 62, 0,  0,true},
+	{"Предельная температура ВД ", "", 63, 0,  0,true},
+	{"Давление жидкости на приеме насоса ", "", 64, 0,  0,true},
+	{"Изменение скорости вращения ВД при регулировании по давлению жидкости на приеме насоса", "", 65, 0,  0,true},
+	{"Предел снижения скорости вращения ВД **", "", 66, 0,  0,true},
+	{"Смена пароля инженера", "", 67, 0,  0,true},
+	{"Смена пароля инженера–наладчика", "", 68, 0,  0,true},
+	{"Тест станции", "", 69, 0,  0,true},
+	{"Восстановление заводских уставок", "", 70, 0,  0,true},
 };
 
 #define NUMBER_OF_SETTINGS (sizeof(all_Settings) / sizeof(setting_t))
@@ -131,7 +132,7 @@ struct controller_data_t {
 };
 
 RitexDevice::RitexDevice(IAdapter* pAdapter)
-	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION)
+	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION), m_isDiviationReported(false)
 {
 	// add device channels
 	AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
@@ -139,22 +140,115 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 	// we have one and only sensor
 	Sensor* pSensor = new Sensor(1);
 
-	pSensor->AddChannel(new DeviceChannel(1, false, new AdapterParameter(1050109000, "Число оборотов ВД", true, "X:X:X:X",
-			false, new controller_data_t(ACK_INFO_MODE_0,2,2))));
+	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050100150, "тип ВД", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,2,2))));
+	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050000020, "номинальная мощность", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,4,2))));
+	pSensor->AddChannel(new DeviceChannel(4, false, new AdapterParameter(1050000030, "количество пар полюсов", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,6,1))));
+	pSensor->AddChannel(new DeviceChannel(5, false, new AdapterParameter(1050109020, "минимальные обороты ВД", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,7,2))));
+	pSensor->AddChannel(new DeviceChannel(6, false, new AdapterParameter(1050109030, "максимальные обороты ВД", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,9,2))));
+	pSensor->AddChannel(new DeviceChannel(7, false, new AdapterParameter(1050110080, "ток по АСХ З", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,11,1))));
+	pSensor->AddChannel(new DeviceChannel(8, false, new AdapterParameter(1050101010, "время по АСХ 3", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,12,1))));
+	pSensor->AddChannel(new DeviceChannel(9, false, new AdapterParameter(1050110090, "ток по АСХ 2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,13,1))));
+	pSensor->AddChannel(new DeviceChannel(10, false, new AdapterParameter(1050101020, "время по АСХ 2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,14,1))));
+	pSensor->AddChannel(new DeviceChannel(11, false, new AdapterParameter(1050110100, "ток по АСХ 1", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,15,1))));
+	pSensor->AddChannel(new DeviceChannel(12, false, new AdapterParameter(1050101030, "время по АСХ 1", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_5,16,1))));
+	pSensor->AddChannel(new DeviceChannel(13, false, new AdapterParameter(1050110030, "минимальный ток", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,7,1))));
+	pSensor->AddChannel(new DeviceChannel(14, false, new AdapterParameter(1050110040, "максимальный ток", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,8,1))));
+	pSensor->AddChannel(new DeviceChannel(15, false, new AdapterParameter(1050111080, "выходное линейное напряжение UV", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,9,2))));
+	pSensor->AddChannel(new DeviceChannel(16, false, new AdapterParameter(1050111090, "выходное линейное напряжениеVW", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,11,2))));
+	pSensor->AddChannel(new DeviceChannel(17, false, new AdapterParameter(1050111100, "выходное линейное напряжение WU", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,13,2))));
+	pSensor->AddChannel(new DeviceChannel(18, false, new AdapterParameter(1050111110, "минимальное выходное линейное напряжение", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,15,2))));
+	pSensor->AddChannel(new DeviceChannel(19, false, new AdapterParameter(1050111120, "максимальное выходное линейное напряжение", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,17,2))));
+	pSensor->AddChannel(new DeviceChannel(20, false, new AdapterParameter(1050104000, "температура радиатора 1", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,25,1))));
+	pSensor->AddChannel(new DeviceChannel(21, false, new AdapterParameter(1050104010, "температура радиатора 2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,26,1))));
+	pSensor->AddChannel(new DeviceChannel(22, false, new AdapterParameter(1050100110, "код состояния ПЧ 0", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,27,1))));
+	pSensor->AddChannel(new DeviceChannel(23, false, new AdapterParameter(1050100120, "код состояния ПЧ 1", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,28,1))));
+	pSensor->AddChannel(new DeviceChannel(24, false, new AdapterParameter(1050100130, "код состояния ПЧ 2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,29,1))));
+	pSensor->AddChannel(new DeviceChannel(25, false, new AdapterParameter(1050100140, "код состояния ПЧ 3", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,30,1))));
 
+	//FIXME: these 2 must be available in all modes
+	pSensor->AddChannel(new DeviceChannel(26, false, new AdapterParameter(1050100090, "Код состояния СУ", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,0,1))));
+	pSensor->AddChannel(new DeviceChannel(27, false, new AdapterParameter(1050100100, "Код неисправности СУ", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,1,1))));
 
-	pSensor->AddChannel(new DeviceChannel(2, false, new AdapterParameter(1050110000, "Средний ток ВД", true, "X:X:X:X")));
-	pSensor->AddChannel(new DeviceChannel(3, false, new AdapterParameter(1050111010, "Напряжение сети", true, "X:X:X:X")));
-
-	pSensor->AddChannel(new DeviceChannel(4, false, new AdapterParameter(1050100050, "Загрузка ВД", true, "X:X:X:X",
-			false, new controller_data_t(ACK_INFO_MODE_0,7,1))));
-
-	pSensor->AddChannel(new DeviceChannel(5, false, new AdapterParameter(1050100060, "Дисбаланс входных напряжений", true, "X:X:X:X")));
-	pSensor->AddChannel(new DeviceChannel(6, false, new AdapterParameter(1050100070, "Дисбаланс выходных напряжений", true, "X:X:X:X")));
-	pSensor->AddChannel(new DeviceChannel(7, false, new AdapterParameter(1050100080, "Дисбаланс выходных токов", true, "X:X:X:X")));
-	pSensor->AddChannel(new DeviceChannel(8, false, new AdapterParameter(1050104000, "ТМС, температура двигателя", true, "X:X:X:X")));
-	pSensor->AddChannel(new DeviceChannel(9, false, new AdapterParameter(1000601000, "Наработка оборудования НИ", true, "X:X:X:X",
-			false, new controller_data_t(ACK_INFO_MODE_0,33,2))));
+	pSensor->AddChannel(new DeviceChannel(29, false, new AdapterParameter(1050101000, "Время оставшееся до автозапуска (время АПВ)", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,13,2))));
+	pSensor->AddChannel(new DeviceChannel(30, false, new AdapterParameter(1050110050, "Ток фазы А", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,4,1))));
+	pSensor->AddChannel(new DeviceChannel(31, false, new AdapterParameter(1050110060, "Ток фазы В", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,5,1))));
+	pSensor->AddChannel(new DeviceChannel(32, false, new AdapterParameter(1050110070, "Ток фазы С", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,6,1))));
+	pSensor->AddChannel(new DeviceChannel(34, false, new AdapterParameter(1050111000, "Входное напряжение АВ", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,19,2))));
+	pSensor->AddChannel(new DeviceChannel(35, false, new AdapterParameter(1050111010, "Входное напряжение ВC", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,21,2))));
+	pSensor->AddChannel(new DeviceChannel(36, false, new AdapterParameter(1050111020, "Входное напряжение CA", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_2,23,2))));
+	pSensor->AddChannel(new DeviceChannel(37, false, new AdapterParameter(1050111070, "Среднее напряжение на входе СУ", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,5,2))));
+	pSensor->AddChannel(new DeviceChannel(38, false, new AdapterParameter(1050110020, "Установившееся значение тока ВД для защит по %", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,15,1))));
+	pSensor->AddChannel(new DeviceChannel(39, false, new AdapterParameter(1050100060, "Дисбаланс входных напряжений", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,8,1))));
+	pSensor->AddChannel(new DeviceChannel(40, false, new AdapterParameter(1050100070, "Дисбаланс выходных напряжений", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,9,1))));
+	pSensor->AddChannel(new DeviceChannel(41, false, new AdapterParameter(1050100080, "Дисбаланс выходных токов", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,10,1))));
+	pSensor->AddChannel(new DeviceChannel(43, false, new AdapterParameter(1050110010, "Средний ток ВД", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,4,1))));
+	pSensor->AddChannel(new DeviceChannel(44, false, new AdapterParameter(1050100050, "Загрузка двигателя", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,7,1))));
+	pSensor->AddChannel(new DeviceChannel(45, false, new AdapterParameter(1050112010, "Полная мощность", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,35,2))));
+	pSensor->AddChannel(new DeviceChannel(46, false, new AdapterParameter(1050112020, "Активная мощность", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,18,1))));
+	pSensor->AddChannel(new DeviceChannel(47, false, new AdapterParameter(1050117000, "Сопротивление изоляции, кОм", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,11,2))));
+	pSensor->AddChannel(new DeviceChannel(48, false, new AdapterParameter(1050109010, "Число оборотов ВД", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,2,2))));
+	pSensor->AddChannel(new DeviceChannel(50, false, new AdapterParameter(1050201000, "Общее время работы насоса, час", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,27,2))));
+	pSensor->AddChannel(new DeviceChannel(51, false, new AdapterParameter(1050102010, "Общее количество запусков насоса", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,25,2))));
+	pSensor->AddChannel(new DeviceChannel(52, false, new AdapterParameter(1050601010, " Время наработки станции в ч", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,31,2))));
+	pSensor->AddChannel(new DeviceChannel(53, false, new AdapterParameter(1080105030, "Давление на приеме насоса (пласт. жидкость)", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,17,1))));
+	pSensor->AddChannel(new DeviceChannel(54, false, new AdapterParameter(1080104010, "Температура на приеме насоса (масло двигателя), °С", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,16,1))));
+	pSensor->AddChannel(new DeviceChannel(55, false, new AdapterParameter(1080104020, "Температура обмоток двигателя, °С", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_3,2,1))));
+	pSensor->AddChannel(new DeviceChannel(56, false, new AdapterParameter(1080100009, "Вибрация насоса по оси X, м/с2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_3,4,2))));
+	pSensor->AddChannel(new DeviceChannel(57, false, new AdapterParameter(1080100010, "Вибрация насоса по оси Y, м/с2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_3,8,2))));
+	pSensor->AddChannel(new DeviceChannel(58, false, new AdapterParameter(1080118000, "Вибрация насоса по оси Z, м/с2", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_3,12,2))));
 
 	AddSensor(pSensor);
 
@@ -214,13 +308,13 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	unsigned short param2 = 0;
 	std::vector<AdapterCommand*>& list = GetExternaCommandList();
 
-	printf( "List size: %d\n",list.size());
+	printf( "List size: %lu\n",list.size());
 
 	assert((cmd->m_cmdType > 0) && (cmd->m_cmdType -1 < list.size()));
 
 	AdapterCommand* pCmd = list[cmd->m_cmdType-1];
 
-	printf( "Param count: %d\n",pCmd->m_args.size());
+	printf( "Param count: %lu\n",pCmd->m_args.size());
 	//now parse "message". it must have the same number of arguments
 	std::vector<std::string> params = Utils::split(cmd->m_messageRaw, '~');
 
@@ -480,14 +574,67 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 
 		time_t timestamp = mktime(&tm);
 
-		syslog(LOG_ERR, "[TIME] KSU time: %d-%d-%d %d:%d:%d . epoch=%lu Diviation [%d] sec", year, p[20],p[19], p[23],p[24],0, timestamp, system_time - timestamp);
+		syslog(LOG_ERR, "[TIME] KSU time: %d-%d-%d %d:%d:%d . epoch=%lu Diviation [%d] sec", year, p[20],p[19], p[23],p[24],0, timestamp, (int)(system_time - timestamp));
 
 		if(abs(system_time - timestamp) > m_timeDiviation) {
+			//report this event only once
+			if(m_isDiviationReported) {
+				return;
+			}
+
+			m_isDiviationReported = true;
+
 			DBEventCommon* event = new DBEventCommon();
 			event->setChannelId(1024); //FIXME: temporrary workaround
 			event->setTypeId(6);
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(abs(system_time - timestamp) / 60) );
+			m_pAdapter->getEventLogger()->EnqueData(event);
+		} else {
+			//reset flag
+			m_isDiviationReported = false;
+		}
+	}
+}
+
+unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size)
+{
+	assert(size == 1 || size == 2);
+	unsigned char* data = pPacket.GetDataPtr();
+	unsigned short value;
+	if(size == 1) {
+		value = data[offset];
+	} else {
+		memcpy(&value, data + offset, 2);
+		value = swap16(value);
+	}
+	return value;
+}
+
+void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings) {
+	assert(newSettings.GetCmd() == ACK_ALL_SETTINGS);
+	assert(oldSettings.GetCmd() == ACK_ALL_SETTINGS);
+
+	time_t system_time = time(NULL);
+
+	for(unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
+		if(!all_Settings[i].m_isVisible || all_Settings[i].m_size == 0)
+			continue;
+
+		int offset = all_Settings[i].m_offset;
+
+		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
+		unsigned short oldValue =  GetSettingFromPacket(oldSettings,offset, all_Settings[i].m_size);
+
+		if(newValue != oldValue) {
+			DBEventCommon* event = new DBEventCommon();
+			event->setChannelId(1024); //FIXME: temporrary workaround
+			event->setTypeId(8);
+			event->setRegisterTimeDate(system_time);
+			event->setArgument1(itoa(newValue));
+			event->setArgument2(itoa(oldValue));
+			event->setArgument3(all_Settings[i].m_name);
+			//TODO: agr 4 -- source of change
 			m_pAdapter->getEventLogger()->EnqueData(event);
 		}
 	}

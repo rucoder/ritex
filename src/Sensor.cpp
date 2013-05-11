@@ -7,11 +7,6 @@
 
 #include "Sensor.h"
 
-Sensor::Sensor() {
-	// TODO Auto-generated constructor stub
-
-}
-
 Sensor::Sensor(int id)
 	: m_id(id)
 {

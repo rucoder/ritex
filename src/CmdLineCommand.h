@@ -60,7 +60,6 @@ private:
 
 	bool GetCompiledParameter(std::string name, struct compiled_parameter& param);
 public:
-	CmdLineCommand();
 	virtual ~CmdLineCommand();
 	void SetCmdLineCmdType(eCommandType cmd) { m_cmdLineCommandType = cmd; };
 	void SetDeviceId(std::string devId) { m_deviceIdRaw = devId; }

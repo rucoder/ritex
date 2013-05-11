@@ -37,8 +37,6 @@ private:
 	void GeneratePidFileName(int deviceId);
 
 protected:
-	Adapter() {};
-
 	std::string m_adapterName;
 	std::string m_adapterVersion;
 	std::string m_adapterDescription;

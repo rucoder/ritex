@@ -37,7 +37,6 @@ protected:
 	//supported commands
 	std::vector<AdapterCommand*> m_supportedCommands;
 public:
-	Device(){};
 	Device(IAdapter* pAdapter);
 	virtual ~Device();
 	bool AddSensor(Sensor* pSensor);

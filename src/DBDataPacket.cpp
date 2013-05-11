@@ -7,7 +7,9 @@
 
 #include "DBDataPacket.h"
 
-DBDataPacket::DBDataPacket() {
+DBDataPacket::DBDataPacket() :
+	m_channelId(0), m_paramId(0), m_registerDate(0), m_value(0)
+{
 	// TODO Auto-generated constructor stub
 
 }

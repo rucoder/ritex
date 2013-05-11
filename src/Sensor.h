@@ -16,7 +16,6 @@ protected:
 	int m_id; //sensor ID
 	std::list<DeviceChannel*> m_deviceChannelList;
 public:
-	Sensor();
 	Sensor(int id);
 	virtual ~Sensor();
 	std::list<DeviceChannel*>& getChannels() { return m_deviceChannelList; };

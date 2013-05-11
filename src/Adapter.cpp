@@ -467,11 +467,10 @@ int Adapter::Run() {
 bool Adapter::UpdateParameterFilter(int devId)
 {
     sqlite3* pDb;
-    char *zErrMsg = 0;
 
     syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
 
-#ifdef KSU_EMULATOR
+#if defined(KSU_EMULATOR) || defined(RS485_ADAPTOR)
     std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
 #else
     std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
@@ -540,7 +539,7 @@ int Adapter::ParentLoop(bool isCommOk)
 bool Adapter::CreateLoggerFacility()
 {
 
-#ifdef KSU_EMULATOR
+#if defined(KSU_EMULATOR) || defined(RS485_ADAPTOR)
 	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
 #else

@@ -15,6 +15,7 @@
 # Eclipse out dirs
 Debug
 Release
+debug-*
 
 # ARM target out directory and executable
 arm_obj

@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
 				pAdapter->Run();
 				delete pAdapter;
 			}
+			syslog(LOG_ERR, "[main()] EXIT");
 		}
 	}
 	return 0;
