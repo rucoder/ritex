@@ -14,6 +14,7 @@
 #include <string>
 #include <sqlite3.h>
 #include <syslog.h>
+#include <assert.h>
 
 template <typename T>
 class LoggerThread: public Thread {
@@ -75,20 +76,31 @@ protected:
 		return sqlite3_errmsg(m_pDb);
 	}
 
-public:
-	virtual ~LoggerThread() {
-		Cancel();
-		Join();
-		pthread_cond_destroy(&m_condProcessQueue);
-		pthread_mutex_destroy(&m_queueMutex);
+	void flush() {
 		while(!m_queue.empty()) {
 			T pData = m_queue.front();
 			m_queue.pop();
 			if(pData) {
+				if(!Insert(pData))
+				{
+					syslog(LOG_ERR, "[SQL] Failed to insert data from flush()!");
+				}
 				delete pData;
 			}
 		}
+	}
+
+public:
+	virtual ~LoggerThread() {
+		syslog(LOG_ERR, "~LoggerThread->>");
+		Cancel();
+		Join();
+		pthread_cond_destroy(&m_condProcessQueue);
+		pthread_mutex_destroy(&m_queueMutex);
+		flush();
+		assert(m_queue.empty());
 		CloseDb();
+		syslog(LOG_ERR, "~LoggerThread-<<");
 	};
 	LoggerThread(std::string db_name)
 		: m_sDbName(db_name), m_pDb(NULL), m_pStm(NULL) {

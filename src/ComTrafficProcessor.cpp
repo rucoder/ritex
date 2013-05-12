@@ -105,7 +105,7 @@ int ComTrafficProcessor::OpenCommPort(std::string port, int speed)
 	struct termios tios;
     int fd;
 
-	fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK| O_NDELAY );
+	fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK| O_NDELAY | O_EXCL);
     if (fd < 0) {
             syslog(LOG_ERR, "[COMM]: Can't open port %s\n", port.c_str());
             return -1;
@@ -248,7 +248,7 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	DataPacket* pPacket;
 	//reset timeout
 	to.tv_sec = timeout / 1000;
-	to.tv_usec = (timeout % 1000) * 1000000; //waiting for line activity with timeout
+	to.tv_usec = (timeout % 1000) * 1000; //waiting for line activity with timeout
 
 #ifdef __DEBUG__
 	syslog(LOG_ERR, "[KSU] waiting for activity: sec:=%d usec=%lu", to.tv_sec, to.tv_usec);
@@ -380,7 +380,7 @@ bool ComTrafficProcessor::HandleError(int error) {
 			m_number_of_ksu_failures = MAX_KSU_CHANCES;
 			syslog(LOG_ERR, "KSU failed %d times in a row", MAX_KSU_CHANCES);
 			pthread_mutex_lock(&m_cmdMutex);
-			if(m_pendingCmd && m_state == STATE_CUSTOM_CMD) {
+			if(m_pendingCmd /*&& m_state == STATE_CUSTOM_CMD*/) {
 				m_pendingCmd->m_pParentCommand.SetReply(NULL, error);
 				delete m_pendingCmd;
 				m_pendingCmd = NULL;
@@ -562,8 +562,14 @@ void* ComTrafficProcessor::Run()
 						pthread_mutex_lock(&m_cmdMutex);
 						if(m_pendingCmd)
 						{
-							WritePacket(m_pendingCmd->m_pDataPacket);
-							m_nextState = STATE_CUSTOM_CMD;
+							//check if we need to change mode first
+							if(GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()) != m_writeMode) {
+								ChangeMode(GET_MODE(m_pendingCmd->m_pDataPacket->GetCmd()));
+								m_nextState = STATE_SET_MODE;
+							} else {
+								WritePacket(m_pendingCmd->m_pDataPacket);
+								m_nextState = STATE_CUSTOM_CMD;
+							}
 						} else {
 							/*
 							 * we cannot change mode if the engine is ON
@@ -646,13 +652,6 @@ void* ComTrafficProcessor::Run()
 				if (error == ERROR_READ_NO_ERROR) {
 					if(GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd()) == packet->GetCmd() ||
 							GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd(), false) == packet->GetCmd()){
-						// report result
-						m_pendingCmd->m_pParentCommand.SetReply(packet, error);
-
-						delete m_pendingCmd;
-						m_pendingCmd = NULL;
-
-						m_nextState = STATE_WAIT_CMD;
 
 						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
 							if(m_currentSettings) {
@@ -661,6 +660,15 @@ void* ComTrafficProcessor::Run()
 							}
 							m_currentSettings = packet;
 						}
+
+						// report result
+						m_pendingCmd->m_pParentCommand.SetReply(packet, error);
+
+						delete m_pendingCmd;
+						m_pendingCmd = NULL;
+
+						m_nextState = STATE_WAIT_CMD;
+
 						gettimeofday(&state_run_end, NULL);
 
 						break;
@@ -788,7 +796,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		//we got activity on the line so decrease timeout
 		timeout->tv_sec = 0;
 		//TODO: IMPORTANT: get the right value
-		timeout->tv_usec = 100 * 1000  * 1000;
+		timeout->tv_usec = 100 * 1000;
 	}
 
 	calculatedCrc16 = Crc16(calculatedCrc16, address);

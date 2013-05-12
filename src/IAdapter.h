@@ -12,6 +12,7 @@
 #include "DataLoggerThread.h"
 #include <map>
 #include "ParameterFilter.h"
+#include <malloc.h>
 
 enum eListValueType {
 	LIST_VALUE_INT,
@@ -43,6 +44,12 @@ struct additional_parameter_t {
 		} list;
 		char* str;
 	} value;
+
+	virtual ~additional_parameter_t() {
+		if(type == PARAM_TYPE_STRING) {
+			free(value.str);
+		}
+	}
 };
 
 typedef std::map<std::string, struct additional_parameter_t*> additional_parameter_map_t;

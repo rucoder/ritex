@@ -626,6 +626,8 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 
 	time_t system_time = time(NULL);
 
+	syslog(LOG_ERR, "CheckSettigsChanged -->>");
+
 	for(unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
 		if(!all_Settings[i].m_isVisible || all_Settings[i].m_size == 0)
 			continue;
@@ -644,9 +646,11 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 			event->setArgument2(itoa(oldValue));
 			event->setArgument3(all_Settings[i].m_name);
 			//TODO: agr 4 -- source of change
+			syslog(LOG_ERR, "CheckSettigsChanged reporting");
 			m_pAdapter->getEventLogger()->EnqueData(event);
 		}
 	}
+	syslog(LOG_ERR, "CheckSettigsChanged -->>");
 }
 
 void RitexDevice::OnResultReady(DeviceCommand* pCmd)

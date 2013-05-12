@@ -121,7 +121,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1631914359" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1321265709" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
-								<option id="gnu.cpp.link.option.libs.1125351414" superClass="gnu.cpp.link.option.libs" valueType="libs">
+								<option id="gnu.cpp.link.option.libs.1125351414" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="sqlite3"/>
 								</option>
@@ -225,7 +225,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2073191900" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1541670342">
 								<option id="gnu.cpp.compiler.option.preprocessor.def.24705733" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
-									<listOptionValue builtIn="false" value="RS485_ADAPTOR=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
 									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.72460142" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
@@ -233,7 +233,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1529493385" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1508034775">
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1617759859" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="TTY_NO_ECHO=1"/>
-									<listOptionValue builtIn="false" value="RS485_ADAPTOR=1"/>
+									<listOptionValue builtIn="false" value="RS485_ADAPTER=1"/>
 									<listOptionValue builtIn="false" value="__DEBUG__=1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.354664656" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -362,10 +362,10 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335.120606551;cdt.managedbuild.config.gnu.exe.debug.288458335.120606551.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1508034775;cdt.managedbuild.tool.gnu.c.compiler.input.382770805">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726;cdt.managedbuild.config.gnu.exe.release.558612726.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.963760463;cdt.managedbuild.tool.gnu.c.compiler.input.1270517585">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067;cdt.managedbuild.tool.gnu.c.compiler.input.1320822451">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.905904067;cdt.managedbuild.tool.gnu.c.compiler.input.1320822451">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726;cdt.managedbuild.config.gnu.exe.release.558612726.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.963760463;cdt.managedbuild.tool.gnu.c.compiler.input.1270517585">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671;cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.1271132711;cdt.managedbuild.tool.gnu.c.compiler.input.963886430">
@@ -374,10 +374,10 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726;cdt.managedbuild.config.gnu.exe.release.558612726.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.2142869270;cdt.managedbuild.tool.gnu.cpp.compiler.input.1363384166">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671;cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1851581727;cdt.managedbuild.tool.gnu.cpp.compiler.input.772757707">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.822591223;cdt.managedbuild.tool.gnu.cpp.compiler.input.1913659722">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335;cdt.managedbuild.config.gnu.exe.debug.288458335.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.822591223;cdt.managedbuild.tool.gnu.cpp.compiler.input.1913659722">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.558612726.1558176671;cdt.managedbuild.config.gnu.exe.release.558612726.1558176671.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1851581727;cdt.managedbuild.tool.gnu.cpp.compiler.input.772757707">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.288458335.120606551;cdt.managedbuild.config.gnu.exe.debug.288458335.120606551.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1541670342;cdt.managedbuild.tool.gnu.cpp.compiler.input.1673760896">

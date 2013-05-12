@@ -11,6 +11,8 @@
 #include <sys/file.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdio.h>
+#include <unistd.h>
 
 
 const char* RitexAdapter::m_commDevices[] = {

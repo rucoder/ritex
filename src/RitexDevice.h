@@ -95,10 +95,10 @@
 #define TYPE_CMD 0
 #define TYPE_ACK 1
 
-#define GET_CMD(x) ((x & CMD_MASK) >> CMD_SHIFT)
+#define GET_CMD(x) (((x) & CMD_MASK) >> CMD_SHIFT)
 
 //for command without mode always return 0
-#define GET_MODE(x) ((x & MODE_MASK) >> MODE_SHIFT)
+#define GET_MODE(x) (((x) & MODE_MASK) >> MODE_SHIFT)
 
 //default value for -sync_time parameter
 #define DEFAULT_TIME_DIVIATION (5*60) //300 seconds

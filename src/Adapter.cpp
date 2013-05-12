@@ -367,7 +367,7 @@ int Adapter::Run() {
 
 									//output command result
 									printf("%s", resp);
-									delete resp;
+									delete [] resp;
 								}
 
 							} else {
