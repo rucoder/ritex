@@ -300,6 +300,8 @@ bool CmdLineParser::Parse() {
 			case 'a':
 				state = OPTION_A_NAME;
 				break;
+			case -1: //-d may not have any -a parameters
+				return true;
 			default:
 				syslog(LOG_ERR,"ERROR: option -d requires -a parameter list\n");
 				isError = true;
