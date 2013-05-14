@@ -14,7 +14,7 @@
 class DataLoggerThread: public LoggerThread<DBDataPacket*> {
 protected:
 	DataLoggerThread() {};
-	virtual bool Insert(DBDataPacket* event);
+	virtual bool BindParams(DBDataPacket* event);
 public:
 	DataLoggerThread(std::string db_name);
 	virtual ~DataLoggerThread() {};

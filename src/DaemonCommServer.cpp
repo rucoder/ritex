@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include <errno.h>
+
 
 #include "Utils.h"
 DaemonCommServer::DaemonCommServer(Device* pDevice, IAdapter* pAdapter)
@@ -238,7 +240,12 @@ void DaemonCommServer::SendResponseToClient(const std::string& response) {
 	}
 
 	syslog(LOG_ERR, "Calling send()");
-	send(m_clientSock,envelope,length + sizeof(int),0);
+
+	if(send(m_clientSock,envelope,length + sizeof(int),MSG_NOSIGNAL) == -1) {
+		if(errno == EPIPE) {
+			syslog(LOG_ERR, "WARNING: client closed connection");
+		}
+	}
 	delete [] envelope;
 }
 
