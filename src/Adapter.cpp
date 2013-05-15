@@ -26,6 +26,8 @@
 #include "DaemonCommServer.h"
 #include "Utils.h"
 
+#define STDIO_DEBUG 1
+
 #define BD_MAX_CLOSE 8192
 
 static char const *priov[] = {
@@ -237,12 +239,15 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		/* 'fd' should be 0 */
 		return CONTEXT_ERROR;
 	}
-	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
-		return CONTEXT_ERROR;
-	}
-	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
-		return CONTEXT_ERROR;
-	}
+//	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
+//	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
+
+	tolog(&stdout);
+	tolog(&stderr);
 
 	fd = open(m_pidFileName.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0);
 	if (fd < 0) {

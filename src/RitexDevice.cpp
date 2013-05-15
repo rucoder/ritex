@@ -681,7 +681,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 			event->setArgument2(itoa(oldValue));
 			event->setArgument3(all_Settings[i].m_name);
 
-			event->setArgument4("HND$" + itoa(89));
+			event->setArgument4("HND");
 
 
 			syslog(LOG_ERR, "CheckSettigsChanged reporting");

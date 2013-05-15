@@ -35,7 +35,7 @@ int DaemonCommChannel::open(std::string socketName)
 	// 0.1 sec sleep. TODO: make timeout configurable
 	struct timespec tim;
 	tim.tv_sec = 0;
-	tim.tv_nsec = 100000000;
+	tim.tv_nsec = 500 * 1000 * 1000;
 	int connectResult;
 
 	m_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);

@@ -662,7 +662,7 @@ void* ComTrafficProcessor::Run()
 //						}
 
 						// report result
-						m_pendingCmd->m_pParentCommand.SetReply(packet, error);
+						m_pendingCmd->m_pParentCommand.SetReply(packet, error, m_currentSettings);
 
 						delete m_pendingCmd;
 						m_pendingCmd = NULL;

@@ -29,6 +29,7 @@ bool CmdExternal::Execute()
 
 void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
 {
+	syslog(LOG_ERR, "CmdExternal::SetReply : status=%d packet->cmd=0x%x m_cmd=0x%x", status, packet->GetCmd(), m_cmdId);
 
 	m_finishedTime = time(NULL); //FIXME:
 
@@ -46,6 +47,7 @@ void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
 				break;
 			case ACK_ALL_SETTINGS:
 				{
+					m_rawResult = "8|Уставка изменена\n";
 					//param1 - keeps setting number
 					//param2 - new value
 					//packet - old value
