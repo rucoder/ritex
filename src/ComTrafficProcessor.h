@@ -79,7 +79,7 @@ protected:
     //fault and event reporting
     bool m_isInFault;
     int m_faultCode;
-    DataPacket* m_currentSettings;
+
     int m_number_of_ksu_failures;
 protected:
 	virtual void* Run();

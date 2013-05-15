@@ -91,7 +91,7 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
 	: m_state(STATE_INIT), m_nextState(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
-	  m_isInFault(false), m_faultCode(-1), m_currentSettings(NULL), m_number_of_ksu_failures(MAX_KSU_CHANCES)
+	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES)
 {
 
 }
@@ -499,22 +499,18 @@ void* ComTrafficProcessor::Run()
 						// got all current settings in response
 						unsigned char* pData = packet->GetDataPtr();
 						m_writeMode = pData[WRITE_MODE_OFFSET];
-						if(m_currentSettings) {
-							m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
-							delete m_currentSettings;
-						}
-						m_currentSettings = packet;
+
+						m_pDevice->CheckSettigsChanged(*packet);
+
 						m_nextState = STATE_WAIT_CMD;
 						/*
 						 * at this point we have all we need:
 						 * 1. current settings array
 						 * 2. current write mode
 						 * 3. password successfully set
-						 * we can go not to the main loop
+						 * we can go into the main loop
 						 */
 						gettimeofday(&state_run_end, NULL);
-
-						break; //do brake so the packet will not be deleted
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
 						//retry
@@ -620,14 +616,9 @@ void* ComTrafficProcessor::Run()
 						syslog(LOG_ERR,"CURRENT WRITE_MODE=%d", m_writeMode);
 						m_nextState = STATE_WAIT_CMD;
 
-						if(m_currentSettings) {
-							m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
-							delete m_currentSettings;
-						}
-						m_currentSettings = packet;
+						m_pDevice->CheckSettigsChanged(*packet/*, *m_currentSettings*/);
 						gettimeofday(&state_run_end, NULL);
 
-						break; //keep packet
 					//couldn't set mode
 					} else if (GET_CMD(packet->GetCmd()) ==  ACK_ACK ){
 						syslog(LOG_ERR, "[ERROR]: FIALED TO SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
@@ -652,14 +643,6 @@ void* ComTrafficProcessor::Run()
 				if (error == ERROR_READ_NO_ERROR) {
 					if(GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd()) == packet->GetCmd() ||
 							GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd(), false) == packet->GetCmd()){
-
-//						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
-//							if(m_currentSettings) {
-//								m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings, m_pendingCmd->m_pParentCommand.GetParentCmd());
-//								delete m_currentSettings;
-//							}
-//							m_currentSettings = packet;
-//						}
 
 						// report result
 						m_pendingCmd->m_pParentCommand.SetReply(packet, error);
@@ -689,12 +672,6 @@ void* ComTrafficProcessor::Run()
 #ifdef __DEBUG__
 		syslog(LOG_ERR, "DORUN======%d", m_doRun);
 #endif
-	}
-
-	//clean up
-	if(m_currentSettings) {
-		delete m_currentSettings;
-		m_currentSettings = NULL;
 	}
 
 	if(m_pendingCmd) {

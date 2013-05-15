@@ -28,16 +28,16 @@ bool CmdTestDevice::Execute() {
 	return true;
 }
 
-void CmdTestDevice::SetReply(DataPacket* packet, int status, DataPacket* param2)
+void CmdTestDevice::SetReply(DataPacket* packet, int status)
 {
 	if(status == ERROR_READ_NO_ERROR) {
 		if(packet->GetCmd() == ACK_INFO_MODE_0) {
 			unsigned short tm;
 			memcpy(&tm, packet->GetDataPtr() + 33, 2);
 			tm = swap16(tm);
-			m_rawResult = "8|Ответ получен. Наработка " + itoa(tm) + " часов\n";
+			m_rawResult = std::string("8|Ответ получен. Наработка ") + itoa(tm) + std::string(" часов\n");
 		} else {
-			m_rawResult = "7|Получен неизвестный ответ\n";
+			m_rawResult = std::string("7|Получен неизвестный ответ\n");
 		}
 		NotifyResultReady();
 

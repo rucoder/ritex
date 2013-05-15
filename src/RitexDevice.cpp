@@ -26,50 +26,54 @@ struct setting_t {
 	int m_offset;
 	int m_size;
 	bool m_isVisible;
+	unsigned short m_value;
+	bool m_isValueSet;
 };
 
 static setting_t all_Settings[] = {
-	{"Частота вращения", " об/мин", 31, 0, 2, true},
-	{"Ток ВД при перегрузе", " А", 32, 0, 0,true},
-	{"Защита по перегрузу", " %", 33, 0,  0,true},
-	{"Время блокировки защиты", " сек", 34, 0,  0,true},
-	{"Время блокировки АПВ", " мин", 35, 0,  0,true},
-	{"Количество перезапусков", "", 36, 0,  0,true},
-	{"Время, в течение которого разрешены перезапуски", " мин", 37, 0,  0,true},
-	{"Ток ВД при недогрузе", " А", 38, 0,  0,true},
-	{"Защита по недогрузу", " %", 39, 0,  0,true},
-	{"Время блокировки защиты", " сек", 40, 0,  0,true},
-	{"Время блокировки АПВ", " мин", 41, 0,  0,true},
-	{"Куст", " №", 42, 0,  0,true},
-	{"Скважина", " №", 43, 0,  0,true},
-	{"Пароль", "", 44, 0,  0,true},
-	{"Служебный режим", "", 45, 0,  0,true},
-	{"Время работы", " мин", 46, 0,  0,true},
-	{"Время паузы", " мин", 47, 0,  0,true},
-	{"Шаг регистрации параметров", " сек", 48, 0, 0, true},
-	{"Текущее время (часы", " минуты)", 49, 0,  0,true},
-	{"Текущая дата (число", " месяц)", 50, 0,  0,true},
-	{"Текущая дата (год)", "", 51, 0,  0,true},
-	{"Напряжение вторичной обмотки трансформатора", " В", 52, 0,  0,true},
-	{"Время блокировки запуска после включения питания", " мин", 53, 0,  0,true},
-	{"Защита по Rиз: 0 – включена", " 1 – выключена", 54, 0,  0,true},
-	{"Дисбаланс по U вх.   лин.", "", 55, 0,  0,true},
-	{"Время срабатывания защиты по дисбалансу U вх.  лин.", "", 56, 0,  0,true},
-	{"Дисбаланс по U вых. лин.", "", 57, 0,  0,true},
-	{"Время срабатывания защиты по дисбалансу U вых. лин.", "", 58, 0,  0,true},
-	{"Дисбаланс по  I  вых. фаз.", "", 59, 0,  0,true},
-	{"Время срабатывания защиты по дисбалансу I  вых. фаз", "", 60, 0,  0,true},
-	{"Дополнительная настройка", "", 61, 0,  0,true},
-	{"Работа с ТМС", "", 62, 0,  0,true},
-	{"Предельная температура ВД ", "", 63, 0,  0,true},
-	{"Давление жидкости на приеме насоса ", "", 64, 0,  0,true},
-	{"Изменение скорости вращения ВД при регулировании по давлению жидкости на приеме насоса", "", 65, 0,  0,true},
-	{"Предел снижения скорости вращения ВД **", "", 66, 0,  0,true},
-	{"Смена пароля инженера", "", 67, 0,  0,true},
-	{"Смена пароля инженера–наладчика", "", 68, 0,  0,true},
-	{"Тест станции", "", 69, 0,  0,true},
-	{"Восстановление заводских уставок", "", 70, 0,  0,true},
+	{"Частота вращения", " об/мин", 31, 0, true, 0, false},
+	{"Ток ВД при перегрузе", " А", 32, 0, true, 0, false},
+	{"Защита по перегрузу", " %", 33, 0, true, 0, false},
+	{"Время блокировки защиты", " сек", 34, 0, true, 0, false},
+	{"Время блокировки АПВ", " мин", 35, 0, true, 0, false},
+	{"Количество перезапусков", "", 36, 0, true, 0, false},
+	{"Время, в течение которого разрешены перезапуски", " мин", 37, 0, true, 0, false},
+	{"Ток ВД при недогрузе", " А", 38, 0, true, 0, false},
+	{"Защита по недогрузу", " %", 39, 0, true, 0, false},
+	{"Время блокировки защиты", " сек", 40, 0, true, 0, false},
+	{"Время блокировки АПВ", " мин", 41, 0, true, 0, false},
+	{"Куст", " №", 42, 0, true, 0, false},
+	{"Скважина", " №", 43, 0, true, 0, false},
+	{"Пароль", "", 44, 0, true, 0, false},
+	{"Служебный режим", "", 45, 0, true, 0, false},
+	{"Время работы", " мин", 46, 0, true, 0, false},
+	{"Время паузы", " мин", 47, 0, true, 0, false},
+	{"Шаг регистрации параметров", " сек", 48, 0, true, 0, false},
+	{"Текущее время (часы", " минуты)", 49, 0, true, 0, false},
+	{"Текущая дата (число", " месяц)", 50, 0, true, 0, false},
+	{"Текущая дата (год)", "", 51, 0, true, 0, false},
+	{"Напряжение вторичной обмотки трансформатора", " В", 52, 0, true, 0, false},
+	{"Время блокировки запуска после включения питания", " мин", 53, 0, true, 0, false},
+	{"Защита по Rиз: 0 – включена", " 1 – выключена", 54, 0, true, 0, false},
+	{"Дисбаланс по U вх.   лин.", "", 55, 0, true, 0, false},
+	{"Время срабатывания защиты по дисбалансу U вх.  лин.", "", 56, 0, true, 0, false},
+	{"Дисбаланс по U вых. лин.", "", 57, 0, true, 0, false},
+	{"Время срабатывания защиты по дисбалансу U вых. лин.", "", 58, 0, true, 0, false},
+	{"Дисбаланс по  I  вых. фаз.", "", 59, 0, true, 0, false},
+	{"Время срабатывания защиты по дисбалансу I  вых. фаз", "", 60, 0, true, 0, false},
+	{"Дополнительная настройка", "", 61, 0, true, 0, false},
+	{"Работа с ТМС", "", 62, 0, true, 0, false},
+	{"Предельная температура ВД ", "", 63, 0, true, 0, false},
+	{"Давление жидкости на приеме насоса ", "", 64, 0, true, 0, false},
+	{"Изменение скорости вращения ВД при регулировании по давлению жидкости на приеме насоса", "", 65, 0, true, 0, false},
+	{"Предел снижения скорости вращения ВД **", "", 66, 0, true, 0, false},
+	{"Смена пароля инженера", "", 67, 0, true, 0, false},
+	{"Смена пароля инженера–наладчика", "", 68, 0, true, 0, false},
+	{"Тест станции", "", 69, 0, true, 0, false},
+	{"Восстановление заводских уставок", "", 70, 0, true, 0, false},
+	{"", "", 71, 0, true, 0, false},
 };
+
 
 #define NUMBER_OF_SETTINGS (sizeof(all_Settings) / sizeof(setting_t))
 
@@ -632,20 +636,30 @@ unsigned short RitexDevice::GetSettingFromPacket(const DataPacket& pPacket, int 
 	return value;
 }
 
-unsigned short RitexDevice::GetSettingFromPacket(const DataPacket& pPacket, int id)
+/**
+ * returns true if new value is applied
+ */
+bool RitexDevice::SetCurrentSettingValue(int id, unsigned short newValue, unsigned short& oldValue)
 {
-	assert(id > all_Settings[0].m_id && id < all_Settings[NUMBER_OF_SETTINGS-1].m_id);
+	assert(id >= all_Settings[0].m_id && id <= all_Settings[NUMBER_OF_SETTINGS-1].m_id);
+
 	//find setting index
 	for (unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
 		if(all_Settings[i].m_id == id) {
-			return GetSettingFromPacket(pPacket, all_Settings[i].m_offset, all_Settings[i].m_size);
+			if(!all_Settings[i].m_isValueSet || all_Settings[i].m_value != newValue) {
+				oldValue = all_Settings[i].m_value;
+				all_Settings[i].m_value = newValue;
+				all_Settings[i].m_isValueSet = true;
+				return true;
+			}
+			break;
 		}
 	}
-	return 0xFFFF;
+	return false;
 }
 
 std::string RitexDevice::getSettingName(int id) {
-	assert(id > all_Settings[0].m_id && id < all_Settings[NUMBER_OF_SETTINGS-1].m_id);
+	assert(id >= all_Settings[0].m_id && id <= all_Settings[NUMBER_OF_SETTINGS-1].m_id);
 	//find setting index
 	for (unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
 		if(all_Settings[i].m_id == id) {
@@ -655,9 +669,8 @@ std::string RitexDevice::getSettingName(int id) {
 	return std::string("");
 }
 
-void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings) {
+void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 	assert(newSettings.GetCmd() == ACK_ALL_SETTINGS);
-	assert(oldSettings.GetCmd() == ACK_ALL_SETTINGS);
 
 	time_t system_time = time(NULL);
 
@@ -670,9 +683,11 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 		int offset = all_Settings[i].m_offset;
 
 		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
-		unsigned short oldValue =  GetSettingFromPacket(oldSettings,offset, all_Settings[i].m_size);
+		unsigned short oldValue =  all_Settings[i].m_value;
 
-		if(newValue != oldValue) {
+		if(newValue != oldValue || !all_Settings[i].m_isValueSet) {
+			all_Settings[i].m_isValueSet = true;
+			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
 			event->setChannelId(1024); //FIXME: temporrary workaround
 			event->setTypeId(8);
@@ -681,7 +696,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 			event->setArgument2(itoa(oldValue));
 			event->setArgument3(all_Settings[i].m_name);
 
-			event->setArgument4("HND$" + itoa(89));
+			event->setArgument4("HND");
 
 
 			syslog(LOG_ERR, "CheckSettigsChanged reporting");
@@ -704,4 +719,58 @@ void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 
 	}
 }
+
+bool RitexDevice::UpdateSettingsValues() {
+//    sqlite3* pDb;
+//
+//    syslog(LOG_ERR, "[SQL]: getting settings for device %d", m_deviceId);
+//
+//#if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
+//    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb";
+//#else
+//    std::string dbPath = "/mnt/www/ControlServer/data/ic_data_event3.sdb";
+//#endif
+//
+//
+//    int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
+//
+//    if(rc != SQLITE_OK)
+//    {
+//    	syslog(LOG_ERR, "[SQL] couldn't open DB %s\n", dbPath.c_str());
+//    	sqlite3_close(pDb);
+//    	return false;
+//    }
+//
+//    sqlite3_stmt* pStm;
+//
+//    char* query = new char[1024];
+//
+//    if (query == NULL) {
+//    	syslog(LOG_ERR, "[SQL] OOM creating query\n");
+//    	sqlite3_close(pDb);
+//    	return false;
+//    }
+//    snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where DeviceId == %d AND isOn == 1", devId);
+//
+//    if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
+//    	if (pStm != NULL) {
+//    		int cols = sqlite3_column_count(pStm);
+//    		syslog(LOG_ERR, "[SQL] cols=%d\n", cols);
+//    		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
+//    			int paramId = sqlite3_column_int(pStm, 0);
+//    			int channelId = sqlite3_column_int(pStm, 1);
+//    			syslog(LOG_ERR, "Add channel to filter: P:%d C:%d", paramId, channelId);
+//    			m_paramFilter.AddItem(channelId, paramId);
+//    		}
+//    		sqlite3_finalize(pStm);
+//    	} else {
+//    		syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+//    	}
+//    } else {
+//    	syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+//    }
+//    delete [] query;
+    return true;
+}
+
 

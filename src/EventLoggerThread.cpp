@@ -20,6 +20,7 @@ EventLoggerThread::EventLoggerThread(std::string db_name)
 
 bool EventLoggerThread::BindParams(DBEventCommon* event)
 {
+	Log("Inserting event: %d", event->getTypeId());
 	return Bind(1, event->getTypeId()) && Bind(2, event->getChannelId()) &&
 	Bind(3, TimeToString(event->getRegisterTimeDate())) &&
 	Bind(4, event->getArgument1())&&

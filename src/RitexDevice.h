@@ -145,9 +145,9 @@ public:
 	void ReportEvent(DBEventCommon* pEvent);
 	void CheckAndReportTimeDiviation(DataPacket* packet);
 	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size);
-	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int id);
+	bool SetCurrentSettingValue(int id, unsigned short newValue, unsigned short& oldValue);
 	std::string getSettingName(int id);
-	void CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings);
+	void CheckSettigsChanged(const DataPacket& newSettings/*, const DataPacket& oldSettings*/);
 
 
 	// command implementations
@@ -157,6 +157,8 @@ public:
 
 	//from ICmdResultReadyListener
 	virtual void OnResultReady(DeviceCommand* pCmd);
+
+	virtual bool UpdateSettingsValues();
 };
 
 #endif /* RITEXDEVICE_H_ */

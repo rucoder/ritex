@@ -27,12 +27,13 @@ DeviceCommand::~DeviceCommand() {
 
 void DeviceCommand::NotifyResultReady()
 {
+	syslog(LOG_ERR, "DeviceCommand::NotifyResultReady(): m_rawResult=%s", m_rawResult.c_str());
 	for(std::list<ICmdResulReadytListener*>::iterator itr = m_Listeners.begin(); itr != m_Listeners.end(); itr++) {
 		(*itr)->OnResultReady(this);
 	}
 }
 
-void DeviceCommand::SetReply(DataPacket* packet, int status, DataPacket* param2)
+void DeviceCommand::SetReply(DataPacket* packet, int status/*, DataPacket* param2*/)
 {
 	if(status == ERROR_READ_BAD_CRC) {
 		m_rawResult = "7|Ошибка в CRC\n";

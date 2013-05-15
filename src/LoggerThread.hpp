@@ -143,7 +143,7 @@ protected:
 	}
 
 	bool Bind(int index, const std::string value) {
-		if(sqlite3_bind_text(m_pStm, 3, value.c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+		if(sqlite3_bind_text(m_pStm, index, value.c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
 			Log("Couldn't bind text: index %d", index);
 			return false;
 		}

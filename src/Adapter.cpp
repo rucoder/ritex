@@ -426,6 +426,13 @@ int Adapter::Run() {
 						break;
 					}
 
+					if(!m_pDevice->UpdateSettingsValues()) {
+						//cannot continue. cleanup and exit
+						DaemonCleanup();
+						syslog(LOG_ERR, "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
+						break;
+					}
+
 
 					/*
 					 * Now create all necessary communication facilities:

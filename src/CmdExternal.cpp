@@ -22,12 +22,11 @@ CmdExternal::~CmdExternal() {
 bool CmdExternal::Execute()
 {
 	syslog(LOG_ERR,"CmdExternal::Execute");
-	//printf("");
 	//bool RitexDevice::ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int speed, unsigned char cmd, unsigned char p1, unsigned short p2)
 	return m_pDevice->ExecuteCustomCommand(this, m_commport, m_speed, m_cmdId, m_param1, m_param2);
 }
 
-void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
+void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*/)
 {
 
 	m_finishedTime = time(NULL); //FIXME:
@@ -42,18 +41,18 @@ void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
 		case REQ_SETTING_SET:
 			switch(packet->GetCmd()) {
 			case ACK_ACK:
-				m_rawResult = "7|Ошибка. Код " + itoa(packet->GetDataPtr()[0]) + "\n";
+				m_rawResult = std::string("7|Ошибка. Код ") + itoa(packet->GetDataPtr()[0]) + std::string("\n");
 				break;
 			case ACK_ALL_SETTINGS:
 				{
 					//param1 - keeps setting number
 					//param2 - new value
 					//packet - old value
-
+					m_rawResult = std::string("8|Уставка изменена\n");
 					time_t system_time = time(NULL);
 					//1. get old value
-					unsigned short oldValue = m_pDevice->GetSettingFromPacket(*param2, m_param1);
-					if(oldValue != m_param2) {
+					unsigned short oldValue;
+					if(m_pDevice->SetCurrentSettingValue(m_param1 /* id */, m_param2 /* new value */, oldValue)) {
 						DBEventCommon* event = new DBEventCommon();
 						event->setChannelId(1024); //FIXME: temporary workaround
 						event->setTypeId(8);
@@ -74,13 +73,13 @@ void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
 		case REQ_VD_ON:
 		case REQ_VD_ROTATION:
 			if (packet->GetCmd() != ACK_ACK) {
-				m_rawResult = "7|Получен неизвестный ответ\n";
+				m_rawResult = std::string("7|Получен неизвестный ответ\n");
 			} else {
 				unsigned char errorCode = packet->GetDataPtr()[0];
 				if(errorCode == 0) {
-					m_rawResult = "8|Прием без ошибок\n";
+					m_rawResult = std::string("8|Прием без ошибок\n");
 				} else {
-					m_rawResult = "7|Ошибка. Код " + itoa(errorCode) + "\n";
+					m_rawResult = std::string("7|Ошибка. Код ") + itoa(errorCode) + std::string("\n");
 				}
 			}
 			break;
