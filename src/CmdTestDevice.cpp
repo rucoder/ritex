@@ -28,7 +28,7 @@ bool CmdTestDevice::Execute() {
 	return true;
 }
 
-void CmdTestDevice::SetReply(DataPacket* packet, int status)
+void CmdTestDevice::SetReply(DataPacket* packet, int status, DataPacket* param2)
 {
 	if(status == ERROR_READ_NO_ERROR) {
 		if(packet->GetCmd() == ACK_INFO_MODE_0) {

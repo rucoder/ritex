@@ -67,7 +67,7 @@ public:
 
 class AdapterCommand {
 public:
-	int m_cmdId;
+	int m_cmdType;
 	std::string m_name;
 	std::string m_description;
 	std::vector<AdapterCommandArg*> m_args;

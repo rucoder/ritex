@@ -653,13 +653,13 @@ void* ComTrafficProcessor::Run()
 					if(GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd()) == packet->GetCmd() ||
 							GetAckForCmd(m_pendingCmd->m_pDataPacket->GetCmd(), false) == packet->GetCmd()){
 
-						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
-							if(m_currentSettings) {
-								m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings);
-								delete m_currentSettings;
-							}
-							m_currentSettings = packet;
-						}
+//						if(packet->GetCmd() == ACK_ALL_SETTINGS) {
+//							if(m_currentSettings) {
+//								m_pDevice->CheckSettigsChanged(*packet, *m_currentSettings, m_pendingCmd->m_pParentCommand.GetParentCmd());
+//								delete m_currentSettings;
+//							}
+//							m_currentSettings = packet;
+//						}
 
 						// report result
 						m_pendingCmd->m_pParentCommand.SetReply(packet, error);

@@ -28,7 +28,7 @@ bool CmdGetSupportedCommands::Execute()
 		AdapterCommand* pCmd = list[i];
 
 		//printf("%d|%s|%s\n", i, pCmd->m_name.c_str(), );
-		std::cout << pCmd->m_cmdId << "|" << pCmd->m_name << "|" << pCmd->m_description << std::endl;
+		std::cout << pCmd->m_cmdType << "|" << pCmd->m_name << "|" << pCmd->m_description << std::endl;
 
 		std::vector<AdapterCommandArg*>& args = pCmd->GetAgrList();
 

@@ -8,7 +8,7 @@
 #include "AdapterCommand.h"
 
 AdapterCommand::AdapterCommand(int id, std::string name, std::string description)
-	: m_cmdId(id), m_name(name), m_description(description)
+	: m_cmdType(id), m_name(name), m_description(description)
 {
 	// TODO Auto-generated constructor stub
 

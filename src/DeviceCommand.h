@@ -34,7 +34,7 @@ public:
 	void AddResultListener(ICmdResulReadytListener* pListener) {
 		m_Listeners.push_back(pListener);
 	}
-	virtual void SetReply(DataPacket* packet, int status);
+	virtual void SetReply(DataPacket* packet, int status, DataPacket* param2 = NULL);
 	CmdLineCommand* GetParentCmd() { return m_pParentCommand; }
 	time_t GetArrivalTime() { return m_arrivalTime; }
 	time_t GetFinishedTime() { return m_finishedTime; }

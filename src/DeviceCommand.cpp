@@ -32,7 +32,7 @@ void DeviceCommand::NotifyResultReady()
 	}
 }
 
-void DeviceCommand::SetReply(DataPacket* packet, int status)
+void DeviceCommand::SetReply(DataPacket* packet, int status, DataPacket* param2)
 {
 	if(status == ERROR_READ_BAD_CRC) {
 		m_rawResult = "7|Ошибка в CRC\n";

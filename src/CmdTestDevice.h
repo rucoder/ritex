@@ -20,7 +20,7 @@ public:
 	CmdTestDevice(RitexDevice* p_device, std::string commport, int speed);
 	virtual ~CmdTestDevice();
 	virtual bool Execute();
-	virtual void SetReply(DataPacket* packet, int status);
+	virtual void SetReply(DataPacket* packet, int status,DataPacket* param2 = NULL);
 };
 
 #endif /* CMDTESTDEVICE_H_ */

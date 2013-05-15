@@ -253,7 +253,7 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 	AddSensor(pSensor);
 
 	// "change setting command group"
-	AdapterCommand* pCmd = new AdapterCommand(1, "Изменить уставку", "Изменение уставок");
+	AdapterCommand* pCmd = new AdapterCommand(24, "Изменить уставку", "Изменение уставок");
 
 	std::vector<AdapterCommandArgParam*> params;
 
@@ -312,9 +312,21 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	printf( "List size: %lu\n",list.size());
 #endif
 
-	assert((cmd->m_cmdType > 0) && (cmd->m_cmdType -1 < list.size()));
+	assert(cmd->m_cmdType > 0);
 
-	AdapterCommand* pCmd = list[cmd->m_cmdType-1];
+	AdapterCommand* pCmd = NULL;
+	syslog(LOG_ERR, "cmd->m_cmdId=%d", cmd->m_cmdType);
+
+	for(unsigned int i = 0; i< list.size(); i++) {
+		syslog(LOG_ERR, "cmd[i].m_cmdId=%d", list[i]->m_cmdType);
+		if(list[i]->m_cmdType == cmd->m_cmdType) {
+			pCmd = list[i];
+			break;
+		}
+	}
+
+	assert(pCmd != NULL);
+
 
 #ifdef __DEBUG__
 	printf( "Param count: %lu\n",pCmd->m_args.size());
@@ -606,7 +618,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 	}
 }
 
-unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size)
+unsigned short RitexDevice::GetSettingFromPacket(const DataPacket& pPacket, int offset, int size)
 {
 	assert(size == 1 || size == 2);
 	unsigned char* data = pPacket.GetDataPtr();
@@ -618,6 +630,29 @@ unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int s
 		value = swap16(value);
 	}
 	return value;
+}
+
+unsigned short RitexDevice::GetSettingFromPacket(const DataPacket& pPacket, int id)
+{
+	assert(id > all_Settings[0].m_id && id < all_Settings[NUMBER_OF_SETTINGS-1].m_id);
+	//find setting index
+	for (unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
+		if(all_Settings[i].m_id == id) {
+			return GetSettingFromPacket(pPacket, all_Settings[i].m_offset, all_Settings[i].m_size);
+		}
+	}
+	return 0xFFFF;
+}
+
+std::string RitexDevice::getSettingName(int id) {
+	assert(id > all_Settings[0].m_id && id < all_Settings[NUMBER_OF_SETTINGS-1].m_id);
+	//find setting index
+	for (unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
+		if(all_Settings[i].m_id == id) {
+			return std::string(all_Settings[i].m_name);
+		}
+	}
+	return std::string("");
 }
 
 void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings) {
@@ -645,7 +680,10 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 			event->setArgument1(itoa(newValue));
 			event->setArgument2(itoa(oldValue));
 			event->setArgument3(all_Settings[i].m_name);
-			//TODO: agr 4 -- source of change
+
+			event->setArgument4("HND$" + itoa(89));
+
+
 			syslog(LOG_ERR, "CheckSettigsChanged reporting");
 			m_pAdapter->getEventLogger()->EnqueData(event);
 		}
@@ -653,25 +691,17 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings, const DataP
 	syslog(LOG_ERR, "CheckSettigsChanged -->>");
 }
 
+void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
+	m_pAdapter->getEventLogger()->EnqueData(pEvent);
+}
+
+
 void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 {
 	syslog(LOG_ERR, "######### RitexDevice::OnResultReady");
 	// add event for HW commands only
 	if(pCmd->isHWCommand()) {
-//		DBEventCommand* event = new DBEventCommand();
-//
-//		event->m_arrivalTime = pCmd->GetArrivalTime();
-//		event->m_finishedTime = pCmd->GetFinishedTime();
-//		event->m_cmdId = 0; //FIXME????
-//		event->m_devId = getDeviceId();
-//		event->m_msg = pCmd->GetParentCmd()->m_messageRaw;
-//		event->m_prio = 0; //FIXME???
-//		event->m_result = pCmd->getRawResult();
-//		event->m_src = pCmd->GetParentCmd()->m_sourceRaw;
-//		event->m_state = 0; //FIXME???
-//		event->m_type = pCmd->GetParentCmd()->m_cmdType;
-//
-//		//m_pAdapter->getCmdLogger()->EnqueData(event);
+
 	}
 }
 

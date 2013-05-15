@@ -27,7 +27,7 @@ public:
 	CmdExternal(RitexDevice* device, std::string commport, int speed, CmdLineCommand* cmd, unsigned short cmdId, unsigned char param1, unsigned short param2 = 0);
 	virtual ~CmdExternal();
 	virtual bool Execute();
-	virtual void SetReply(DataPacket* packet, int status);
+	virtual void SetReply(DataPacket* packet, int status, DataPacket* param2 = NULL);
 };
 
 #endif /* CMDEXTERNAL_H_ */

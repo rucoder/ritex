@@ -27,7 +27,7 @@ bool CmdExternal::Execute()
 	return m_pDevice->ExecuteCustomCommand(this, m_commport, m_speed, m_cmdId, m_param1, m_param2);
 }
 
-void CmdExternal::SetReply(DataPacket* packet, int status)
+void CmdExternal::SetReply(DataPacket* packet, int status, DataPacket* param2)
 {
 
 	m_finishedTime = time(NULL); //FIXME:
@@ -45,7 +45,27 @@ void CmdExternal::SetReply(DataPacket* packet, int status)
 				m_rawResult = "7|Ошибка. Код " + itoa(packet->GetDataPtr()[0]) + "\n";
 				break;
 			case ACK_ALL_SETTINGS:
-				m_rawResult = "8|Уставка изменена\n";
+				{
+					//param1 - keeps setting number
+					//param2 - new value
+					//packet - old value
+
+					time_t system_time = time(NULL);
+					//1. get old value
+					unsigned short oldValue = m_pDevice->GetSettingFromPacket(*param2, m_param1);
+					if(oldValue != m_param2) {
+						DBEventCommon* event = new DBEventCommon();
+						event->setChannelId(1024); //FIXME: temporary workaround
+						event->setTypeId(8);
+						event->setRegisterTimeDate(system_time);
+						event->setArgument1(itoa(m_param2));
+						event->setArgument2(itoa(oldValue));
+						event->setArgument3(m_pDevice->getSettingName(m_param1));
+						event->setArgument4(m_pParentCommand->m_sourceRaw+"$" + m_pParentCommand->m_cmdIdRaw);
+						syslog(LOG_ERR, "CheckSettigsChanged reporting");
+						m_pDevice->ReportEvent(event);
+					}
+				}
 				break;
 			}
 			break;

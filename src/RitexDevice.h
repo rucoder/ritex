@@ -142,7 +142,11 @@ public:
 	//event/data reporting
 	void ReportDataPacket(DataPacket* packet);
 	void ReportFault(int code, time_t time);
+	void ReportEvent(DBEventCommon* pEvent);
 	void CheckAndReportTimeDiviation(DataPacket* packet);
+	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size);
+	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int id);
+	std::string getSettingName(int id);
 	void CheckSettigsChanged(const DataPacket& newSettings, const DataPacket& oldSettings);
 
 
