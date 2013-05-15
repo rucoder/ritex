@@ -36,11 +36,11 @@ void DeviceCommand::NotifyResultReady()
 void DeviceCommand::SetReply(DataPacket* packet, int status/*, DataPacket* param2*/)
 {
 	if(status == ERROR_READ_BAD_CRC) {
-		m_rawResult = "7|Ошибка в CRC\n";
+		m_rawResult = std::string("7|Ошибка в CRC\n");
 	} else if(status == ERROR_READ_TIMEOUT) {
-		m_rawResult = "7|Станция не отвечает\n";
+		m_rawResult = std::string("7|Станция не отвечает\n");
 	} else {
-		m_rawResult = "7|Ошибка неизвестна: код " + itoa(status) + "\n";
+		m_rawResult = std::string("7|Ошибка неизвестна: код ") + itoa(status) + std::string("\n");
 	}
 
 	NotifyResultReady();
