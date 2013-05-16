@@ -27,19 +27,17 @@
 
 #include <errno.h>
 
-
 #include "Utils.h"
-DaemonCommServer::DaemonCommServer(Device* pDevice, IAdapter* pAdapter)
-	: Thread(), m_pDevice(pDevice), m_pAdapter(pAdapter), m_connectSock(-1), m_clientSock(-1), m_canProcessCommands(true)
-{
+DaemonCommServer::DaemonCommServer(Device* pDevice, IAdapter* pAdapter) :
+		Thread(), m_pDevice(pDevice), m_pAdapter(pAdapter), m_connectSock(-1), m_clientSock(
+				-1), m_canProcessCommands(true) {
 
 }
 
 DaemonCommServer::~DaemonCommServer() {
 }
 
-bool DaemonCommServer::Create(bool createDetached )
-{
+bool DaemonCommServer::Create(bool createDetached) {
 	struct sockaddr_un addr;
 
 	m_connectSock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -53,15 +51,14 @@ bool DaemonCommServer::Create(bool createDetached )
 
 	//TODO: fix it
 	char name[32];
-	snprintf(name, 32,"Ritex_socket%d", m_pDevice->getDeviceId());
+	snprintf(name, 32, "Ritex_socket%d", m_pDevice->getDeviceId());
 	/// end
 
 	strncpy(&addr.sun_path[1], name, sizeof(addr.sun_path) - 2);
 
 	syslog(LOG_ERR, "DaemonCommServer: Opening server socket.. [%s] ", name);
 
-
-	if (bind(m_connectSock, (struct sockaddr *) &addr, sizeof(struct sockaddr_un)) == -1) {
+	if (bind(m_connectSock, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + strlen(name) + 1) == -1) {
 		syslog(LOG_ERR, "DaemonCommServer: bind() error");
 		close(m_connectSock);
 		m_connectSock = -1;
@@ -75,7 +72,7 @@ bool DaemonCommServer::Create(bool createDetached )
 	}
 
 	pthread_cond_init(&m_canProcessCommandsCond, NULL);
-	pthread_mutex_init(&m_mutex,NULL);
+	pthread_mutex_init(&m_mutex, NULL);
 
 	m_pDevice->SetDeviceStatusListener(this);
 
@@ -107,50 +104,55 @@ void* DaemonCommServer::Run() {
 		/*
 		 * Command handling loop
 		 */
-		syslog(LOG_ERR, "DaemonCommServer: Client connected. m_clientSock=0x%X", m_clientSock);
+		syslog(LOG_ERR, "DaemonCommServer: Client connected. m_clientSock=0x%X",
+				m_clientSock);
 		do {
 #ifdef KSU_EMULATOR
 			int length;
-			numRead =4;
+			numRead = 4;
 			length = 4;
-			char* rawData = new char[1024];;
+			char* rawData = new char[1024];
 #else
 			int length;
 			unsigned char* rawData;
-			numRead = recv(m_clientSock, &length, 4, 0); //get the length
+			numRead = recv(m_clientSock, &length, sizeof(int), MSG_WAITALL); //get the length
 
-			syslog(LOG_ERR, "DaemonCommServer: Got packet. length=%d", length);
+			syslog(LOG_ERR, "DaemonCommServer: Got packet. length=%d numRead=%d", length, numRead);
 
 			if(numRead < 0) {
 				m_clientSock = -1;
+				SendResponseToClient(
+						"7;[SERVER] error getting  content length\n");
 				break;
 			}
 #endif
 
-			if(numRead == 4) {
+			if (numRead == sizeof(int)) {
 #ifdef KSU_EMULATOR
 				printf("input command>");
 				gets(rawData);
 #else
 				rawData = new unsigned char[length];
-				numRead = recv(m_clientSock, rawData, length, 0); //get the data
+				numRead = recv(m_clientSock, rawData, length, MSG_WAITALL); //get the data
 #endif
-
 
 #ifdef __DEBUG__
-				syslog(LOG_ERR, "DaemonCommServer: Got packet data read. =%d expected=%d", numRead, length);
+				syslog(LOG_ERR,
+						"DaemonCommServer: Got packet data read. =%d expected=%d",
+						numRead, length);
 #endif
 
-				syslog(LOG_ERR, "DaemonCommServer: command line from client: %s", rawData);
-
+				syslog(LOG_ERR,
+						"DaemonCommServer: command line from client: %s",
+						rawData);
 
 				//good packet
-				if(numRead == length) {
+				if (numRead == length) {
 
 #ifdef __DEBUG__
 					syslog(LOG_ERR, "--- 0");
 #endif
-					pParser->SetCmdLine((char*)rawData);
+					pParser->SetCmdLine((char*) rawData);
 #ifdef __DEBUG__
 					syslog(LOG_ERR, "--- 0.1");
 #endif
@@ -161,51 +163,62 @@ void* DaemonCommServer::Run() {
 						syslog(LOG_ERR, "--- 1");
 #endif
 						CmdLineCommand* pCommand = pParser->GetCommand();
-						if(pCommand && pCommand->Compile(m_pAdapter->GetAdditionalParameterMap())) {
+						if (pCommand
+								&& pCommand->Compile(
+										m_pAdapter->GetAdditionalParameterMap())) {
 #ifdef __DEBUG__
 							syslog(LOG_ERR, "--- 2");
 #endif
-							DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCommand);
+							DeviceCommand* pDevCmd = m_pDevice->CreateCommand(
+									pCommand);
 							if (pDevCmd) {
 								int s;
 #ifdef __DEBUG__
 								syslog(LOG_ERR, "--- 3");
 #endif
 
-								syslog(LOG_ERR, "DaemonCommServer: Executing external command...");
+								syslog(LOG_ERR,
+										"DaemonCommServer: Executing external command...");
 
 								s = pthread_mutex_lock(&m_mutex);
-								if( s != 0) {
-									syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+								if (s != 0) {
+									syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d", s);
 								}
 
 								m_canProcessCommands = false;
 								s = pthread_mutex_unlock(&m_mutex);
-								if( s != 0) {
-									syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+								if (s != 0) {
+									syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d", s);
 								}
 
-
 								pDevCmd->AddResultListener(this);
-								if(pDevCmd->Execute()) {
-									syslog(LOG_ERR, "DaemonCommServer: Executing. WAIT->>");
+								if (pDevCmd->Execute()) {
+									syslog(LOG_ERR,
+											"DaemonCommServer: Executing. WAIT->>");
 
 									s = pthread_mutex_lock(&m_mutex);
-									syslog(LOG_ERR, "DaemonCommServer: Executing. WAIT: locked %d", s);
+									syslog(LOG_ERR,
+											"DaemonCommServer: Executing. WAIT: locked %d",
+											s);
 
-									while(!m_canProcessCommands) {
-										syslog(LOG_ERR, "Executing. WAIT: wait on cond");
-										pthread_cond_wait(&m_canProcessCommandsCond, &m_mutex);
+									while (!m_canProcessCommands) {
+										syslog(LOG_ERR,
+												"Executing. WAIT: wait on cond");
+										pthread_cond_wait(
+												&m_canProcessCommandsCond,
+												&m_mutex);
 									}
 									s = pthread_mutex_unlock(&m_mutex);
-									if( s != 0) {
-										syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+									if (s != 0) {
+										syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",
+												s);
 									}
 
 									syslog(LOG_ERR, "Executing. WAIT-<<");
 								} else {
 									syslog(LOG_ERR, "[ERROR] Executing. ");
-									SendResponseToClient("7|Не могу начать выполнение команды. Внутренняя ошибка\n");
+									SendResponseToClient(
+											"7;Не могу начать выполнение команды. Внутренняя ошибка\n");
 								}
 
 								delete pDevCmd;
@@ -214,12 +227,21 @@ void* DaemonCommServer::Run() {
 						}
 					}
 					continue;
+				} else {
+					syslog(LOG_ERR, "[SERVER] got wrong content length: %d",
+							numRead);
+					SendResponseToClient(
+							"7;[SERVER] got wrong content length\n");
 				}
 				break;
+			} else {
+				syslog(LOG_ERR, "[SERVER] got wrong packet length: %d",
+						numRead);
+				SendResponseToClient("7;[SERVER] got wrong packet length\n");
 			}
 			break;
 
-		} while(1);
+		} while (1);
 		//TODO: handle error better
 	}
 	syslog(LOG_ERR, "DaemonCommServer::Run(): DONE");
@@ -232,32 +254,33 @@ void DaemonCommServer::SendResponseToClient(const std::string& response) {
 
 	syslog(LOG_ERR, "DaemonCommServer: Sending result: length: %d", length);
 
-	unsigned char* envelope = new unsigned char[response.length()+1 + sizeof(int)];
+	unsigned char* envelope = new unsigned char[response.length() + 1
+			+ sizeof(int)];
 
 	::memcpy(envelope, &length, sizeof(int));
-	if(length > 0) {
+	if (length > 0) {
 		::memcpy(envelope + sizeof(int), response.c_str(), length);
 	}
 
 	syslog(LOG_ERR, "Calling send()");
 
-	if(send(m_clientSock,envelope,length + sizeof(int),MSG_NOSIGNAL) == -1) {
-		if(errno == EPIPE) {
+	if (send(m_clientSock, envelope, length + sizeof(int), MSG_NOSIGNAL)
+			== -1) {
+		if (errno == EPIPE) {
 			syslog(LOG_ERR, "WARNING: client closed connection");
 		}
 	}
-	delete [] envelope;
+	delete[] envelope;
 }
 
-void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
-{
-	syslog(LOG_ERR,"DaemonCommServer::OnResultReady->>");
+void DaemonCommServer::OnResultReady(DeviceCommand* pCmd) {
+	syslog(LOG_ERR, "DaemonCommServer::OnResultReady->>");
 
 	SendResponseToClient(pCmd->getRawResult());
 
 	int s = pthread_mutex_lock(&m_mutex);
-	if( s != 0) {
-		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+	if (s != 0) {
+		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d", s);
 	}
 
 	syslog(LOG_ERR, "Calling send(): locked");
@@ -269,15 +292,14 @@ void DaemonCommServer::OnResultReady(DeviceCommand* pCmd)
 	syslog(LOG_ERR, "Calling send(): after 1");
 
 	s = pthread_mutex_unlock(&m_mutex);
-	if( s != 0) {
-		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d",s);
+	if (s != 0) {
+		syslog(LOG_ERR, "~~~~~~~~~~MUTEX s=%d", s);
 	}
 
-	syslog(LOG_ERR,"DaemonCommServer::OnResultReady-<<");
+	syslog(LOG_ERR, "DaemonCommServer::OnResultReady-<<");
 }
 
-void DaemonCommServer::OnDeviceStatusChanged(eDeviceStaus status)
-{
+void DaemonCommServer::OnDeviceStatusChanged(eDeviceStaus status) {
 	syslog(LOG_ERR, "OnDeviceStatusChanged: %d", status);
 	if (status == DEVICE_STATUS_EXIT) {
 		Cancel();
@@ -287,16 +309,15 @@ void DaemonCommServer::OnDeviceStatusChanged(eDeviceStaus status)
 void DaemonCommServer::OnCancel() {
 	syslog(LOG_ERR, "OnCancel!!!!:");
 
-	if(m_clientSock != -1) {
+	if (m_clientSock != -1) {
 		m_clientSock = -1;
 		close(m_clientSock);
 	}
-	if(m_connectSock != -1) {
+	if (m_connectSock != -1) {
 		m_connectSock = -1;
 		close(m_connectSock);
 	}
 	pthread_cond_destroy(&m_canProcessCommandsCond);
 	pthread_mutex_destroy(&m_mutex);
 }
-
 

@@ -692,7 +692,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
 			event->setChannelId(GetDeviceStateChannelId());
-			event->setTypeId(8);
+			event->setTypeId(11);
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(newValue));
 			event->setArgument2(itoa(oldValue));

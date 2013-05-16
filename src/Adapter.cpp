@@ -372,6 +372,7 @@ int Adapter::Run() {
 
 							} else {
 								syslog(LOG_ERR, "Error connecting to daemon on %s\n", m_socket.c_str());
+								printf("7;Адаптер не отвечает\n");
 							}
 						} else {
 							syslog(LOG_ERR, "OOM creating DaemonCommChannel\n");

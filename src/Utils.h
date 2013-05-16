@@ -27,6 +27,9 @@ static inline unsigned short swap16(unsigned short x)
 #define MSB(x) ((x) & 0xFF)
 #endif
 
+#define _STRUCT_OFFSET(struct_type, member)	\
+    ((long) ((unsigned char*) &((struct_type*) 0)->member))
+
 std::string itoa(int i);
 std::vector<std::string> split(const std::string &s, char delim);
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);

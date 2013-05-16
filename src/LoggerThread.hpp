@@ -104,24 +104,26 @@ protected:
 	}
 	void flush() {
 		//just in case we terminated thread somewhere in between
-		sqlite3_reset(m_pStm);
-		sqlite3_clear_bindings(m_pStm);
-		while(!m_queue.empty()) {
-			T pData = m_queue.front();
-			m_queue.pop();
-			if(pData) {
-				if(BindParams(pData))
-				{
-					if (sqlite3_step(m_pStm) != SQLITE_DONE) {
-						Log("Failed to insert data from flush(): STEP : ERROR: %s!", getLastError());
-					}
+		if(m_pStm && m_pDb) {
+			sqlite3_reset(m_pStm);
+			sqlite3_clear_bindings(m_pStm);
+			while(!m_queue.empty()) {
+				T pData = m_queue.front();
+				m_queue.pop();
+				if(pData) {
+					if(BindParams(pData))
+					{
+						if (sqlite3_step(m_pStm) != SQLITE_DONE) {
+							Log("Failed to insert data from flush(): STEP : ERROR: %s!", getLastError());
+						}
 
-				} else {
-					Log("Failed to insert data from flush(): BIND : ERROR: %s!", getLastError());
+					} else {
+						Log("Failed to insert data from flush(): BIND : ERROR: %s!", getLastError());
+					}
+					delete pData;
+					sqlite3_reset(m_pStm);
+					sqlite3_clear_bindings(m_pStm);
 				}
-				delete pData;
-				sqlite3_reset(m_pStm);
-				sqlite3_clear_bindings(m_pStm);
 			}
 		}
 	}

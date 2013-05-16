@@ -20,7 +20,8 @@ CmdStartMeasurement::~CmdStartMeasurement() {
 bool CmdStartMeasurement::Execute()
 {
 	bool result =  m_pDevice->StartMesurements(this, m_commport, m_speed);
-	NotifyResultReady();
+	if(result)
+		NotifyResultReady();
 	return result;
 }
 

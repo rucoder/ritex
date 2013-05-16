@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include "Utils.h"
+
 DaemonCommChannel::DaemonCommChannel()
 	: m_fd(-1)
 {
@@ -50,7 +52,7 @@ int DaemonCommChannel::open(std::string socketName)
 
 	// wait for 10 sec at most
 	for(int i = 0; i < 55; i++) {
-		connectResult = ::connect(m_fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un));
+		connectResult = ::connect(m_fd, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + socketName.length() + 1);
 		if (connectResult == -1) {
 			::nanosleep(&tim, NULL);
 		} else {
@@ -62,7 +64,6 @@ int DaemonCommChannel::open(std::string socketName)
 		close();
 		return errno;
 	}
-
 	return 0;
 }
 
