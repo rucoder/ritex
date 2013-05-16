@@ -69,6 +69,7 @@ public:
 	AdapterParameter* FindGarameter(int paramId);
 
 	virtual bool UpdateSettingsValues() { return true; }
+	virtual int GetDeviceStateChannelId() = 0;
 
 //	virtual DeviceCommand* CreateCommand(void* rawCommand, int length);
 //	virtual DeviceCommand* CreateCommand(CmdLineCommand* pCommand);

@@ -63,7 +63,7 @@ public:
 	virtual EventLoggerThread* getEventLogger() = 0;
 	virtual DataLoggerThread* getDataLogger() = 0;
 	virtual additional_parameter_map_t& GetAdditionalParameterMap() = 0;
-	virtual const ParameterFilter& GetParameterFilter() const = 0;
+	virtual ParameterFilter& GetParameterFilter()= 0;
 //protected:
 	virtual ~IAdapter() {};
 };

@@ -93,7 +93,7 @@ public:
 	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
 	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
 	virtual std::map<std::string, struct additional_parameter_t*>& GetAdditionalParameterMap() {return m_additionalParameters;}
-	virtual const ParameterFilter& GetParameterFilter() const {
+	virtual ParameterFilter& GetParameterFilter()  {
 		return m_paramFilter;
 	}
 

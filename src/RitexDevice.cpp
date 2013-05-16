@@ -19,6 +19,8 @@
 
 #include <vector>
 
+#define DEVICE_STATE_CHANNEL_PARAM 1050100010
+
 struct setting_t {
 	const char* m_name;
 	const char* m_suffix;
@@ -138,8 +140,8 @@ struct controller_data_t {
 RitexDevice::RitexDevice(IAdapter* pAdapter)
 	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION), m_isDiviationReported(false)
 {
-	// add device channels
-	AddChannel(new DeviceChannel(0, false, new AdapterParameter(1050100010, "Канал состояния", true, "X:X:X:X")));
+	// add device state channel
+	AddChannel(new DeviceChannel(0, false, new AdapterParameter(DEVICE_STATE_CHANNEL_PARAM, "Канал состояния", true, "X:X:X:X", true)));
 
 	// we have one and only sensor
 	Sensor* pSensor = new Sensor(1);
@@ -561,7 +563,7 @@ std::string RitexDevice::getFaultText(int code) {
 
 void RitexDevice::ReportFault(int code, time_t time) {
 	DBEventCommon* event = new DBEventCommon();
-	event->setChannelId(1024);
+	event->setChannelId(GetDeviceStateChannelId());
 	event->setRegisterTimeDate(time);
 	if (code == 0) {
 		event->setTypeId(25);
@@ -610,7 +612,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 			m_isDiviationReported = true;
 
 			DBEventCommon* event = new DBEventCommon();
-			event->setChannelId(1024); //FIXME: temporrary workaround
+			event->setChannelId(GetDeviceStateChannelId());
 			event->setTypeId(6);
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(abs(system_time - timestamp) / 60) );
@@ -689,7 +691,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			all_Settings[i].m_isValueSet = true;
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
-			event->setChannelId(1024); //FIXME: temporrary workaround
+			event->setChannelId(GetDeviceStateChannelId());
 			event->setTypeId(8);
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(newValue));
@@ -772,5 +774,9 @@ bool RitexDevice::UpdateSettingsValues() {
 //    delete [] query;
     return true;
 }
+int RitexDevice::GetDeviceStateChannelId() {
+	return m_pAdapter->GetParameterFilter().FindChannel(DEVICE_STATE_CHANNEL_PARAM);
+}
+
 
 

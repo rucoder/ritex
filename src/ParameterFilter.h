@@ -36,6 +36,15 @@ public:
 	const ParaneterFilterItem&  operator[](int index) const {
 		return m_items[index];
 	}
+
+	int FindChannel(int param) {
+		for(unsigned int i = 0; i < m_items.size(); i++) {
+			if(m_items[i].m_paramId == param) {
+				return m_items[i].m_channelId;
+			}
+		}
+		return -1;
+	}
 };
 
 #endif /* PARAMETERFILTER_H_ */

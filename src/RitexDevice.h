@@ -148,6 +148,8 @@ public:
 	bool SetCurrentSettingValue(int id, unsigned short newValue, unsigned short& oldValue);
 	std::string getSettingName(int id);
 	void CheckSettigsChanged(const DataPacket& newSettings/*, const DataPacket& oldSettings*/);
+	virtual int GetDeviceStateChannelId();
+
 
 
 	// command implementations
