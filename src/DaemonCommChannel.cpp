@@ -62,7 +62,9 @@ int DaemonCommChannel::open(std::string socketName)
 		close();
 		return errno;
 	}
-
+//    int rc = setsockopt(m	, SOL_SOCKET, SO_RCVLOWAT,
+//                                        (char *)&length, sizeof(length));
+	//setsockopt()
 	return 0;
 }
 

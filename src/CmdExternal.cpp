@@ -55,7 +55,7 @@ void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*
 					if(m_pDevice->SetCurrentSettingValue(m_param1 /* id */, m_param2 /* new value */, oldValue)) {
 						DBEventCommon* event = new DBEventCommon();
 						event->setChannelId(m_pDevice->GetDeviceStateChannelId());
-						event->setTypeId(8);
+						event->setTypeId(11);
 						event->setRegisterTimeDate(system_time);
 						event->setArgument1(itoa(m_param2));
 						event->setArgument2(itoa(oldValue));
