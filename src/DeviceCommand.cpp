@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "Utils.h"
+#include "Log.h"
 
 DeviceCommand::DeviceCommand(bool isHwCommand, CmdLineCommand* parent)
 	: m_isHWCommand(isHwCommand), m_pParentCommand(parent), m_arrivalTime(0), m_finishedTime(0)
@@ -21,13 +22,13 @@ DeviceCommand::DeviceCommand(bool isHwCommand, CmdLineCommand* parent)
 
 
 DeviceCommand::~DeviceCommand() {
-	syslog(LOG_ERR, "[DESTRUCTOR] ~DeviceCommand() : result=%s", m_rawResult.c_str());
+	Log( "[DESTRUCTOR] ~DeviceCommand() : result=%s", m_rawResult.c_str());
 	m_Listeners.clear();
 }
 
 void DeviceCommand::NotifyResultReady()
 {
-	syslog(LOG_ERR, "DeviceCommand::NotifyResultReady(): m_rawResult=%s", m_rawResult.c_str());
+	Log( "DeviceCommand::NotifyResultReady(): m_rawResult=%s", m_rawResult.c_str());
 	for(std::list<ICmdResulReadytListener*>::iterator itr = m_Listeners.begin(); itr != m_Listeners.end(); itr++) {
 		(*itr)->OnResultReady(this);
 	}

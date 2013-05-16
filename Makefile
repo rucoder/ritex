@@ -1,5 +1,9 @@
 
-CC=$(HOME)/termo/gcc-4.1.2-glibc-2.5-nptl-3/arm-none-linux-gnueabi/bin/arm-none-linux-gnueabi-g++
+CC_PATH=$(HOME)/termo/gcc-4.1.2-glibc-2.5-nptl-3/arm-none-linux-gnueabi/bin
+
+CC=$(CC_PATH)/arm-none-linux-gnueabi-g++
+STRIP=$(CC_PATH)/arm-none-linux-gnueabi-strip
+
 
 OUT = ./arm_obj
 
@@ -24,6 +28,7 @@ all::dirs $(EXECUTABLE) Makefile
 $(EXECUTABLE): $(OBJ_FILES) 
 	@echo Linking $@
 	@$(CC) $(LD_FLAGS) -o $@ $^
+	@$(STRIP) $@
 
 $(OUT)/%.o: src/%.cpp
 	@echo Compiling $^

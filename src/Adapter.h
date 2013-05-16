@@ -19,18 +19,19 @@
 #include "ParameterFilter.h"
 #include "AdapterCommand.h"
 
-#define PID_FILE_PATH "/tmp/"
+#define PID_FILE_PATH "/forsrv/"
+
+
 
 class Adapter: public IAdapter{
-
-private:
-
+public:
 	enum eExecutionContext {
 		CONTEXT_DAEMON,
 		CONTEXT_PARENT,
 		CONTEXT_ERROR
 	};
 
+private:
 	eExecutionContext BecomeDaemon();
 	int LockPidFile(const char* pidfile);
 	void DeletePidFile();

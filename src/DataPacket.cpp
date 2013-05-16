@@ -10,6 +10,7 @@
 #include "RitexDevice.h"
 #include <assert.h>
 #include <string.h>
+#include "Log.h"
 
 DataPacket::DataPacket(int type, unsigned char address, unsigned short cmd, time_t timestamp)
 	: m_address(address), m_cmd(cmd), m_type(type), m_timestamp(timestamp), m_size(0), m_pData(NULL)
@@ -50,8 +51,8 @@ unsigned char* DataPacket::CreateRawPacket(int& rawSize)
 	}
 	unsigned short crc = Crc16(0, pRawPacket, m_size + RAW_PACKET_HEADER_SIZE);
 
-#ifdef __DEBUG__
-	syslog(LOG_ERR, "PACKET CREATED CRC=0x%X", crc);
+#if defined(__DEBUG__) && defined (__DUMP_RAW_DATA)
+	Log( "PACKET CREATED CRC=0x%X", crc);
 #endif
 
 
@@ -60,9 +61,9 @@ unsigned char* DataPacket::CreateRawPacket(int& rawSize)
 
 	rawSize = m_size + RAW_PACKET_ENVELOPE_SIZE;
 
-#ifdef __DEBUG__
+#if defined(__DEBUG__) && defined (__DUMP_RAW_DATA)
 	for(int i = 0; i < rawSize; i++)
-		syslog(LOG_ERR, "0x%X", pRawPacket[i]);
+		Log( "0x%X", pRawPacket[i]);
 #endif
 
 	return pRawPacket;

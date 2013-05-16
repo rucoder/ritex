@@ -12,7 +12,7 @@
 #include <vector>
 #include <string.h>
 
-#include <syslog.h>
+#include "Log.h"
 
 #define OPT_INDEX_CMD  0
 #define OPT_INDEX_SP   1
@@ -45,11 +45,11 @@ void CmdLineParser::SetCmdLine(char* cmdLine)
 	std::string s;
 	std::vector<std::string> args;
 	int i = 0;
-	syslog(LOG_ERR, "SetCmdLine: %s", cmdLine);
+	Log( "SetCmdLine: %s", cmdLine);
 	while ( std::getline( iss, s, ' ' ) ) {
 		i++;
-		syslog(LOG_ERR,"[%d] %s\n", i,s.c_str());
-		syslog(LOG_ERR,"[%d] %s\n",i, s.c_str());
+		Log("[%d] %s\n", i,s.c_str());
+		Log("[%d] %s\n",i, s.c_str());
 		args.push_back(s);
 	}
 
@@ -93,13 +93,13 @@ bool CmdLineParser::Parse() {
 
 	m_pCommand = new CmdLineCommand();
 
-	//syslog(LOG_ERR,"\nRaw Command line: ");
-	syslog(LOG_ERR,"Raw Command line: ");
+	//Log("\nRaw Command line: ");
+	Log("Raw Command line: ");
 	for(int i = 0; i < m_Argc; i++) {
 		//printf(LOG_ERR,"%s ", m_Argv[i]);
-		syslog(LOG_ERR, "[%s]", m_Argv[i]);
+		Log( "[%s]", m_Argv[i]);
 	}
-	syslog(LOG_ERR,"\n");
+	Log("\n");
 
 	optind = 1;
 
@@ -113,7 +113,7 @@ bool CmdLineParser::Parse() {
 		c = ::getopt_long_only(m_Argc, m_Argv, m_ShortOptioonsStr,
 				m_LongOptions, &option_index);
 
-		syslog(LOG_ERR,"state=%d c=%d optarg=%s\n", state, c, optarg);
+		Log("state=%d c=%d optarg=%s\n", state, c, optarg);
 
 		switch (state) {
 
@@ -130,7 +130,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_EXIT;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: Only -cmd, -p ,-a or -exit can be the first option\n");
+					Log("ERROR: Only -cmd, -p ,-a or -exit can be the first option\n");
 					isError = true;
 					break;
 				}
@@ -154,7 +154,7 @@ bool CmdLineParser::Parse() {
 				isError = true;
 				break;
 			default:
-				syslog(LOG_ERR,
+				Log(
 						"ERROR: Only -cmd, -p or -a can be the first option and should not have parameters\n");
 				isError = true;
 				break;
@@ -167,7 +167,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->SetCmdLineCmdType(CMD_GET_ADDITIONAL_PARAMETER_LIST);
 				return true;
 			default:
-				syslog(LOG_ERR,
+				Log(
 						"ERROR: option -a has no parameter when comes first. other options are not allowed\n");
 				isError = true;
 				break;
@@ -181,7 +181,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->SetCmdLineCmdType(CMD_SHOW_INFO);
 				return true;
 			default:
-				syslog(LOG_ERR,
+				Log(
 						"ERROR: option -p has no parameter. other options are not allowed\n");
 				isError = true;
 				break;
@@ -210,7 +210,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_TYPE;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-cmd] device ID expected.\n");
+					Log("ERROR: [-cmd] device ID expected.\n");
 					isError = true;
 					break;
 
@@ -223,7 +223,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_MSG;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-cmd] command type expected.\n");
+					Log("ERROR: [-cmd] command type expected.\n");
 					isError = true;
 					break;
 
@@ -237,7 +237,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_SRC;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-cmd] command message expected.\n");
+					Log("ERROR: [-cmd] command message expected.\n");
 					isError = true;
 					break;
 
@@ -251,7 +251,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_CMD_ID;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-cmd] command source expected.\n");
+					Log("ERROR: [-cmd] command source expected.\n");
 					isError = true;
 					break;
 
@@ -264,12 +264,12 @@ bool CmdLineParser::Parse() {
 					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						syslog(LOG_ERR,"ERROR: [-cmd] -sp expected.\n");
+						Log("ERROR: [-cmd] -sp expected.\n");
 						isError = true;
 					}
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-cmd] -sp expected.\n");
+					Log("ERROR: [-cmd] -sp expected.\n");
 					isError = true;
 					break;
 
@@ -279,14 +279,14 @@ bool CmdLineParser::Parse() {
 
 			// -t may only have -a parameter list in format '-a name value -a name value ...'
 		case OPTION_T:
-			syslog(LOG_ERR,"command -t: \n");
+			Log("command -t: \n");
 			m_pCommand->SetCmdLineCmdType(CMD_TEST_DEVICE);
 			switch (c) {
 			case 'a':
 				state = OPTION_A_NAME;
 				break;
 			default:
-				syslog(LOG_ERR,"ERROR: option -t requires -a parameter list\n");
+				Log("ERROR: option -t requires -a parameter list\n");
 				isError = true;
 				break;
 
@@ -294,7 +294,7 @@ bool CmdLineParser::Parse() {
 			break;
 			// -d may only have -a parameter list in format '-a name value -a name value ...'
 		case OPTION_D:
-			syslog(LOG_ERR,"command -d: ");
+			Log("command -d: ");
 			m_pCommand->SetCmdLineCmdType(CMD_GET_CONNECTED_DEVICE_INFO);
 			switch (c) {
 			case 'a':
@@ -303,7 +303,7 @@ bool CmdLineParser::Parse() {
 			case -1: //-d may not have any -a parameters
 				return true;
 			default:
-				syslog(LOG_ERR,"ERROR: option -d requires -a parameter list\n");
+				Log("ERROR: option -d requires -a parameter list\n");
 				isError = true;
 				break;
 
@@ -326,7 +326,7 @@ bool CmdLineParser::Parse() {
 				state = OPTION_A_VALUE;
 				break;
 			default:
-				syslog(LOG_ERR,
+				Log(
 						"ERROR: wrong -a parameter list: unexpected token: %d(%c) \n",
 						c, c);
 				isError = true;
@@ -341,7 +341,7 @@ bool CmdLineParser::Parse() {
 				m_pCommand->AddParameter(lastArgName, optarg);
 				break;
 			default:
-				syslog(LOG_ERR,"ERROR: wrong -a parameter list\n");
+				Log("ERROR: wrong -a parameter list\n");
 				isError = true;
 				break;
 
@@ -352,13 +352,13 @@ bool CmdLineParser::Parse() {
 			switch (c)
 			{
 				case 1:
-					syslog(LOG_ERR,"[-r] device ID: %s\n", optarg);
+					Log("[-r] device ID: %s\n", optarg);
 					m_pCommand->SetCmdLineCmdType(CMD_GET_MESUREMENTS);
 					m_pCommand->SetDeviceId(optarg);
 					state = OPTION_R_DEVID;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-r] device ID expected.\n");
+					Log("ERROR: [-r] device ID expected.\n");
 					isError = true;
 					break;
 
@@ -370,12 +370,12 @@ bool CmdLineParser::Parse() {
 					if(option_index == OPT_INDEX_SP) {
 						state = OPTION_SP;
 					} else {
-						syslog(LOG_ERR,"ERROR: [-r] -sp expected\n");
+						Log("ERROR: [-r] -sp expected\n");
 						isError = true;
 					}
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: [-r] -sp expected\n");
+					Log("ERROR: [-r] -sp expected\n");
 					isError = true;
 					break;
 
@@ -389,7 +389,7 @@ bool CmdLineParser::Parse() {
 					state = OPTION_SP_PATH;
 					break;
 				default:
-					syslog(LOG_ERR,"ERROR: option -sp should have parameter\n");
+					Log("ERROR: option -sp should have parameter\n");
 					isError = true;
 					break;
 
@@ -402,7 +402,7 @@ bool CmdLineParser::Parse() {
 					break;
 				//TODO: handle -1 as 'true' if -a list  is not mandatory
 				default:
-					syslog(LOG_ERR,"ERROR: -a list expected\n");
+					Log("ERROR: -a list expected\n");
 					isError = true;
 					break;
 
@@ -414,7 +414,7 @@ bool CmdLineParser::Parse() {
 					m_pCommand->SetCmdLineCmdType(CMD_EXIT);
 					return true;
 				default:
-					syslog(LOG_ERR,"ERROR: option -exit has no parameter\n");
+					Log("ERROR: option -exit has no parameter\n");
 					isError = true;
 					break;
 

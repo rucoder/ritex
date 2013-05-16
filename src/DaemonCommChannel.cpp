@@ -36,8 +36,8 @@ int DaemonCommChannel::open(std::string socketName)
 
 	// 0.1 sec sleep. TODO: make timeout configurable
 	struct timespec tim;
-	tim.tv_sec = 1;
-	tim.tv_nsec = 0;
+	tim.tv_sec = 0;
+	tim.tv_nsec = 500 * 1000 * 1000;
 	int connectResult;
 
 	m_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
@@ -50,8 +50,8 @@ int DaemonCommChannel::open(std::string socketName)
 	addr.sun_family = AF_UNIX;
 	::strncpy(&addr.sun_path[1], socketName.c_str(), sizeof(addr.sun_path) - 2);
 
-	// wait for 10 sec at most
-	for(int i = 0; i < 55; i++) {
+	// wait for 50 sec at most
+	for(int i = 0; i < 100; i++) {
 		connectResult = ::connect(m_fd, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + socketName.length() + 1);
 		if (connectResult == -1) {
 			::nanosleep(&tim, NULL);

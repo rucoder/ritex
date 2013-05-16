@@ -13,6 +13,7 @@
 #include <string>
 
 #include "Utils.h"
+#include "Log.h"
 
 
 CmdLineCommand::~CmdLineCommand() {
@@ -225,7 +226,7 @@ bool CmdLineCommand::Compile(const additional_parameter_map_t& map)
 			//need to create fake device Id
 			m_deviceId = rand();
 			m_deviceIdRaw = std::string(itoa(m_deviceId));
-			syslog(LOG_ERR, "Generate fake Device ID: m_deviceId = %d", m_deviceId);
+			Log( "Generate fake Device ID: m_deviceId = %d", m_deviceId);
 			return HasRequiredParameters(m_cmdLineCommandType);
 		}
 		default:

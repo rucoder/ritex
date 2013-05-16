@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <vector>
+#include "Log.h"
 
 #define DEVICE_STATE_CHANNEL_PARAM 1050100010
 
@@ -307,8 +308,8 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	cmd->GetParameter("comdevice", comm);
 	cmd->GetParameter("baudrate", speed);
 
-	syslog(LOG_ERR, "comdevice: %s", comm.c_str());
-	syslog(LOG_ERR, "baudrate: %d", speed);
+	Log( "comdevice: %s", comm.c_str());
+	Log( "baudrate: %d", speed);
 
 
 	unsigned short param2 = 0;
@@ -321,10 +322,10 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	assert(cmd->m_cmdType > 0);
 
 	AdapterCommand* pCmd = NULL;
-	syslog(LOG_ERR, "cmd->m_cmdId=%d", cmd->m_cmdType);
+	Log( "cmd->m_cmdId=%d", cmd->m_cmdType);
 
 	for(unsigned int i = 0; i< list.size(); i++) {
-		syslog(LOG_ERR, "cmd[i].m_cmdId=%d", list[i]->m_cmdType);
+		Log( "cmd[i].m_cmdId=%d", list[i]->m_cmdType);
 		if(list[i]->m_cmdType == cmd->m_cmdType) {
 			pCmd = list[i];
 			break;
@@ -398,7 +399,7 @@ bool RitexDevice::ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int
 	}
 		break;
 	default:
-		syslog(LOG_ERR, "WARNING!!!: command not supported: 0x%X", cmd);
+		Log( "WARNING!!!: command not supported: 0x%X", cmd);
 		delete pCustomCmd;
 		return false;
 	}
@@ -429,8 +430,8 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 		if(cmd->GetParameter("sync_time", m_timeDiviation))
 			m_timeDiviation*=60; //parameter is given in min. we operate in sec.
 
-		syslog(LOG_ERR, "comdevice: %s", comm.c_str());
-		syslog(LOG_ERR, "baudrate: %d", speed);
+		Log( "comdevice: %s", comm.c_str());
+		Log( "baudrate: %d", speed);
 
 		CmdStartMeasurement* pCmd = new CmdStartMeasurement(this, comm, speed);
 
@@ -447,8 +448,8 @@ DeviceCommand* RitexDevice::CreateCommand(CmdLineCommand* cmd)
 		cmd->GetParameter("comdevice", comm);
 		cmd->GetParameter("baudrate", speed);
 
-		syslog(LOG_ERR, "comdevice: %s", comm.c_str());
-		syslog(LOG_ERR, "baudrate: %d", speed);
+		Log( "comdevice: %s", comm.c_str());
+		Log( "baudrate: %d", speed);
 		return new CmdTestDevice(this, comm, speed);
 	}
 	// get command from supported command table
@@ -474,7 +475,7 @@ void RitexDevice::CreateOffsetTable()
 		if(pParam) {
 			//TODO: templetize it!!!!
 			controller_data_t* pData = reinterpret_cast<controller_data_t*>(pParam->getControllerData());
-			syslog(LOG_ERR,"Param: %d found. ControllerData == %p", param, pParam->getControllerData());
+			Log("Param: %d found. ControllerData == %p", param, pParam->getControllerData());
 			if(pData) {
 				//store data in offset table
 				offset_table_entry_t entry;
@@ -581,7 +582,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 
 	time_t system_time = time(NULL);
 
-	syslog(LOG_ERR, "[TIME] Local time: %s. epoch=%lu", TimeToString(system_time).c_str(), system_time);
+	Log( "[TIME] Local time: %s. epoch=%lu", TimeToString(system_time).c_str(), system_time);
 
 	//only this packet has KSU time
 	if(packet->GetCmd() == ACK_INFO_MODE_0) {
@@ -601,7 +602,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 
 		time_t timestamp = mktime(&tm);
 
-		syslog(LOG_ERR, "[TIME] KSU time: %d-%d-%d %d:%d:%d . epoch=%lu Diviation [%d] sec", year, p[20],p[19], p[23],p[24],0, timestamp, (int)(system_time - timestamp));
+		Log( "[TIME] KSU time: %d-%d-%d %d:%d:%d . epoch=%lu Diviation [%d] sec", year, p[20],p[19], p[23],p[24],0, timestamp, (int)(system_time - timestamp));
 
 		if(abs(system_time - timestamp) > m_timeDiviation) {
 			//report this event only once
@@ -676,7 +677,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 
 	time_t system_time = time(NULL);
 
-	syslog(LOG_ERR, "CheckSettigsChanged -->>");
+	Log( "CheckSettigsChanged -->>");
 
 	for(unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
 		if(!all_Settings[i].m_isVisible || all_Settings[i].m_size == 0)
@@ -701,11 +702,11 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setArgument4("HND");
 
 
-			syslog(LOG_ERR, "CheckSettigsChanged reporting");
+			Log( "CheckSettigsChanged reporting");
 			m_pAdapter->getEventLogger()->EnqueData(event);
 		}
 	}
-	syslog(LOG_ERR, "CheckSettigsChanged -->>");
+	Log( "CheckSettigsChanged -->>");
 }
 
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
@@ -715,7 +716,7 @@ void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
 
 void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 {
-	syslog(LOG_ERR, "######### RitexDevice::OnResultReady");
+	Log( "######### RitexDevice::OnResultReady");
 	// add event for HW commands only
 	if(pCmd->isHWCommand()) {
 
@@ -725,7 +726,7 @@ void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 bool RitexDevice::UpdateSettingsValues() {
 //    sqlite3* pDb;
 //
-//    syslog(LOG_ERR, "[SQL]: getting settings for device %d", m_deviceId);
+//    Log( "[SQL]: getting settings for device %d", m_deviceId);
 //
 //#if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
 //    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb";
@@ -738,7 +739,7 @@ bool RitexDevice::UpdateSettingsValues() {
 //
 //    if(rc != SQLITE_OK)
 //    {
-//    	syslog(LOG_ERR, "[SQL] couldn't open DB %s\n", dbPath.c_str());
+//    	Log( "[SQL] couldn't open DB %s\n", dbPath.c_str());
 //    	sqlite3_close(pDb);
 //    	return false;
 //    }
@@ -748,7 +749,7 @@ bool RitexDevice::UpdateSettingsValues() {
 //    char* query = new char[1024];
 //
 //    if (query == NULL) {
-//    	syslog(LOG_ERR, "[SQL] OOM creating query\n");
+//    	Log( "[SQL] OOM creating query\n");
 //    	sqlite3_close(pDb);
 //    	return false;
 //    }
@@ -757,19 +758,19 @@ bool RitexDevice::UpdateSettingsValues() {
 //    if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
 //    	if (pStm != NULL) {
 //    		int cols = sqlite3_column_count(pStm);
-//    		syslog(LOG_ERR, "[SQL] cols=%d\n", cols);
+//    		Log( "[SQL] cols=%d\n", cols);
 //    		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
 //    			int paramId = sqlite3_column_int(pStm, 0);
 //    			int channelId = sqlite3_column_int(pStm, 1);
-//    			syslog(LOG_ERR, "Add channel to filter: P:%d C:%d", paramId, channelId);
+//    			Log( "Add channel to filter: P:%d C:%d", paramId, channelId);
 //    			m_paramFilter.AddItem(channelId, paramId);
 //    		}
 //    		sqlite3_finalize(pStm);
 //    	} else {
-//    		syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+//    		Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
 //    	}
 //    } else {
-//    	syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+//    	Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
 //    }
 //    delete [] query;
     return true;

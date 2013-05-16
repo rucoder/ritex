@@ -156,7 +156,8 @@ protected:
 		std::string fullFormat = "[SQL] " + m_TAG + " :" + format;
 		va_list args;
 		va_start(args, format);
-		vsyslog(LOG_ERR, fullFormat.c_str(), args);
+		//::Log();
+		//vsyslog(LOG_ERR, fullFormat.c_str(), args);
 		va_end(args);
 	}
 

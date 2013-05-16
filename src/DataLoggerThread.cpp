@@ -19,8 +19,8 @@ DataLoggerThread::DataLoggerThread(std::string db_name)
 
 bool DataLoggerThread::BindParams(DBDataPacket* event)
 {
-	Log("Inserting data: chId=%d, paramId=%d, td=%lu %s val=%g",event->getChannelId(), event->getParamId(),
-	 event->getRegisterDate(), TimeToString(event->getRegisterDate()).c_str(), event->getValue());
+	//::Log("Inserting data: chId=%d, paramId=%d, td=%lu %s val=%g",event->getChannelId(), event->getParamId(),
+	// event->getRegisterDate(), TimeToString(event->getRegisterDate()).c_str(), event->getValue());
 	return  Bind(1, event->getChannelId()) &&
 			Bind( 2, event->getParamId()) &&
 			Bind( 3, TimeToString(event->getRegisterDate())) &&

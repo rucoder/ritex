@@ -15,12 +15,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-//syslog
-#ifdef KSU_EMULATOR
-#define syslog(x, y, ...) printf(#y"\n", ## __VA_ARGS__)
-#else
-#include <syslog.h>
-#endif
+#include "Log.h"
 
 //memset
 #include <string.h>
@@ -107,7 +102,7 @@ int ComTrafficProcessor::OpenCommPort(std::string port, int speed)
 
 	fd = open(port.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK| O_NDELAY | O_EXCL);
     if (fd < 0) {
-            syslog(LOG_ERR, "[COMM]: Can't open port %s\n", port.c_str());
+            Log( "[COMM]: Can't open port %s\n", port.c_str());
             return -1;
     }
     tcgetattr(fd, &tios);
@@ -159,7 +154,7 @@ int ComTrafficProcessor::OpenCommPort(std::string port, int speed)
 bool ComTrafficProcessor::isLengthMatches(unsigned char cmd, unsigned short length, int& type)
 {
 
-	//syslog(LOG_ERR, "FULL CMD: 0x%X", cmd);
+	//Log( "FULL CMD: 0x%X", cmd);
 
 	for(unsigned int i = 0; i < MAX_COMMAND_INDEX; i++) {
 		if(GET_CMD(m_cmdParams[i].m_cmd)  == cmd)
@@ -251,13 +246,13 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	to.tv_usec = (timeout % 1000) * 1000; //waiting for line activity with timeout
 
 #ifdef __DEBUG__
-	syslog(LOG_ERR, "[KSU] waiting for activity: sec:=%d usec=%lu", to.tv_sec, to.tv_usec);
+	Log( "[KSU] waiting for activity: sec:=%d usec=%lu", to.tv_sec, to.tv_usec);
 #endif
 
 	pPacket = ReadPacket(&to, error);
 
 #ifdef __DEBUG__
-	syslog(LOG_ERR, "[Run] Activity detected: %s", GetErrorStr(error).c_str());
+	Log( "[Run] Activity detected: %s", GetErrorStr(error).c_str());
 #endif
 
 	return pPacket;
@@ -272,7 +267,7 @@ void ComTrafficProcessor::ChangeMode(unsigned short mode)
 
 void ComTrafficProcessor::SetSetting(unsigned char setting, unsigned short value) {
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"SetSetting(%d, %d) -->>", setting, value);
+	Log("SetSetting(%d, %d) -->>", setting, value);
 #endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_SETTING_SET, time(NULL));
 	unsigned char* pData = pPacket->Allocate(3);
@@ -282,32 +277,32 @@ void ComTrafficProcessor::SetSetting(unsigned char setting, unsigned short value
 	WritePacket(pPacket);
 	delete pPacket;
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"SetSetting(%d, %d) --<<", setting, value);
+	Log("SetSetting(%d, %d) --<<", setting, value);
 #endif
 }
 
 void ComTrafficProcessor::GetAllSettings() {
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"GetAllSettings() -->>");
+	Log("GetAllSettings() -->>");
 #endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_SETTING_ALL_GET, time(NULL));
 	WritePacket(pPacket);
 	delete pPacket;
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"GetAllSettings() --<<");
+	Log("GetAllSettings() --<<");
 #endif
 }
 
 
 void ComTrafficProcessor::GetPasswords() {
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"GetPasswords() -->>");
+	Log("GetPasswords() -->>");
 #endif
 	DataPacket* pPacket = new DataPacket(TYPE_CMD, KSU_ADDRESS, REQ_PASSWORD_GET, time(NULL));
 	WritePacket(pPacket);
 	delete pPacket;
 #ifdef __DEBUG__
-	syslog(LOG_ERR,"GetPasswords() --<<");
+	Log("GetPasswords() --<<");
 #endif
 
 }
@@ -319,7 +314,7 @@ void ComTrafficProcessor::SetPassword(unsigned short password) {
 bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 {
 	pthread_mutex_lock(&m_cmdMutex);
-	syslog(LOG_ERR,"$$$$$$ CUSTOM_CMD sent!");
+	Log("$$$$$$ CUSTOM_CMD sent!");
 	m_pendingCmd = cmd;
 	pthread_mutex_unlock(&m_cmdMutex);
 	return true;
@@ -337,7 +332,7 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 	if(GET_CMD(packet->GetCmd()) == ACK_INFO) {
 		unsigned char vd_state =  packet->GetDataPtr()[VD_STATUS_OFFSET];
 		unsigned char error_code = packet->GetDataPtr()[1];
-		syslog(LOG_ERR, "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, vd_state, error_code);
+		Log( "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, vd_state, error_code);
 		if(!m_isInFault) {
 			if (error_code > 0) {
 				m_faultCode = error_code;
@@ -362,7 +357,7 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 
 bool ComTrafficProcessor::HandleError(int error) {
 #ifdef __DEBUG__
-	syslog(LOG_ERR, "HandleError ->>");
+	Log( "HandleError ->>");
 #endif
 	switch(error) {
 	case ERROR_READ_NO_ERROR:
@@ -378,7 +373,7 @@ bool ComTrafficProcessor::HandleError(int error) {
 		// now either end processing or reset to INIT state
 		if(--m_number_of_ksu_failures == 0) {
 			m_number_of_ksu_failures = MAX_KSU_CHANCES;
-			syslog(LOG_ERR, "KSU failed %d times in a row", MAX_KSU_CHANCES);
+			Log( "KSU failed %d times in a row", MAX_KSU_CHANCES);
 			pthread_mutex_lock(&m_cmdMutex);
 			if(m_pendingCmd /*&& m_state == STATE_CUSTOM_CMD*/) {
 				m_pendingCmd->m_pParentCommand.SetReply(NULL, error);
@@ -390,14 +385,14 @@ bool ComTrafficProcessor::HandleError(int error) {
 			m_nextState = STATE_INIT;
 			break;
 		}
-		syslog(LOG_ERR, "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
+		Log( "KSU communication error: %d (%s)", error, GetErrorStr(error).c_str());
 		break;
 	}
 	//either in capture mode or custom command is being executed
 	m_doRun = m_isDataCapture || (m_pendingCmd != NULL);
 
 #ifdef __DEBUG__
-	syslog(LOG_ERR, "HandleError -<<");
+	Log( "HandleError -<<");
 #endif
 
 	return true;
@@ -409,10 +404,10 @@ void* ComTrafficProcessor::Run()
 	unsigned char passwd_hi, passwd_lo;
 
 
-	syslog(LOG_ERR, "ComTrafficProcessor: Enter run()...");
+	Log( "ComTrafficProcessor: Enter run()...");
 
 	if(!m_isDataCapture) {
-		syslog(LOG_ERR, "ComTrafficProcessor: Waiting for start...");
+		Log( "ComTrafficProcessor: Waiting for start...");
 		pthread_mutex_lock(&m_startMutex);
 			while(!m_doRun) {
 				pthread_cond_wait(&m_startCond,&m_startMutex);
@@ -420,7 +415,7 @@ void* ComTrafficProcessor::Run()
 		}
 	}
 
-	syslog(LOG_ERR, "ComTrafficProcessor: Now running...");
+	Log( "ComTrafficProcessor: Now running...");
 
 	unsigned long delta;
 	struct timeval state_run_start;
@@ -439,7 +434,7 @@ void* ComTrafficProcessor::Run()
 
 		gettimeofday(&state_run_start, NULL);
 
-		syslog(LOG_ERR, "#### NEW_STATE=%s | STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d: took: %lu",GetStateStr(m_nextState).c_str(), m_state, GetStateStr(m_state).c_str(), m_writeMode, m_number_of_ksu_failures, delta);
+		Log( "#### NEW_STATE=%s | STATE: %d %s WRITE_MODE=%d KSU CHANCES: %d: took: %lu",GetStateStr(m_nextState).c_str(), m_state, GetStateStr(m_state).c_str(), m_writeMode, m_number_of_ksu_failures, delta);
 
 		m_state = m_nextState;
 
@@ -468,7 +463,7 @@ void* ComTrafficProcessor::Run()
 				if(error == ERROR_READ_NO_ERROR) {
 					if(packet->GetCmd() == ACK_PASSWORDS) {
 						unsigned char* pData = packet->GetDataPtr();
-						syslog(LOG_ERR,"CURRENT PASSWORDS=0x%X 0x%X 0x%X 0x%X", pData[0], pData[1], pData[2], pData[3]);
+						Log("CURRENT PASSWORDS=0x%X 0x%X 0x%X 0x%X", pData[0], pData[1], pData[2], pData[3]);
 						passwd_hi = pData[2];
 						passwd_lo = pData[3];
 						SetPassword((unsigned short)passwd_hi << 8 | passwd_lo);
@@ -492,7 +487,7 @@ void* ComTrafficProcessor::Run()
 					//something bad happened. get error code
 					if(packet->GetCmd() == ACK_ACK) {
 						unsigned char* pData = packet->GetDataPtr();
-						syslog(LOG_ERR, "[ERROR] FIALED SET PASSWORD. REASON: %d", pData[0]);
+						Log( "[ERROR] FIALED SET PASSWORD. REASON: %d", pData[0]);
 						m_nextState = STATE_INIT;
 						//FIXME?????
 					} else if(packet->GetCmd() == ACK_ALL_SETTINGS) {
@@ -610,10 +605,10 @@ void* ComTrafficProcessor::Run()
 					if(GET_CMD(packet->GetCmd()) == ACK_ALL_SETTINGS) {
 						//get new mode
 						if((m_writeMode+1) % 7 != pData[WRITE_MODE_OFFSET]) {
-							syslog(LOG_ERR,"[WARNING]: new mode is not reflected in reply");
+							Log("[WARNING]: new mode is not reflected in reply");
 						}
 						m_writeMode = pData[WRITE_MODE_OFFSET];
-						syslog(LOG_ERR,"CURRENT WRITE_MODE=%d", m_writeMode);
+						Log("CURRENT WRITE_MODE=%d", m_writeMode);
 						m_nextState = STATE_WAIT_CMD;
 
 						m_pDevice->CheckSettigsChanged(*packet/*, *m_currentSettings*/);
@@ -621,7 +616,7 @@ void* ComTrafficProcessor::Run()
 
 					//couldn't set mode
 					} else if (GET_CMD(packet->GetCmd()) ==  ACK_ACK ){
-						syslog(LOG_ERR, "[ERROR]: FIALED TO SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
+						Log( "[ERROR]: FIALED TO SET MODE %d: REASON: %d", (m_writeMode + 1) % 7, pData[0]);
 						m_nextState = STATE_INIT;
 						//FIXME: ????? to INIT???
 					} else {
@@ -670,7 +665,7 @@ void* ComTrafficProcessor::Run()
 			break;
 		}
 #ifdef __DEBUG__
-		syslog(LOG_ERR, "DORUN======%d", m_doRun);
+		Log( "DORUN======%d", m_doRun);
 #endif
 	}
 
@@ -680,7 +675,7 @@ void* ComTrafficProcessor::Run()
 	}
 
 	m_pDevice->NotifyStatusChanged(DEVICE_STATUS_EXIT);
-	syslog(LOG_ERR, "Exit run...");
+	Log( "Exit run...");
 	return NULL;
 }
 
@@ -704,7 +699,7 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 
 		if(ret < 0) {
 			if(errno == EWOULDBLOCK) {
-				//syslog(LOG_ERR,"WOULDBLOCK");
+				//Log("WOULDBLOCK");
 				// wait for event
 				ret = select(m_fd + 1, &readfds, NULL, &errorfds, timeout);
 
@@ -738,12 +733,12 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 					m_echoCancelFifo.pop();
 					total_read--;
 #ifdef __DEBUG__
-					syslog(LOG_ERR, "### ECHO FIFO : FIFO=0x%X PORT=0x%X", echoByte, ((unsigned char*)buffer)[total_read]);
+					Log( "### ECHO FIFO : FIFO=0x%X PORT=0x%X", echoByte, ((unsigned char*)buffer)[total_read]);
 #endif
 
 					if(echoByte != ((unsigned char*)buffer)[total_read]) {
 
-						syslog(LOG_ERR, "### ECHO FIFO : total_read=%d ret=%d size: %d FIFO=0x%X PORT=0x%X", total_read, ret, m_echoCancelFifo.size(), echoByte, ((unsigned char*)buffer)[total_read]);
+						Log( "### ECHO FIFO : total_read=%d ret=%d size: %d FIFO=0x%X PORT=0x%X", total_read, ret, m_echoCancelFifo.size(), echoByte, ((unsigned char*)buffer)[total_read]);
 					}
 
 					assert(echoByte == ((unsigned char*)buffer)[total_read]);
@@ -796,7 +791,7 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 
 	calculatedCrc16 = Crc16(calculatedCrc16, cmd);
 
-	//syslog(LOG_ERR, "GOT: CMD=0x%X LEN=%d", cmd, length);
+	//Log( "GOT: CMD=0x%X LEN=%d", cmd, length);
 
 	longCmd = cmd;
 	//
@@ -845,21 +840,21 @@ DataPacket* ComTrafficProcessor::ReadPacket(struct timeval* timeout, int &error)
 		crc16 = swap16(crc16);
 
 		if (crc16 != calculatedCrc16) {
-			syslog(LOG_ERR, "CRC ERROR CRC16=0x%X CALCULATED=0x%X", crc16, calculatedCrc16);
+			Log( "CRC ERROR CRC16=0x%X CALCULATED=0x%X", crc16, calculatedCrc16);
 			delete packet;
 			error = ERROR_READ_BAD_CRC;
 			return NULL;
 		}
 
-		syslog(LOG_ERR, "Packet: addr: 0x%X cmd 0x%X length 0x%X", packet->GetAddress(), packet->GetCmd(), packet->GetSize());
+		Log( "Packet: addr: 0x%X cmd 0x%X length 0x%X", packet->GetAddress(), packet->GetCmd(), packet->GetSize());
 
-#ifdef __DEBUG__
+#if defined(__DEBUG__) && defined (__DUMP_RAW_DATA)
 		//print packet data
 		unsigned char* p = packet->GetDataPtr();
 		for(int i = 0; i < packet->GetSize(); i++) {
-			syslog(LOG_ERR, "0x%X", p[i]);
+			Log( "0x%X", p[i]);
 		}
-		syslog(LOG_ERR, "CRC: 0x%X", crc16);
+		Log( "CRC: 0x%X", crc16);
 #endif
 
 		error = ERROR_READ_NO_ERROR;
@@ -894,7 +889,7 @@ bool ComTrafficProcessor::WritePacket(DataPacket* pPacket) {
 	int ret = write(m_fd, pRawPacket, rawSize);
 
 	if(ret != rawSize) {
-		syslog(LOG_ERR, "[[ ERROR ]]: WritePacket: ret=%d rawSize=%d", ret, rawSize);
+		Log( "[[ ERROR ]]: WritePacket: ret=%d rawSize=%d", ret, rawSize);
 	}
 
 	delete [] pRawPacket;

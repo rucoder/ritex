@@ -25,6 +25,10 @@
 
 #include "DaemonCommServer.h"
 #include "Utils.h"
+#include "Log.h"
+//socket
+#include <sys/un.h>
+#include <sys/socket.h>
 
 #define BD_MAX_CLOSE 8192
 
@@ -83,114 +87,29 @@ Adapter::~Adapter() {
 }
 
 
+int createLock(const char* lock_name) {
+	struct sockaddr_un addr;
+	int fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-int fcntl_lock(int fd, int cmd, int type, int whence, int start, int len)
-{
-	struct flock lock[1];
+	memset(&addr, 0, sizeof(struct sockaddr_un));
+	addr.sun_family = AF_UNIX;
 
-	lock->l_type = type;
-	lock->l_whence = whence;
-	lock->l_start = start;
-	lock->l_len = len;
+	strncpy(&addr.sun_path[1], lock_name, sizeof(addr.sun_path) - 2);
 
-	return fcntl(fd, cmd, lock);
-}
+	Log("##########LOCK_NAME %s", lock_name);
 
-
-int Adapter::LockPidFile(const char* pidfile) {
-	mode_t mode = 0;//S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-	mode_t newMode =  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-	struct stat statbuf_fd[1], statbuf_fs[1];
-	int pid_fd;
-	start:
-
-	/* This is broken over NFS (Linux). So pidfiles must reside locally. */
-
-	if ((pid_fd = open(pidfile, O_RDWR | O_CREAT | O_EXCL, mode)) == -1) {
-		if (errno != EEXIST)
-			return -1;
-
-		/*
-		 ** The pidfile already exists. Is it locked?
-		 ** If so, another invocation is still alive.
-		 ** If not, the invocation that created it has died.
-		 ** Open the pidfile to attempt a lock.
-		 */
-
-		if ((pid_fd = open(pidfile, O_RDWR)) == -1) {
-			/*
-			 ** We couldn't open the file. That means that it existed
-			 ** a moment ago but has been since been deleted. Maybe if
-			 ** we try again now, it'll work (unless another process is
-			 ** about to re-create it before we do, that is).
-			 */
-
-			if (errno == ENOENT)
-				goto start;
-
-			return -1;
-		}
-	}
-
-#if 0
-	if (flock(pid_fd, LOCK_EX | LOCK_NB) == -1) {
-		if (errno == EWOULDBLOCK) {
-			close(pid_fd);
-			return -1;
-		}
-	}
-
-#else
-	if (fcntl_lock(pid_fd, F_SETLK, F_WRLCK, SEEK_SET, 0, 0) == -1) {
-		close(pid_fd);
+	if (bind(fd, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + strlen(lock_name) + 1) == -1) {
+		close(fd);
 		return -1;
 	}
-	fchmod(pid_fd, newMode);
-#endif
-
-	/*
-	 ** The pidfile may have been unlinked, after we opened, it by another daemon
-	 ** process that was dying between the last open() and the fcntl(). There's
-	 ** no use hanging on to a locked file that doesn't exist (and there's
-	 ** nothing to stop another daemon process from creating and locking a
-	 ** new instance of the file. So, if the pidfile has been deleted, we
-	 ** abandon this lock and start again. Note that it may have been deleted
-	 ** and subsequently re-created by yet another daemon process just starting
-	 ** up so check that that hasn't happened as well by comparing inode
-	 ** numbers. If it has, we also abandon this lock and start again.
-	 */
-
-	if (fstat(pid_fd, statbuf_fd) == -1) {
-		/* This shouldn't happen */
-		close(pid_fd);
-		return -1;
-	}
-
-	if (stat(pidfile, statbuf_fs) == -1) {
-		/* The pidfile has been unlinked so we start again */
-
-		if (errno == ENOENT) {
-			close(pid_fd);
-			goto start;
-		}
-
-		close(pid_fd);
-		return -1;
-	} else if (statbuf_fd->st_ino != statbuf_fs->st_ino) {
-		/* The pidfile has been unlinked and re-created so we start again */
-
-		close(pid_fd);
-		goto start;
-	}
-
-	return pid_fd;
+	return fd;
 }
 
 Adapter::eExecutionContext Adapter::BecomeDaemon() {
 #ifdef KSU_EMULATOR
 	return CONTEXT_DAEMON;
 #else
-	int maxfd, fd, pid_fd;
+	int maxfd, fd;
 
 	switch (::fork()) {
 	case -1:
@@ -198,6 +117,7 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	case 0:
 		break;
 	default:
+		::SetLogContext(CONTEXT_PARENT);
 		return CONTEXT_PARENT;
 		break;
 	}
@@ -211,6 +131,8 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	case -1:
 		return CONTEXT_ERROR;
 	case 0:
+		::SetLogContext(CONTEXT_DAEMON);
+
 		break;
 	default:
 		_exit(EXIT_SUCCESS); //exit from the second child
@@ -227,7 +149,11 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		maxfd = BD_MAX_CLOSE;
 	/* so take a guess */
 	for (fd = 0; fd < maxfd; fd++)
-		close(fd);
+	{
+		// keep log file opened
+		if(fd != ::GetLogFd())
+			close(fd);
+	}
 
 
 	close(STDIN_FILENO);
@@ -244,37 +170,12 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		return CONTEXT_ERROR;
 	}
 
-	fd = open(m_pidFileName.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0);
-	if (fd < 0) {
-		syslog(LOG_ERR, "Cannot open PID file exclusivly %s\n", m_pidFileName.c_str());
-		fd = open(m_pidFileName.c_str(), O_RDWR);
-		if (fd < 0)
-		{
-			syslog(LOG_ERR, "Still cannot open PID file for RD %s\n", m_pidFileName.c_str());
-			return CONTEXT_ERROR;
-		}
+	if(createLock(m_pidFileName.c_str()) == -1) {
+		Log( "Already running as daemon.Exiting...\n");
+		_exit(EXIT_SUCCESS);
 	}
 
-	// file opened or created
-	if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-		int saveErrno = errno;
-		if (errno == EWOULDBLOCK) {
-			close(fd);
-			syslog(LOG_ERR, "Already running as daemon.Exiting...\n");
-			_exit(EXIT_SUCCESS);
-		} else {
-			syslog(LOG_ERR, "Couldn't lock file.Exiting...\n");
-			_exit(EXIT_SUCCESS);
-		}
-	}
-
-	fchmod(fd, 0600);
-
-
-	syslog(LOG_ERR, "PID: 0x%d", getpid());
-
-	std::string sPid = itoa(getpid());
-	write(fd, sPid.c_str(), sPid.length());
+	Log( "PID: 0x%d", getpid());
 
 	return CONTEXT_DAEMON;
 #endif
@@ -301,7 +202,7 @@ int Adapter::Run() {
 		DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCmdLineCommand);
 
 		if (pDevCmd == NULL) {
-			syslog(LOG_ERR, "ERROR: couldn't create  DeviceCommand()\n");
+			Log( "ERROR: couldn't create  DeviceCommand()\n");
 			return -1;
 		}
 
@@ -317,7 +218,7 @@ int Adapter::Run() {
 		{
 			//set device ID first so daemon will know it. It cannot be changed until daemon restart
 			if(pCmdLineCommand->m_deviceId < 0) {
-				syslog(LOG_ERR, "ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
+				Log( "ERROR: deviceID invalid: %d\n", pCmdLineCommand->m_deviceId);
 				delete pCmdLineCommand;
 				delete pDevCmd;
 				return -1;
@@ -329,11 +230,11 @@ int Adapter::Run() {
 			GeneratePidFileName(pCmdLineCommand->m_deviceId);
 			//TODO: how to handle -a params the best way?
 
-			syslog(LOG_ERR, "PID FILE: %s\n", m_pidFileName.c_str());
+			Log( "PID FILE: %s\n", m_pidFileName.c_str());
 
 			switch (BecomeDaemon()) {
 				case CONTEXT_ERROR: //error. may happen from either child or parent so call syslog
-					syslog(LOG_ERR, "Couldn't run daemon. Exiting");
+					Log( "Couldn't run daemon. Exiting");
 					_exit(EXIT_FAILURE);
 					break;
 				case CONTEXT_PARENT: //we are in parent. wait for daemon init compleate and run command if neccessary
@@ -371,11 +272,12 @@ int Adapter::Run() {
 								}
 
 							} else {
-								syslog(LOG_ERR, "Error connecting to daemon on %s\n", m_socket.c_str());
+								Log( "Error connecting to daemon on %s\n", m_socket.c_str());
 								printf("7;Адаптер не отвечает\n");
 							}
 						} else {
-							syslog(LOG_ERR, "OOM creating DaemonCommChannel\n");
+							Log( "OOM creating DaemonCommChannel\n");
+							printf("7;Нет памяти\n");
 							delete pCmdLineCommand;
 							delete pDevCmd;
 							return -1;
@@ -411,7 +313,7 @@ int Adapter::Run() {
 					//tolog(&stderr);
 					//tolog(&stdout);
 
-					syslog(LOG_ERR, "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
+					Log( "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
 
 					/************************ The work starts here ******************/
 					assert(m_pDevice->getDeviceId() > 0);
@@ -423,14 +325,14 @@ int Adapter::Run() {
 					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
 						//cannot continue. cleanup and exit
 						DaemonCleanup();
-						syslog(LOG_ERR, "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
+						Log( "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
 						break;
 					}
 
 					if(!m_pDevice->UpdateSettingsValues()) {
 						//cannot continue. cleanup and exit
 						DaemonCleanup();
-						syslog(LOG_ERR, "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
+						Log( "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
 						break;
 					}
 
@@ -448,16 +350,16 @@ int Adapter::Run() {
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
 						 * so we go into command processing loop
 						 */
-						syslog(LOG_ERR, "[DAEMON] Opening server socket.. ");
+						Log( "[DAEMON] Opening server socket.. ");
 						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
 						pServer->Create();
-						syslog(LOG_ERR, "[DAEMON] Waiting for Server to complete");
+						Log( "[DAEMON] Waiting for Server to complete");
 						pServer->Join();//stuck here till the end of daemon live
-						syslog(LOG_ERR, "[DAEMON] Server [DONE]");
+						Log( "[DAEMON] Server [DONE]");
 						delete pServer;
 						DaemonCleanup();
 					} else {
-						syslog(LOG_ERR, "[DAEMON] Couldn't create data loggers for devId=%d", m_pDevice->getDeviceId());
+						Log( "[DAEMON] Couldn't create data loggers for devId=%d", m_pDevice->getDeviceId());
 					}
 
 					break;
@@ -476,7 +378,7 @@ bool Adapter::UpdateParameterFilter(int devId)
 {
     sqlite3* pDb;
 
-    syslog(LOG_ERR, "[SQL]: getting filter for device %d", devId);
+    Log( "[SQL]: getting filter for device %d", devId);
 
 #if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
     std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
@@ -489,7 +391,7 @@ bool Adapter::UpdateParameterFilter(int devId)
 
     if(rc != SQLITE_OK)
     {
-    	syslog(LOG_ERR, "[SQL] couldn't open DB %s\n", dbPath.c_str());
+    	Log( "[SQL] couldn't open DB %s\n", dbPath.c_str());
     	sqlite3_close(pDb);
     	return false;
     }
@@ -499,7 +401,7 @@ bool Adapter::UpdateParameterFilter(int devId)
     char* query = new char[1024];
 
     if (query == NULL) {
-    	syslog(LOG_ERR, "[SQL] OOM creating query\n");
+    	Log( "[SQL] OOM creating query\n");
     	sqlite3_close(pDb);
     	return false;
     }
@@ -508,19 +410,19 @@ bool Adapter::UpdateParameterFilter(int devId)
     if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
     	if (pStm != NULL) {
     		int cols = sqlite3_column_count(pStm);
-    		syslog(LOG_ERR, "[SQL] cols=%d\n", cols);
+    		Log( "[SQL] cols=%d\n", cols);
     		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
     			int paramId = sqlite3_column_int(pStm, 0);
     			int channelId = sqlite3_column_int(pStm, 1);
-    			syslog(LOG_ERR, "Add channel to filter: P:%d C:%d", paramId, channelId);
+    			Log( "Add channel to filter: P:%d C:%d", paramId, channelId);
     			m_paramFilter.AddItem(channelId, paramId);
     		}
     		sqlite3_finalize(pStm);
     	} else {
-    		syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    		Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     	}
     } else {
-    	syslog(LOG_ERR, "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    	Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     }
     delete [] query;
     return true;
@@ -529,8 +431,8 @@ bool Adapter::UpdateParameterFilter(int devId)
 void Adapter::GeneratePidFileName(int deviceId)
 {
 	char filename[32];
-	snprintf(filename, 32, "%s-%d.pid",m_adapterName.c_str(), deviceId);
-	m_pidFileName = m_pidFilePath+filename;
+	snprintf(filename, 32, "%s-lock-%d",m_adapterName.c_str(), deviceId);
+	m_pidFileName = std::string(filename);//m_pidFilePath+filename;
 }
 
 void Adapter::DeletePidFile()

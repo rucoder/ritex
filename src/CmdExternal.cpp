@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "Utils.h"
+#include "Log.h"
 
 CmdExternal::CmdExternal(RitexDevice* device, std::string commport, int speed, CmdLineCommand* cmd, unsigned short cmdId, unsigned char param1, unsigned short param2)
 	: DeviceCommand(true, cmd), m_pDevice(device), m_cmdId(cmdId), m_param1(param1), m_param2(param2), m_commport(commport), m_speed(speed)
@@ -21,7 +22,7 @@ CmdExternal::~CmdExternal() {
 
 bool CmdExternal::Execute()
 {
-	syslog(LOG_ERR,"CmdExternal::Execute");
+	Log("CmdExternal::Execute");
 	//bool RitexDevice::ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int speed, unsigned char cmd, unsigned char p1, unsigned short p2)
 	return m_pDevice->ExecuteCustomCommand(this, m_commport, m_speed, m_cmdId, m_param1, m_param2);
 }
@@ -61,7 +62,7 @@ void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*
 						event->setArgument2(itoa(oldValue));
 						event->setArgument3(m_pDevice->getSettingName(m_param1));
 						event->setArgument4(m_pParentCommand->m_sourceRaw+"$" + m_pParentCommand->m_cmdIdRaw);
-						syslog(LOG_ERR, "CheckSettigsChanged reporting");
+						Log( "CheckSettigsChanged reporting");
 						m_pDevice->ReportEvent(event);
 					}
 				}
