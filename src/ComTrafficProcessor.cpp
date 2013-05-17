@@ -34,7 +34,7 @@
 
 #define WRITE_MODE_OFFSET 22
 
-
+#define MODE_CYCLE_TIME (30)
 
 
 //MUST be aligned with ComTrafficProcessor::m_ackParams array
@@ -421,10 +421,11 @@ void* ComTrafficProcessor::Run()
 	struct timeval state_run_start;
 	struct timeval state_run_end;
 
+	time_t nextModeLoopCycle = time(NULL) + MODE_CYCLE_TIME;
+
 	while (m_doRun) {
 		int error;
 		DataPacket* packet = NULL;
-
 
 
 		state_run_end.tv_sec-=state_run_start.tv_sec;
@@ -566,8 +567,13 @@ void* ComTrafficProcessor::Run()
 							/*
 							 * go into modes loop  every 5 mins
 							 */
-							ChangeMode((m_writeMode+1) % 7);
-							m_nextState = STATE_SET_MODE;
+							if(nextModeLoopCycle < time(NULL)) {
+								ChangeMode((m_writeMode+1) % 7);
+								m_nextState = STATE_SET_MODE;
+							} else {
+								m_nextState = STATE_WAIT_CMD;
+								Log("********** NEXT MOD CYCLE IN %d sec", nextModeLoopCycle - time(NULL));
+							}
 
 
 							/*
@@ -618,6 +624,13 @@ void* ComTrafficProcessor::Run()
 						m_nextState = STATE_WAIT_CMD;
 
 						m_pDevice->CheckSettigsChanged(*packet/*, *m_currentSettings*/);
+
+
+						// we are at the start of the loop.
+						if(m_writeMode == 0) {
+							nextModeLoopCycle = time(NULL) + MODE_CYCLE_TIME;
+						}
+
 						gettimeofday(&state_run_end, NULL);
 
 					//couldn't set mode
