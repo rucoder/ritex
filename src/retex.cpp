@@ -11,7 +11,7 @@
 #include "Log.h"
 #include "Utils.h"
 
-#define VERSION_STR "v 0.1.16 alpha"
+#define VERSION_STR "v 0.1.17 alpha"
 
 int main(int argc, char* argv[]) {
 	InitLog();
