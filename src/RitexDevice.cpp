@@ -574,7 +574,7 @@ void RitexDevice::ReportFault(int code, time_t time) {
 		event->setArgument1(getFaultText(code)); //error text
 		event->setArgument2(itoa(code)); //error code
 	}
-	m_pAdapter->getEventLogger()->EnqueData(event);
+	ReportEvent(event);
 }
 
 void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
@@ -617,7 +617,7 @@ void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 			event->setTypeId(6);
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(abs(system_time - timestamp) / 60) );
-			m_pAdapter->getEventLogger()->EnqueData(event);
+			ReportEvent(event);
 		} else {
 			//reset flag
 			m_isDiviationReported = false;
@@ -703,7 +703,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 
 
 			Log( "CheckSettigsChanged reporting");
-			m_pAdapter->getEventLogger()->EnqueData(event);
+			ReportEvent(event);
 		}
 	}
 	Log( "CheckSettigsChanged -->>");
@@ -711,6 +711,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
 	m_pAdapter->getEventLogger()->EnqueData(pEvent);
+	m_pAdapter->getEventLogger2()->EnqueData(pEvent);
 }
 
 

@@ -59,6 +59,7 @@ protected:
 
 	// logging facilities
 	EventLoggerThread* m_pEventLogger;
+	EventLoggerThread* m_pEventLogger2;
 	DataLoggerThread* m_pDataLogger;
 	bool CreateLoggerFacility();
 
@@ -92,6 +93,7 @@ public:
 	const std::string& getVersion() { return m_adapterVersion; };
 	const std::string& getDescription() { return m_adapterDescription; };
 	virtual EventLoggerThread* getEventLogger() { return m_pEventLogger; };
+	virtual EventLoggerThread* getEventLogger2() { return m_pEventLogger2; };
 	virtual DataLoggerThread* getDataLogger() { return m_pDataLogger; };
 	virtual std::map<std::string, struct additional_parameter_t*>& GetAdditionalParameterMap() {return m_additionalParameters;}
 	virtual ParameterFilter& GetParameterFilter()  {

@@ -64,7 +64,7 @@ void tolog(FILE **pfp)
 Adapter::Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser)
 	: m_adapterName(name), m_adapterVersion(version), m_adapterDescription(description),
 	  m_pCmdLineParser(parser), m_pDevice(NULL), m_pCommChannel(NULL),
-	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pDataLogger(NULL)
+	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pEventLogger2(NULL), m_pDataLogger(NULL)
 {
 	//generate base part of socket name
 	m_socket = name + "_socket";
@@ -437,7 +437,7 @@ void Adapter::GeneratePidFileName(int deviceId)
 
 void Adapter::DeletePidFile()
 {
-	unlink(m_pidFileName.c_str());
+	//unlink(m_pidFileName.c_str());
 }
 
 int Adapter::ParentLoop(bool isCommOk)
@@ -450,15 +450,17 @@ bool Adapter::CreateLoggerFacility()
 {
 
 #if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
-	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
+	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/forsrv/event/ic_data_event3.sdb");
+	m_pEventLogger2 = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
 #else
-	m_pEventLogger = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
+	m_pEventLogger = new EventLoggerThread("/forsrv/event/ic_data_event3.sdb");
+	m_pEventLogger2 = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/mnt/www/ControlServer/data/ic_data_value3.sdb");
 #endif
 
-	if(m_pEventLogger && m_pDataLogger) {
-		if(m_pEventLogger->Create() && m_pDataLogger->Create()) {
+	if(m_pEventLogger && m_pEventLogger2 && m_pDataLogger) {
+		if(m_pEventLogger->Create() && m_pEventLogger2->Create() && m_pDataLogger->Create()) {
 			return true;
 		}
 	}
@@ -466,6 +468,10 @@ bool Adapter::CreateLoggerFacility()
 	if(m_pEventLogger) {
 		delete m_pEventLogger;
 		m_pEventLogger = NULL;
+	}
+	if(m_pEventLogger2) {
+		delete m_pEventLogger2;
+		m_pEventLogger2 = NULL;
 	}
 	if(m_pDataLogger) {
 		delete m_pDataLogger;
@@ -526,6 +532,10 @@ void Adapter::DaemonCleanup() {
 	if(m_pEventLogger) {
 		delete m_pEventLogger;
 		m_pEventLogger = NULL;
+	}
+	if(m_pEventLogger2) {
+		delete m_pEventLogger2;
+		m_pEventLogger2 = NULL;
 	}
 	DeletePidFile();
 }

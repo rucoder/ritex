@@ -61,6 +61,7 @@ public:
 	virtual const std::string& getVersion() = 0;
 	virtual const std::string& getDescription() = 0;
 	virtual EventLoggerThread* getEventLogger() = 0;
+	virtual EventLoggerThread* getEventLogger2() = 0;
 	virtual DataLoggerThread* getDataLogger() = 0;
 	virtual additional_parameter_map_t& GetAdditionalParameterMap() = 0;
 	virtual ParameterFilter& GetParameterFilter()= 0;
