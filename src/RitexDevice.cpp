@@ -711,7 +711,10 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
 	m_pAdapter->getEventLogger()->EnqueData(pEvent);
-	m_pAdapter->getEventLogger2()->EnqueData(pEvent);
+
+	DBEventCommon* pEvent2 = new DBEventCommon(*pEvent);
+
+	m_pAdapter->getEventLogger2()->EnqueData(pEvent2);
 }
 
 
