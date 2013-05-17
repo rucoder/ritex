@@ -562,6 +562,14 @@ void* ComTrafficProcessor::Run()
 								m_nextState = STATE_CUSTOM_CMD;
 							}
 						} else {
+
+							/*
+							 * go into modes loop  every 5 mins
+							 */
+							ChangeMode((m_writeMode+1) % 7);
+							m_nextState = STATE_SET_MODE;
+
+
 							/*
 							 * we cannot change mode if the engine is ON
 							 */
@@ -574,10 +582,8 @@ void* ComTrafficProcessor::Run()
 								//FIXME: is this true?
 								//m_writeMode = 0; //the mode is reset to 0
 							} else {
-#endif
 								ChangeMode((m_writeMode+1) % 7);
 								m_nextState = STATE_SET_MODE;
-#if 0
 							}
 #endif
 						}
@@ -738,10 +744,17 @@ int ComTrafficProcessor::Read(void* buffer, int length, struct timeval* timeout)
 
 					if(echoByte != ((unsigned char*)buffer)[total_read]) {
 
-						Log( "### ECHO FIFO : total_read=%d ret=%d size: %d FIFO=0x%X PORT=0x%X", total_read, ret, m_echoCancelFifo.size(), echoByte, ((unsigned char*)buffer)[total_read]);
+						Log( "### [WARNING] ECHO FIFO : total_read=%d ret=%d size: %d FIFO=0x%X PORT=0x%X", total_read, ret, m_echoCancelFifo.size(), echoByte, ((unsigned char*)buffer)[total_read]);
+						/*
+						 * try to clear FIFO and data on port. return error so we will retry to reset to INIT state
+						 */
+						while(!m_echoCancelFifo.empty())
+							m_echoCancelFifo.pop();
+
+						tcflush(m_fd, TCIOFLUSH);
+						return ERROR_READ_OTHER;
 					}
 
-					assert(echoByte == ((unsigned char*)buffer)[total_read]);
 				}
 			}
 		}
