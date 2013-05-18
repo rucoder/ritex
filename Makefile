@@ -4,6 +4,7 @@ CC_PATH=$(HOME)/termo/gcc-4.1.2-glibc-2.5-nptl-3/arm-none-linux-gnueabi/bin
 CC=$(CC_PATH)/arm-none-linux-gnueabi-g++
 STRIP=$(CC_PATH)/arm-none-linux-gnueabi-strip
 
+VERSION=`git describe`
 
 OUT = ./arm_obj
 
@@ -16,7 +17,7 @@ LIB_PATH = -L$(HOME)/termo/sqlite-3.6.22/.libs
 #CC_FLAGS = -O0 -g3 -Wall $(INC_PATH)
 
 #for Release
-CC_FLAGS = -O3 -Wall $(INC_PATH)
+CC_FLAGS = -O3 -Wall $(INC_PATH) -D_ADAPTER_VERSION_=\"$(VERSION)\"
 
 LD_FLAGS = -lpthread -lsqlite3 $(LIB_PATH) 
 
@@ -26,7 +27,7 @@ OBJ_FILES = $(patsubst src/%.cpp,$(OUT)/%.o,$(CPP_FILES))
 all::dirs $(EXECUTABLE) Makefile
 
 $(EXECUTABLE): $(OBJ_FILES) 
-	@echo Linking $@
+	@echo Linking $@ version $(VERSION)
 	@$(CC) $(LD_FLAGS) -o $@ $^
 	@$(STRIP) $@
 

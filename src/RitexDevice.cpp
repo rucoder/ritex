@@ -141,7 +141,7 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION), m_isDiviationReported(false)
 {
 	// add device state channel
-	AddChannel(new DeviceChannel(0, false, new AdapterParameter(DEVICE_STATE_CHANNEL_PARAM, "Канал состояния", true, "X:X:X:X", true)));
+	AddChannel(new DeviceChannel(0, false, new AdapterParameter(DEVICE_STATE_CHANNEL_PARAM, "Канал состояния", true, "X:X:X:X", false)));
 
 	// we have one and only sensor
 	Sensor* pSensor = new Sensor(1);

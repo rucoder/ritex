@@ -11,7 +11,11 @@
 #include "Log.h"
 #include "Utils.h"
 
-#define VERSION_STR "v 0.1.17 alpha"
+#ifndef _ADAPTER_VERSION_
+#define VERSION_STR "v0.1.17 alpha"
+#else
+#define VERSION_STR _ADAPTER_VERSION_
+#endif
 
 int main(int argc, char* argv[]) {
 	InitLog();
