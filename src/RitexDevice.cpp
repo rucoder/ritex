@@ -704,12 +704,51 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 	Log( "CheckSettigsChanged -->>");
 }
 
+bool RitexDevice::IncrementEventCount() {
+    sqlite3* pDb = NULL;
+	std::string query = std::string("update tblConfigSettings   set  Value = Value + \"1\"  where Tag = 'EVNT_CNT'");
+
+#if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
+    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data3.sdb";
+#else
+    std::string dbPath = "/mnt/www/ControlServer/data/ic_data3.sdb";
+#endif
+
+    int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READWRITE, NULL);
+
+    if(rc != SQLITE_OK)
+    {
+    	Log( "[SQL] couldn't open DB %s\n", dbPath.c_str());
+    	sqlite3_close(pDb);
+    	return false;
+    }
+
+    sqlite3_stmt* pStm;
+
+    if ((rc = sqlite3_prepare_v2(pDb, query.c_str(), - 1, &pStm, NULL)) == SQLITE_OK) {
+    	if (pStm != NULL) {
+    		if ((rc = sqlite3_step(pStm)) !=  SQLITE_DONE) {
+    			Log("[SQL] Error updating event count %d %s", rc, sqlite3_errmsg(pDb));
+    		}
+    		sqlite3_finalize(pStm);
+    	} else {
+    		Log( "[SQL] error preparing %d %s for DB: %s", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    	}
+    } else {
+    	Log( "[SQL] error preparing %d %s for DB: %s", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    }
+    sqlite3_close(pDb);
+    return (rc == SQLITE_DONE);
+}
+
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
 	m_pAdapter->getEventLogger()->EnqueData(pEvent);
 
 	DBEventCommon* pEvent2 = new DBEventCommon(*pEvent);
 
 	m_pAdapter->getEventLogger2()->EnqueData(pEvent2);
+
+	IncrementEventCount();
 }
 
 

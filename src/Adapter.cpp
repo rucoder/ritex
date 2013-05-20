@@ -425,6 +425,7 @@ bool Adapter::UpdateParameterFilter(int devId)
     	Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
     }
     delete [] query;
+    sqlite3_close(pDb);
     return true;
 }
 

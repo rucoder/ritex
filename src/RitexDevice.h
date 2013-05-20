@@ -161,6 +161,8 @@ public:
 	virtual void OnResultReady(DeviceCommand* pCmd);
 
 	virtual bool UpdateSettingsValues();
+
+	bool IncrementEventCount();
 };
 
 #endif /* RITEXDEVICE_H_ */
