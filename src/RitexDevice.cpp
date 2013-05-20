@@ -134,7 +134,8 @@ struct controller_data_t {
 };
 
 RitexDevice::RitexDevice(IAdapter* pAdapter)
-	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION), m_isDiviationReported(false)
+	: Device(pAdapter), m_writeMode(WRITE_MODE_0), m_timeDiviation(DEFAULT_TIME_DIVIATION), m_isDiviationReported(false),
+	  m_isFirstSettingsPacket(true)
 {
 	// add device state channel
 	AddChannel(new DeviceChannel(0, false, new AdapterParameter(DEVICE_STATE_CHANNEL_PARAM, "Канал состояния", true, "X:X:X:X", false)));
@@ -683,7 +684,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
 		unsigned short oldValue =  all_Settings[i].m_value;
 
-		if(newValue != oldValue || !all_Settings[i].m_isValueSet) {
+		if(newValue != oldValue || !all_Settings[i].m_isValueSet || m_isFirstSettingsPacket) {
 			all_Settings[i].m_isValueSet = true;
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
@@ -694,13 +695,17 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setArgument2(itoa(oldValue));
 			event->setArgument3(all_Settings[i].m_name);
 
-			event->setArgument4("HND");
-
+			if(m_isFirstSettingsPacket) {
+				event->setArgument4("INIT");
+			} else {
+				event->setArgument4("HND");
+			}
 
 			Log( "CheckSettigsChanged reporting");
 			ReportEvent(event);
 		}
 	}
+	m_isFirstSettingsPacket = false;
 	Log( "CheckSettigsChanged -->>");
 }
 

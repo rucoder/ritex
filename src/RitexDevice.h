@@ -133,6 +133,7 @@ protected:
 
 	int m_timeDiviation;
 	bool m_isDiviationReported;
+	bool m_isFirstSettingsPacket;
 public:
 	RitexDevice(IAdapter* pAdapter);
 	virtual ~RitexDevice();
