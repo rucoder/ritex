@@ -563,35 +563,26 @@ void* ComTrafficProcessor::Run()
 								m_nextState = STATE_CUSTOM_CMD;
 							}
 						} else {
-
-							/*
-							 * go into modes loop  every 5 mins
-							 */
-							if(nextModeLoopCycle < time(NULL)) {
-								ChangeMode((m_writeMode+1) % 7);
-								m_nextState = STATE_SET_MODE;
-							} else {
-								m_nextState = STATE_WAIT_CMD;
-								Log("********** NEXT MOD CYCLE IN %d sec", nextModeLoopCycle - time(NULL));
-							}
-
-
 							/*
 							 * we cannot change mode if the engine is ON
 							 */
-#if 0
 							unsigned char* pData = packet->GetDataPtr();
 
-							if((pData[VD_STATUS_OFFSET] & VD_ON_MASK) ||
-									(pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK)) {
+							if(pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK) {
 								m_nextState = STATE_WAIT_CMD;
-								//FIXME: is this true?
-								//m_writeMode = 0; //the mode is reset to 0
+								Log("********** NEXT MOD CYCLE: DELAYED: AUTO MODE ON ");
 							} else {
-								ChangeMode((m_writeMode+1) % 7);
-								m_nextState = STATE_SET_MODE;
+								/*
+								 * go into modes loop  every 5 mins
+								 */
+								if(nextModeLoopCycle < time(NULL)) {
+									ChangeMode((m_writeMode+1) % 7);
+									m_nextState = STATE_SET_MODE;
+								} else {
+									m_nextState = STATE_WAIT_CMD;
+									Log("********** NEXT MOD CYCLE IN %d sec", nextModeLoopCycle - time(NULL));
+								}
 							}
-#endif
 						}
 						pthread_mutex_unlock(&m_cmdMutex);
 
