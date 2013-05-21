@@ -573,6 +573,22 @@ void RitexDevice::ReportFault(int code, time_t time) {
 	ReportEvent(event);
 }
 
+void RitexDevice::ReportStationState(int newState, int oldState, time_t time) {
+	DBEventCommon* event = new DBEventCommon();
+	event->setChannelId(GetDeviceStateChannelId());
+	event->setRegisterTimeDate(time);
+	event->setTypeId(10);
+	event->setArgument1(itoa(newState));
+	event->setArgument2(itoa(oldState));
+	if(newState == 0) {
+		event->setArgument3(std::string("ВД выключен"));
+	} else {
+		event->setArgument3(std::string("ВД включен"));
+	}
+	event->setArgument4("HND");
+	ReportEvent(event);
+}
+
 void RitexDevice::CheckAndReportTimeDiviation(DataPacket* packet)
 {
 

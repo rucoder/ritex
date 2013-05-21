@@ -144,6 +144,8 @@ public:
 	void ReportDataPacket(DataPacket* packet);
 	void ReportFault(int code, time_t time);
 	void ReportEvent(DBEventCommon* pEvent);
+	void ReportStationState(int newState, int oldState, time_t time);
+
 	void CheckAndReportTimeDiviation(DataPacket* packet);
 	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size);
 	bool SetCurrentSettingValue(int id, unsigned short newValue, unsigned short& oldValue);

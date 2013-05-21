@@ -86,7 +86,7 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
 	: m_state(STATE_INIT), m_nextState(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
-	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES)
+	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES), m_vd_state(-1)
 {
 
 }
@@ -333,6 +333,22 @@ bool ComTrafficProcessor::CheckAndReportFault(DataPacket* packet) {
 		unsigned char vd_state =  packet->GetDataPtr()[VD_STATUS_OFFSET];
 		unsigned char error_code = packet->GetDataPtr()[1];
 		Log( "[ FAULT ? ]: isInFault=%d VD state=%d ERROR=%d",m_isInFault, vd_state, error_code);
+
+		//check VD state and report event #10
+		if(m_vd_state == -1) {
+			//just store initial value
+			m_vd_state = vd_state;
+		} else {
+			int nSt = vd_state & VD_ON_MASK;
+			int oSt = m_vd_state & VD_ON_MASK;
+
+			if(nSt != oSt) {
+				m_pDevice->ReportStationState(nSt, oSt, time(NULL));
+			}
+
+			m_vd_state = vd_state;
+		}
+
 		if(!m_isInFault) {
 			if (error_code > 0) {
 				m_faultCode = error_code;

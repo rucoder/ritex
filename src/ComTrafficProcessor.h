@@ -81,6 +81,8 @@ protected:
     int m_faultCode;
 
     int m_number_of_ksu_failures;
+
+    int m_vd_state;
 protected:
 	virtual void* Run();
     int OpenCommPort(std::string port, int speed);
