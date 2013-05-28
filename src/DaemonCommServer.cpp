@@ -243,6 +243,8 @@ void* DaemonCommServer::Run() {
 
 		} while (1);
 		//TODO: handle error better
+		::close(m_clientSock);
+		m_clientSock = -1;
 	}
 	Log( "DaemonCommServer::Run(): DONE");
 	return NULL;
