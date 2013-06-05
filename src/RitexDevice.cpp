@@ -520,7 +520,7 @@ bool RitexDevice::TestDevice(DeviceCommand* pCmd, std::string com, int speed)
 void RitexDevice::ReportDataPacket(DataPacket* packet)
 {
 #ifdef __DEBUG__
-	printf("Reporting packet\n");
+	Log("Reporting packet\n");
 #endif
 
 	for(unsigned int i = 0; i < m_offsetTable.size(); i++) {
@@ -544,7 +544,7 @@ void RitexDevice::ReportDataPacket(DataPacket* packet)
 				value = swap16(value);
 				event->setValue((float)value);
 			}
-			m_pAdapter->getDataLogger()->EnqueData(event);
+			m_pAdapter->getDataLogger()->EnqueData(event, false);
 		}
 	}
 

@@ -13,6 +13,7 @@
 #include "sqlite3.h"
 #include "Log.h"
 
+
 EventLoggerThread::EventLoggerThread(std::string db_name)
 	: LoggerThread<DBEventCommon*>(db_name, "EventLoggerThread")
 {

@@ -52,22 +52,6 @@ RitexAdapter::RitexAdapter(std::string name, std::string version, std::string de
 	AddAdditionalParameter("sync_time", 0, 60);
 }
 
-bool RitexAdapter::isDaemonRunning() {
-	/* if PID file exists and we cannot obtain lock then daemon is running*/
-	int fd = open(m_pidFileName.c_str(), O_RDWR);
-	if (fd > 0) {
-		if (flock(fd, LOCK_EX | LOCK_NB) == -1) {
-			if (errno == EWOULDBLOCK) {
-				return true;
-			}
-			// need to release lock and remove the file
-		} else {
-			flock(fd, LOCK_UN);
-		}
-	}
-	return false;
-}
-
 RitexAdapter::~RitexAdapter() {
 	if (m_pCmdLineParser != NULL) {
 		delete m_pCmdLineParser;

@@ -22,7 +22,6 @@
 #define PID_FILE_PATH "/forsrv/"
 
 
-
 class Adapter: public IAdapter{
 public:
 	enum eExecutionContext {

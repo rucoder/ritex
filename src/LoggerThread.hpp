@@ -15,6 +15,9 @@
 #include <sqlite3.h>
 #include <syslog.h>
 #include <assert.h>
+#include <errno.h>
+
+extern void Log(std::string format, ...);
 
 template <typename T>
 class LoggerThread: public Thread {
@@ -51,42 +54,70 @@ protected:
 	virtual void* Run()
 	{
 		T pData;
+		int rc;
 		while(true) {
 
 			timespec tm;
 
-			tm.tv_sec = 2;
-			tm.tv_nsec = 0;
+			int transactionSize;
 
 			pthread_mutex_lock(&m_queueMutex);
-			while(m_queue.empty())
-				pthread_cond_timedwait(&m_condProcessQueue, &m_queueMutex, &tm);
 
-			pData = m_queue.front();
-			m_queue.pop();
+			clock_gettime(CLOCK_REALTIME, &tm);
+			tm.tv_sec += 15;
+			Log("[SQL] waiting for data");
+
+			rc = 0;
+
+			while(m_queue.size() < 50 && rc == 0)
+				rc = pthread_cond_timedwait(&m_condProcessQueue, &m_queueMutex, &tm);
+
+			transactionSize = m_queue.size();
+
+			Log("[SQL] rc=%d transaction size=%d", rc, transactionSize);
 
 			pthread_mutex_unlock(&m_queueMutex);
 
-			//write data to DB
-			if(pData) {
-				if(BindParams(pData)) {
-					int error = sqlite3_step(m_pStm);
-					if (error == SQLITE_DONE) {
-						delete pData;
-						pData = NULL;
-					} else if(error == SQLITE_BUSY) {
-						Log("DB is busy. will try again");
-					}
-				}
-				//put data back to queue but not notify.
-				if(pData) {
-					EnqueData(pData, false);
-					Log("Couldn't insert data. ERROR: [%d-%d] %s", getLastError(), getLastExtError(),  getLastErrorMsg());
-				}
-				//reset statement and clear bindings in any case
-				sqlite3_reset(m_pStm);
-				sqlite3_clear_bindings(m_pStm);
+			if (rc == ETIMEDOUT && transactionSize == 0) {
+				Log("[SQL] timedout. no data to write");
+				continue;
 			}
+
+
+			sqlite3_exec(m_pDb, "BEGIN", 0, 0, 0);
+
+
+			while(transactionSize > 0) {
+				transactionSize--;
+				pthread_mutex_lock(&m_queueMutex);
+				if(m_queue.empty()) {
+					break;
+				}
+				pData = m_queue.front();
+				m_queue.pop();
+				pthread_mutex_unlock(&m_queueMutex);
+				//write data to DB
+				if(pData) {
+					if(BindParams(pData)) {
+						int error = sqlite3_step(m_pStm);
+						if (error == SQLITE_DONE) {
+							delete pData;
+							pData = NULL;
+						} else if(error == SQLITE_BUSY) {
+							Log("DB is busy. will try again");
+						}
+					}
+					//put data back to queue but not notify.
+					if(pData) {
+						EnqueData(pData, false);
+						Log("Couldn't insert data. ERROR: [%d-%d] %s", getLastError(), getLastExtError(),  getLastErrorMsg());
+					}
+					//reset statement and clear bindings in any case
+					sqlite3_reset(m_pStm);
+					sqlite3_clear_bindings(m_pStm);
+				}
+			}
+			sqlite3_exec(m_pDb, "END", 0, 0, 0);
 		}
 		return NULL;
 	}
@@ -107,6 +138,7 @@ protected:
 		if(m_pStm && m_pDb) {
 			sqlite3_reset(m_pStm);
 			sqlite3_clear_bindings(m_pStm);
+			sqlite3_exec(m_pDb, "BEGIN", 0, 0, 0);
 			while(!m_queue.empty()) {
 				T pData = m_queue.front();
 				m_queue.pop();
@@ -125,6 +157,7 @@ protected:
 					sqlite3_clear_bindings(m_pStm);
 				}
 			}
+			sqlite3_exec(m_pDb, "END", 0, 0, 0);
 		}
 	}
 
@@ -150,15 +183,6 @@ protected:
 			return false;
 		}
 		return true;
-	}
-
-	void Log(std::string format, ...) {
-		std::string fullFormat = "[SQL] " + m_TAG + " :" + format;
-		va_list args;
-		va_start(args, format);
-		//::Log();
-		//vsyslog(LOG_ERR, fullFormat.c_str(), args);
-		va_end(args);
 	}
 
 public:
@@ -208,6 +232,7 @@ public:
 
 	bool EnqueData(T event, bool signal = true) {
 		//TODO: check return values
+		Log("[SQL] Enqueue data");
 		pthread_mutex_lock(&m_queueMutex);
 		m_queue.push(event);
 		pthread_mutex_unlock(&m_queueMutex);

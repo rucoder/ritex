@@ -7,11 +7,13 @@
 
 #ifndef LOG_H_
 #define LOG_H_
-#include "Adapter.h"
 
-void InitLog();
-int GetLogFd();
-void Log(std::string format, ...);
-void SetLogContext(Adapter::eExecutionContext context);
+#include "Adapter.h"
+#include <string>
+class Adapter;
+extern void InitLog();
+extern int GetLogFd();
+extern void Log(std::string format, ...);
+extern void SetLogContext(Adapter::eExecutionContext context);
 
 #endif /* LOG_H_ */
