@@ -342,12 +342,21 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 
 	//the first item in 'params' is a command.
 
-#ifdef __DEBUG__
-	printf("First arg: %s\n", pCmd->m_args[0]->m_list_val[atoi(params[0].c_str()) - 1]->m_name.c_str());
-#endif
 
-	// setting number or command number
-	cmd_template_t* tm = (cmd_template_t*)(pCmd->m_args[0]->m_list_val[atoi(params[0].c_str()) - 1]->m_deviceData);
+	// setting number or command number. search for it
+	int id = atoi(params[0].c_str());
+
+	cmd_template_t* tm = NULL;
+
+	for(unsigned int i = 0; i < pCmd->m_args[0]->m_list_val.size(); i++) {
+		if(pCmd->m_args[0]->m_list_val[i]->m_id == id) {
+			tm = (cmd_template_t*)(pCmd->m_args[0]->m_list_val[i]->m_deviceData);
+#ifdef __DEBUG__
+	printf("First arg: %s\n", pCmd->m_args[0]->m_list_val[i]->m_name.c_str());
+#endif
+			break;
+		}
+	}
 
 	// if second arg exists -- get it
 	if(pCmd->m_args.size() > 1) {
