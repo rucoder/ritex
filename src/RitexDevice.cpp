@@ -261,7 +261,7 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 	std::vector<AdapterCommandArgParam*> params;
 
 	for(unsigned int i = 0; i < NUMBER_OF_SETTINGS; i++) {
-		params.push_back(new AdapterCommandArgParam(all_Settings[i].m_name, new cmd_template_t(REQ_SETTING_SET, all_Settings[i].m_id)));
+		params.push_back(new AdapterCommandArgParam(all_Settings[i].m_name, all_Settings[i].m_id, new cmd_template_t(REQ_SETTING_SET, all_Settings[i].m_id)));
 	}
 
 	//argument order makes big difference!!!
@@ -275,12 +275,12 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 
 	std::vector<AdapterCommandArgParam*> params1;
 
-	params1.push_back(new AdapterCommandArgParam("Включить ВД", new cmd_template_t(REQ_VD_ON, VD_ON_START)));
-	params1.push_back(new AdapterCommandArgParam("Выключить ВД", new cmd_template_t(REQ_VD_OFF)));
-	params1.push_back(new AdapterCommandArgParam("Сброс", new cmd_template_t(REQ_VD_ON, VD_ON_RESET)));
-	params1.push_back(new AdapterCommandArgParam("Начать тарировку", new cmd_template_t(REQ_VD_ON, VD_ON_TUNE)));
-	params1.push_back(new AdapterCommandArgParam("Левое вращение", new cmd_template_t(REQ_VD_ROTATION, VD_ROTATE_LEFT)));
-	params1.push_back(new AdapterCommandArgParam("Правое вращение", new cmd_template_t(REQ_VD_ROTATION, VD_ROTATE_RIGHT)));
+	params1.push_back(new AdapterCommandArgParam("Включить ВД", 1, new cmd_template_t(REQ_VD_ON, VD_ON_START)));
+	params1.push_back(new AdapterCommandArgParam("Выключить ВД", 2, new cmd_template_t(REQ_VD_OFF)));
+	params1.push_back(new AdapterCommandArgParam("Сброс", 3, new cmd_template_t(REQ_VD_ON, VD_ON_RESET)));
+	params1.push_back(new AdapterCommandArgParam("Начать тарировку", 4, new cmd_template_t(REQ_VD_ON, VD_ON_TUNE)));
+	params1.push_back(new AdapterCommandArgParam("Левое вращение", 5, new cmd_template_t(REQ_VD_ROTATION, VD_ROTATE_LEFT)));
+	params1.push_back(new AdapterCommandArgParam("Правое вращение", 6, new cmd_template_t(REQ_VD_ROTATION, VD_ROTATE_RIGHT)));
 
 	pCmd->AddArgument("Команда ВД", params1);
 	AddExternalCommand(pCmd);

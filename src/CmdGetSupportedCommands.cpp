@@ -44,7 +44,7 @@ bool CmdGetSupportedCommands::Execute()
 			case ARG_TYPE_LIST:
 				std::cout<<"|list";
 				for(unsigned int k = 0; k < args[j]->m_list_val.size(); k++) {
-					std::cout<<"|" << (k+1) << "~" << args[j]->m_list_val[k]->m_name;
+					std::cout<<"|" << args[j]->m_list_val[k]->m_id << "~" << args[j]->m_list_val[k]->m_name;
 				}
 				break;
 			default:

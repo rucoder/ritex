@@ -23,9 +23,10 @@ class AdapterCommandArgParam
 {
 public:
 	std::string m_name;
+	int m_id;
 	void* m_deviceData;
-	AdapterCommandArgParam(std::string name, void* data = NULL)
-		: m_name(name), m_deviceData(data)
+	AdapterCommandArgParam(std::string name, int id, void* data = NULL)
+		: m_name(name), m_id(id), m_deviceData(data)
 	{
 
 	}
