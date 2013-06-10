@@ -56,6 +56,10 @@ protected:
 	std::string m_pidFileName;
 	std::string m_pidFilePath;
 
+	int m_daemonFd;
+
+	int createLock(const char* lock_name);
+
 	// logging facilities
 	EventLoggerThread* m_pEventLogger;
 	EventLoggerThread* m_pEventLogger2;

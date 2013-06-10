@@ -88,9 +88,9 @@ Adapter::~Adapter() {
 }
 
 
-int createLock(const char* lock_name) {
+int Adapter::createLock(const char* lock_name) {
 	struct sockaddr_un addr;
-	int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+	m_daemonFd = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_UNIX;
@@ -99,11 +99,11 @@ int createLock(const char* lock_name) {
 
 	Log("##########LOCK_NAME %s", lock_name);
 
-	if (bind(fd, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + strlen(lock_name) + 1) == -1) {
-		close(fd);
+	if (bind(m_daemonFd, (struct sockaddr *) &addr, _STRUCT_OFFSET (struct sockaddr_un, sun_path) + strlen(lock_name) + 1) == -1) {
+		close(m_daemonFd);
 		return -1;
 	}
-	return fd;
+	return m_daemonFd;
 }
 
 Adapter::eExecutionContext Adapter::BecomeDaemon() {
@@ -111,6 +111,14 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	return CONTEXT_DAEMON;
 #else
 	int maxfd, fd;
+
+	if(createLock(m_pidFileName.c_str()) == -1) {
+		Log( "Already running as daemon. Continue as client\n");
+		::SetLogContext(CONTEXT_PARENT);
+		return CONTEXT_PARENT;
+		//_exit(EXIT_SUCCESS);
+	}
+
 
 	switch (::fork()) {
 	case -1:
@@ -152,29 +160,26 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 	for (fd = 0; fd < maxfd; fd++)
 	{
 		// keep log file opened
-		if(fd != ::GetLogFd())
+		if(fd != ::GetLogFd() && fd != m_daemonFd)
 			close(fd);
 	}
 
 
-	close(STDIN_FILENO);
+	::close(STDIN_FILENO);
 	/* Reopen standard fd's to /dev/null */
 	fd = open("/dev/null", O_RDWR);
 	if (fd != STDIN_FILENO) {
 		/* 'fd' should be 0 */
 		return CONTEXT_ERROR;
 	}
-	if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
+
+	if (::dup2(::GetLogFd(), STDOUT_FILENO) != STDOUT_FILENO) {
 		return CONTEXT_ERROR;
 	}
-	if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO) {
+	if (::dup2(::GetLogFd(), STDERR_FILENO) != STDERR_FILENO) {
 		return CONTEXT_ERROR;
 	}
 
-	if(createLock(m_pidFileName.c_str()) == -1) {
-		Log( "Already running as daemon.Exiting...\n");
-		_exit(EXIT_SUCCESS);
-	}
 
 	Log( "PID: 0x%d", getpid());
 
