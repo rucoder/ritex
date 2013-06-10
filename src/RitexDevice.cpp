@@ -709,7 +709,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
 		unsigned short oldValue =  all_Settings[i].m_value;
 
-		if(newValue != oldValue || !all_Settings[i].m_isValueSet || m_isFirstSettingsPacket) {
+		if(newValue != oldValue) {
 			all_Settings[i].m_isValueSet = true;
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
@@ -721,13 +721,16 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setArgument3(all_Settings[i].m_name);
 
 			if(m_isFirstSettingsPacket) {
-				event->setArgument4("INIT");
+				if(!all_Settings[i].m_isValueSet) {
+					event->setArgument4("INIT");
+					Log( "CheckSettigsChanged reporting");
+					ReportEvent(event);
+				}
 			} else {
 				event->setArgument4("HND");
+				Log( "CheckSettigsChanged reporting");
+				ReportEvent(event);
 			}
-
-			Log( "CheckSettigsChanged reporting");
-			ReportEvent(event);
 		}
 	}
 	m_isFirstSettingsPacket = false;
@@ -792,60 +795,56 @@ void RitexDevice::OnResultReady(DeviceCommand* pCmd)
 }
 
 bool RitexDevice::UpdateSettingsValues() {
-//    sqlite3* pDb;
-//
-//    Log( "[SQL]: getting settings for device %d", m_deviceId);
-//
-//#if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
-//    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb";
-//#else
-//    std::string dbPath = "/mnt/www/ControlServer/data/ic_data_event3.sdb";
-//#endif
-//
-//
-//    int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
-//
-//    if(rc != SQLITE_OK)
-//    {
-//    	Log( "[SQL] couldn't open DB %s\n", dbPath.c_str());
-//    	sqlite3_close(pDb);
-//    	return false;
-//    }
-//
-//    sqlite3_stmt* pStm;
-//
-//    char* query = new char[1024];
-//
-//    if (query == NULL) {
-//    	Log( "[SQL] OOM creating query\n");
-//    	sqlite3_close(pDb);
-//    	return false;
-//    }
-//    snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where DeviceId == %d AND isOn == 1", devId);
-//
-//    if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
-//    	if (pStm != NULL) {
-//    		int cols = sqlite3_column_count(pStm);
-//    		Log( "[SQL] cols=%d\n", cols);
-//    		while (sqlite3_step(pStm) ==  SQLITE_ROW) {
-//    			int paramId = sqlite3_column_int(pStm, 0);
-//    			int channelId = sqlite3_column_int(pStm, 1);
-//    			Log( "Add channel to filter: P:%d C:%d", paramId, channelId);
-//    			m_paramFilter.AddItem(channelId, paramId);
-//    		}
-//    		sqlite3_finalize(pStm);
-//    	} else {
-//    		Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
-//    	}
-//    } else {
-//    	Log( "[SQL] error preparing %d %s for DB: %s\n", rc, sqlite3_errmsg(pDb), dbPath.c_str());
-//    }
-//    delete [] query;
-    return true;
+
+    sqlite3* pDb = NULL;
+
+#if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
+    std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb";
+#else
+    std::string dbPath = "/mnt/www/ControlServer/data/ic_data_event3.sdb";
+#endif
+
+	std::string sEventSqlQuery = std::string("select Argument3,Argument1 from (" \
+					"select  *  from tbleventbus as filter inner join" \
+				  	" (select Argument3, max(registerdate) as registerdate from tbleventbus where TypeId = \"11\" group by Argument3 )	as filter1" \
+					" on filter.Argument3 = filter1.Argument3 and filter.registerdate = filter1.registerdate)");
+
+    int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
+
+    if(rc != SQLITE_OK)
+    {
+    	Log( "[SQL] UpdateSettingsValues: couldn't open DB %s\n", dbPath.c_str());
+    	sqlite3_close(pDb);
+    	return false;
+    }
+
+    sqlite3_stmt* pStm;
+
+    if ((rc = sqlite3_prepare_v2(pDb, sEventSqlQuery.c_str(), - 1, &pStm, NULL)) == SQLITE_OK) {
+    	while ((rc =sqlite3_step(pStm)) ==  SQLITE_ROW) {
+    		const unsigned char * paramId = sqlite3_column_text(pStm, 0);
+    		double value = sqlite3_column_double(pStm, 1);
+    		Log( "Found setting: S:%s V:%g", paramId, value);
+
+    		for(unsigned int i = 0;i < NUMBER_OF_SETTINGS; i++) {
+    			if(strcmp(all_Settings[i].m_name,(const char*)paramId) == 0) {
+    					all_Settings[i].m_value = value;
+    					all_Settings[i].m_isValueSet = true;
+    			}
+    		}
+    	}
+    } else {
+    	Log( "[SQL] UpdateSettingsValues: error preparing %d %s for DB: %s", rc, sqlite3_errmsg(pDb), dbPath.c_str());
+    }
+    sqlite3_finalize(pStm);
+    sqlite3_close(pDb);
+    return (rc == SQLITE_DONE);
 }
 int RitexDevice::GetDeviceStateChannelId() {
 	return m_pAdapter->GetParameterFilter().FindChannel(DEVICE_STATE_CHANNEL_PARAM);
 }
+
+
 
 
 
