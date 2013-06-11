@@ -47,7 +47,7 @@ RitexAdapter::RitexAdapter(std::string name, std::string version, std::string de
 #endif
 	AddAdditionalParameter("comdevice", m_commDevices, sizeof(m_commDevices)/ sizeof(char*), LIST_VALUE_STRING);
 	AddAdditionalParameter("baudrate", m_commSpeed, sizeof(m_commSpeed)/ sizeof(char*), LIST_VALUE_INT);
-	AddAdditionalParameter("debug",0,1);
+	AddAdditionalParameter("debug",0,5);
 	AddAdditionalParameter("address","54");
 	AddAdditionalParameter("sync_time", 0, 60);
 }

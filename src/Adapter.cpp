@@ -200,9 +200,13 @@ int Adapter::Run() {
 	CmdLineCommand* pCmdLineCommand = m_pCmdLineParser->GetCommand();
 
 	if(pCmdLineCommand != NULL && pCmdLineCommand->Compile(GetAdditionalParameterMap())) {
+		int debugLevel = 0;
 #ifdef STDIO_DEBUG
 		pCmdLineCommand->Dump();
 #endif
+
+		pCmdLineCommand->GetParameter("debug", debugLevel);
+		SetLogLevel(debugLevel);
 
 		//TODO: declare as interface and move to Device class
 		DeviceCommand* pDevCmd = m_pDevice->CreateCommand(pCmdLineCommand);

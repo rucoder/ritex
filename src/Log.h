@@ -15,5 +15,6 @@ extern void InitLog();
 extern int GetLogFd();
 extern void Log(std::string format, ...);
 extern void SetLogContext(Adapter::eExecutionContext context);
+extern void SetLogLevel(int logLevel);
 
 #endif /* LOG_H_ */
