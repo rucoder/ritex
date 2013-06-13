@@ -64,12 +64,12 @@ protected:
 			pthread_mutex_lock(&m_queueMutex);
 
 			clock_gettime(CLOCK_REALTIME, &tm);
-			tm.tv_sec += 15;
+			tm.tv_sec += 5;
 			Log("[SQL] waiting for data");
 
 			rc = 0;
 
-			while(m_queue.size() < 50 && rc == 0)
+			while(m_queue.empty())
 				rc = pthread_cond_timedwait(&m_condProcessQueue, &m_queueMutex, &tm);
 
 			transactionSize = m_queue.size();

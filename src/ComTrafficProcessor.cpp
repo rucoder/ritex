@@ -542,6 +542,8 @@ void* ComTrafficProcessor::Run()
 				if (error == ERROR_READ_NO_ERROR) {
 					if(GET_CMD(packet->GetCmd()) == REQ_INFO) {
 						m_nextState = STATE_WAIT_ACK;
+					} else if(GET_CMD(packet->GetCmd()) == REQ_SETTING_SET) {
+						m_nextState = STATE_WAIT_ACK;
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
@@ -602,6 +604,8 @@ void* ComTrafficProcessor::Run()
 						}
 						pthread_mutex_unlock(&m_cmdMutex);
 
+					} else if (GET_CMD(packet->GetCmd()) == ACK_ALL_SETTINGS){
+						m_pDevice->CheckSettigsChanged(*packet);
 					}
 				    else
 					{
