@@ -8,10 +8,12 @@
 #include "DBEventCommon.h"
 
 DBEventCommon::DBEventCommon()
-	: m_typeId(0), m_channelId(-1), m_registerTimeDate(0), m_sArgument1("X"), m_sArgument2("X"), m_sArgument3("X"), m_sArgument4("X")
+	: m_typeId(0), m_channelId(-1), m_registerTimeDate(0)
 {
-	// TODO Auto-generated constructor stub
-
+	m_sArgument1 = std::string("X");
+	m_sArgument2 = std::string("X");
+	m_sArgument3 = std::string("X");
+	m_sArgument4 = std::string("X");
 }
 
 DBEventCommon::~DBEventCommon() {

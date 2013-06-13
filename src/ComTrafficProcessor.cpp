@@ -36,6 +36,7 @@
 
 #define MODE_CYCLE_TIME (30)
 
+#define DATA_CAPTURE_PERIOD 5
 
 //MUST be aligned with ComTrafficProcessor::m_ackParams array
 #define IDX_ACK_ACK 0
@@ -86,7 +87,8 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
 	: m_state(STATE_INIT), m_nextState(STATE_INIT), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false), m_pendingCmd(NULL), m_doRun(true),
-	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES), m_vd_state(-1)
+	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES), m_vd_state(-1),
+	  m_dataCapturePeriod(DATA_CAPTURE_PERIOD)
 {
 
 }
@@ -542,6 +544,8 @@ void* ComTrafficProcessor::Run()
 				if (error == ERROR_READ_NO_ERROR) {
 					if(GET_CMD(packet->GetCmd()) == REQ_INFO) {
 						m_nextState = STATE_WAIT_ACK;
+					} else if(GET_CMD(packet->GetCmd()) == REQ_SETTING_SET) {
+						m_nextState = STATE_WAIT_ACK;
 					} else {
 						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
@@ -564,7 +568,12 @@ void* ComTrafficProcessor::Run()
 
 						if (m_isDataCapture)
 						{
-							m_pDevice->ReportDataPacket(packet);
+							if((m_dataCapturePeriod+1) % DATA_CAPTURE_PERIOD == 0) {
+								m_dataCapturePeriod = 0;
+								m_pDevice->ReportDataPacket(packet);
+							} else {
+								m_dataCapturePeriod++;
+							}
 						}
 
 						pthread_mutex_lock(&m_cmdMutex);
@@ -602,6 +611,11 @@ void* ComTrafficProcessor::Run()
 						}
 						pthread_mutex_unlock(&m_cmdMutex);
 
+					} else if(GET_CMD(packet->GetCmd()) == REQ_SETTING_SET) {
+						m_nextState = STATE_WAIT_ACK;
+					} else if (GET_CMD(packet->GetCmd()) == ACK_ALL_SETTINGS){
+						Log("[-----GOT ACK_ALL_SETTINGS in STATE_WAIT_ACK]");
+						m_pDevice->CheckSettigsChanged(*packet);
 					}
 				    else
 					{

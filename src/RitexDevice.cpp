@@ -710,7 +710,6 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 		unsigned short oldValue =  all_Settings[i].m_value;
 
 		if(newValue != oldValue) {
-			all_Settings[i].m_isValueSet = true;
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
 			event->setChannelId(GetDeviceStateChannelId());
@@ -721,13 +720,14 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setArgument3(all_Settings[i].m_name);
 
 			if(m_isFirstSettingsPacket) {
-				if(!all_Settings[i].m_isValueSet) {
-					event->setArgument4("INIT");
+				if(!all_Settings[i].m_isValueSet || newValue != oldValue) {
+					all_Settings[i].m_isValueSet = true;
+					event->setArgument4(std::string("INIT"));
 					Log( "CheckSettigsChanged reporting");
 					ReportEvent(event);
 				}
 			} else {
-				event->setArgument4("HND");
+				event->setArgument4(std::string("HND"));
 				Log( "CheckSettigsChanged reporting");
 				ReportEvent(event);
 			}
@@ -806,7 +806,7 @@ bool RitexDevice::UpdateSettingsValues() {
 
 	std::string sEventSqlQuery = std::string("select Argument3,Argument1 from (" \
 					"select  *  from tbleventbus as filter inner join" \
-				  	" (select Argument3, max(registerdate) as registerdate from tbleventbus where TypeId = \"11\" group by Argument3 )	as filter1" \
+				  	" (select Argument3, max(registerdate) as registerdate from tbleventbus where (TypeId=\"11\" and Argument4!=\"INIT\") group by Argument3 )	as filter1" \
 					" on filter.Argument3 = filter1.Argument3 and filter.registerdate = filter1.registerdate)");
 
     int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
@@ -830,6 +830,7 @@ bool RitexDevice::UpdateSettingsValues() {
     			if(strcmp(all_Settings[i].m_name,(const char*)paramId) == 0) {
     					all_Settings[i].m_value = value;
     					all_Settings[i].m_isValueSet = true;
+    					break;
     			}
     		}
     	}

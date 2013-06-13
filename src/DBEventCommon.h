@@ -21,6 +21,16 @@ class DBEventCommon {
 	std::string m_sArgument4;
 public:
 	DBEventCommon();
+
+	DBEventCommon(const DBEventCommon& event)
+		: m_typeId(event.m_typeId), m_channelId(event.m_channelId) {
+		m_registerTimeDate = event.m_registerTimeDate;
+		m_sArgument1 = event.m_sArgument1;
+		m_sArgument2 = event.m_sArgument2;
+		m_sArgument3 = event.m_sArgument3;
+		m_sArgument4 = event.m_sArgument4;
+	}
+
 	virtual ~DBEventCommon();
 
 	int getChannelId() const {
