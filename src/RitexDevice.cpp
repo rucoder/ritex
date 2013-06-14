@@ -366,8 +366,8 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 	//	CmdExternal(RitexDevice* device, std::string commport, int speed, CmdLineCommand* cmd, unsigned short cmdId, unsigned char param1, unsigned short param2 = 0);
 	CmdExternal* pExtCmd = new CmdExternal(this,comm, speed,cmd,tm->m_cmd, tm->m_param, param2);
 
-	if (pExtCmd)
-		pExtCmd->AddResultListener(this);
+//	if (pExtCmd)
+//		pExtCmd->AddResultListener(this);
 
 	return pExtCmd;
 

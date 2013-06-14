@@ -32,6 +32,7 @@ void DeviceCommand::NotifyResultReady()
 	for(std::list<ICmdResulReadytListener*>::iterator itr = m_Listeners.begin(); itr != m_Listeners.end(); itr++) {
 		(*itr)->OnResultReady(this);
 	}
+	delete this;
 }
 
 void DeviceCommand::SetReply(DataPacket* packet, int status/*, DataPacket* param2*/)

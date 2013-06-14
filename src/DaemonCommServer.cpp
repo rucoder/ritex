@@ -221,7 +221,7 @@ void* DaemonCommServer::Run() {
 											"7;Не могу начать выполнение команды. Внутренняя ошибка\n");
 								}
 
-								delete pDevCmd;
+								//delete pDevCmd;
 								Log( "Executing. WAIT 1-<<");
 							}
 						}
