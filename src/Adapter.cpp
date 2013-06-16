@@ -31,6 +31,8 @@
 #include <sys/socket.h>
 
 
+#define EMULATE_DAEMON
+
 #define BD_MAX_CLOSE 8192
 
 static char const *priov[] = {
@@ -119,7 +121,16 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 		//_exit(EXIT_SUCCESS);
 	}
 
-
+#ifdef EMULATE_DAEMON
+	::SetLogContext(CONTEXT_BOTH);
+//	if (::dup2(::GetLogFd(), STDOUT_FILENO) != STDOUT_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
+//	if (::dup2(::GetLogFd(), STDERR_FILENO) != STDERR_FILENO) {
+//		return CONTEXT_ERROR;
+//	}
+	return CONTEXT_BOTH;
+#else
 	switch (::fork()) {
 	case -1:
 		return CONTEXT_ERROR;
@@ -185,6 +196,7 @@ Adapter::eExecutionContext Adapter::BecomeDaemon() {
 
 	return CONTEXT_DAEMON;
 #endif
+#endif
 }
 
 int Adapter::Run() {
@@ -215,6 +227,10 @@ int Adapter::Run() {
 			Log( "ERROR: couldn't create  DeviceCommand()\n");
 			return -1;
 		}
+
+//		if(pCmdLineCommand->m_cmdType == CMD_EXIT) {
+//
+//		}
 
 		//execute and exit
 		if(!pDevCmd->isHWCommand()) {
@@ -249,58 +265,7 @@ int Adapter::Run() {
 					break;
 				case CONTEXT_PARENT: //we are in parent. wait for daemon init compleate and run command if neccessary
 					{
-						m_pCommChannel = new DaemonCommChannel();
-						if(m_pCommChannel != NULL) {
-#ifdef STDIO_DEBUG
-							printf("opening channel socket %s\n", m_socket.c_str());
-#endif
-							if(m_pCommChannel->open(m_socket) == 0) {
-#ifdef STDIO_DEBUG
-								printf("Channel opened on socket %s\n", m_socket.c_str());
-#endif
-								//send raw command line
-								std::string cmdLine = m_pCmdLineParser->GetCmdLine();
-#ifdef STDIO_DEBUG
-								printf("RAW::: %s\n", cmdLine.c_str());
-#endif
-
-								m_pCommChannel->send((unsigned char*)cmdLine.c_str(), cmdLine.length() + 1); //send sero terminated command line
-
-								unsigned length;
-								m_pCommChannel->recv(&length, 4); //length
-#ifdef STDIO_DEBUG
-								printf("Got reply length: %d\n", length);
-#endif
-
-								if (length > 0) {
-									unsigned char* resp = new unsigned char[length];
-									m_pCommChannel->recv(resp,length); //length
-
-									//output command result
-									printf("%s", resp);
-									delete [] resp;
-								}
-
-							} else {
-								Log( "Error connecting to daemon on %s\n", m_socket.c_str());
-								printf("7;Адаптер не отвечает\n");
-							}
-						} else {
-							Log( "OOM creating DaemonCommChannel\n");
-							printf("7;Нет памяти\n");
-							delete pCmdLineCommand;
-							delete pDevCmd;
-							return -1;
-						}
-
-						ParentLoop(m_pCommChannel != NULL && m_pCommChannel->isOpened());
-
-						if(m_pCommChannel) {
-							delete m_pCommChannel;
-							m_pCommChannel = NULL;
-						}
-						delete pCmdLineCommand;
-						delete pDevCmd;
+						parentMain(pCmdLineCommand, pDevCmd);
 					}
 					break;
 					/*
@@ -322,56 +287,16 @@ int Adapter::Run() {
 
 					//tolog(&stderr);
 					//tolog(&stdout);
+					childMain();
 
-					Log( "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
-
-					/************************ The work starts here ******************/
-					assert(m_pDevice->getDeviceId() > 0);
-					/*
-					 * 1. create comm server
-					 */
-
-					//Update channels information from DB
-					if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
-						//cannot continue. cleanup and exit
-						DaemonCleanup();
-						Log( "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
-						break;
-					}
-
-					if(!m_pDevice->UpdateSettingsValues()) {
-						//cannot continue. cleanup and exit
-						DaemonCleanup();
-						Log( "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
-						break;
-					}
-
-
-					/*
-					 * Now create all necessary communication facilities:
-					 * - EventLogger
-					 * - DataLogger
-					 *
-					 */
-
-					if(CreateLoggerFacility()) {
-						/*
-						 * now create server socket and start listening. there must be a command alredy
-						 * which initiated daemonization! Here we have to go to some kind of endless loop
-						 * so we go into command processing loop
-						 */
-						Log( "[DAEMON] Opening server socket.. ");
-						DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
-						pServer->Create();
-						Log( "[DAEMON] Waiting for Server to complete");
-						pServer->Join();//stuck here till the end of daemon live
-						Log( "[DAEMON] Server [DONE]");
-						delete pServer;
-						DaemonCleanup();
-					} else {
-						Log( "[DAEMON] Couldn't create data loggers for devId=%d", m_pDevice->getDeviceId());
-					}
-
+					break;
+				case CONTEXT_BOTH:
+					DaemonThread* pD = new DaemonThread(this);
+					ClentThread* pC = new ClentThread(this, pCmdLineCommand, pDevCmd);
+					pC->Create();
+					pD->Create();
+					pC->Join();
+					pD->Join();
 					break;
 			}
 
@@ -379,6 +304,113 @@ int Adapter::Run() {
 	}
 
 	return 0;
+}
+
+void Adapter::parentMain( CmdLineCommand* pCmdLineCommand, DeviceCommand* pDevCmd) {
+	m_pCommChannel = new DaemonCommChannel();
+	if(m_pCommChannel != NULL) {
+#ifdef STDIO_DEBUG
+		printf("opening channel socket %s\n", m_socket.c_str());
+#endif
+		if(m_pCommChannel->open(m_socket) == 0) {
+#ifdef STDIO_DEBUG
+			printf("Channel opened on socket %s\n", m_socket.c_str());
+#endif
+			//send raw command line
+			std::string cmdLine = m_pCmdLineParser->GetCmdLine();
+#ifdef STDIO_DEBUG
+			printf("RAW::: %s\n", cmdLine.c_str());
+#endif
+
+			m_pCommChannel->send((unsigned char*)cmdLine.c_str(), cmdLine.length() + 1); //send sero terminated command line
+
+			unsigned length;
+			m_pCommChannel->recv(&length, 4); //length
+#ifdef STDIO_DEBUG
+			printf("Got reply length: %d\n", length);
+#endif
+
+			if (length > 0) {
+				unsigned char* resp = new unsigned char[length];
+				m_pCommChannel->recv(resp,length); //length
+
+				//output command result
+				printf("%s", resp);
+				delete [] resp;
+			}
+
+		} else {
+			Log( "Error connecting to daemon on %s\n", m_socket.c_str());
+			printf("7;Адаптер не отвечает\n");
+		}
+	} else {
+		Log( "OOM creating DaemonCommChannel\n");
+		printf("7;Нет памяти\n");
+		delete pCmdLineCommand;
+		delete pDevCmd;
+		return;// -1;
+	}
+
+	ParentLoop(m_pCommChannel != NULL && m_pCommChannel->isOpened());
+
+	if(m_pCommChannel) {
+		delete m_pCommChannel;
+		m_pCommChannel = NULL;
+	}
+	delete pCmdLineCommand;
+	delete pDevCmd;
+}
+
+void Adapter::childMain() {
+	Log( "[DAEMON] Starting daemon for devId=%d", m_pDevice->getDeviceId());
+
+	/************************ The work starts here ******************/
+	assert(m_pDevice->getDeviceId() > 0);
+	/*
+	 * 1. create comm server
+	 */
+
+	//Update channels information from DB
+	if (!UpdateParameterFilter(m_pDevice->getDeviceId())) {
+		//cannot continue. cleanup and exit
+		DaemonCleanup();
+		Log( "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
+		return;
+	}
+
+	if(!m_pDevice->UpdateSettingsValues()) {
+		//cannot continue. cleanup and exit
+		DaemonCleanup();
+		Log( "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
+		return;
+	}
+
+
+	/*
+	 * Now create all necessary communication facilities:
+	 * - EventLogger
+	 * - DataLogger
+	 *
+	 */
+
+	if(CreateLoggerFacility()) {
+		/*
+		 * now create server socket and start listening. there must be a command alredy
+		 * which initiated daemonization! Here we have to go to some kind of endless loop
+		 * so we go into command processing loop
+		 */
+		Log( "[DAEMON] Opening server socket.. ");
+		DaemonCommServer* pServer = new DaemonCommServer(m_pDevice, this);
+		pServer->Create();
+		Log( "[DAEMON] Waiting for Server to complete");
+		pServer->Join();//stuck here till the end of daemon live
+		Log( "[DAEMON] Server [DONE]");
+		delete pServer;
+		DaemonCleanup();
+	} else {
+		Log( "[DAEMON] Couldn't create data loggers for devId=%d", m_pDevice->getDeviceId());
+	}
+
 }
 
 /*

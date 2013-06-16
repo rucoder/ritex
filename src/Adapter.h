@@ -21,13 +21,13 @@
 
 #define PID_FILE_PATH "/forsrv/"
 
-
 class Adapter: public IAdapter{
 public:
 	enum eExecutionContext {
 		CONTEXT_DAEMON,
 		CONTEXT_PARENT,
-		CONTEXT_ERROR
+		CONTEXT_ERROR,
+		CONTEXT_BOTH
 	};
 
 private:
@@ -73,7 +73,6 @@ protected:
 
 	virtual void DaemonCleanup();
 
-
 public:
 	Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser);
 	//bool AddParameter(AdapterParameter* parameter);
@@ -102,8 +101,43 @@ public:
 	virtual ParameterFilter& GetParameterFilter()  {
 		return m_paramFilter;
 	}
+	void parentMain(CmdLineCommand* pCmdLineCommand, DeviceCommand* pDevCmd);
+	void childMain();
 
 
 };
+
+class DaemonThread: public Thread {
+private:
+	Adapter* m_pAdapter;
+public:
+	DaemonThread(Adapter* pAdapter)
+		: Thread(), m_pAdapter(pAdapter) {
+	}
+
+	virtual void* Run() {
+		m_pAdapter->childMain();
+		return NULL;
+	}
+
+};
+
+class ClentThread: public Thread {
+private:
+	Adapter* m_pAdapter;
+	CmdLineCommand* m_cmdLineCommand;
+	DeviceCommand* m_devCmd;
+public:
+	ClentThread(Adapter* pAdapter, CmdLineCommand* cmdLineCommand, DeviceCommand* devCmd)
+		: Thread(), m_pAdapter(pAdapter), m_cmdLineCommand(cmdLineCommand), m_devCmd(devCmd) {
+	}
+
+	virtual void* Run() {
+		m_pAdapter->parentMain(m_cmdLineCommand, m_devCmd);
+		return NULL;
+	}
+
+};
+
 
 #endif /* ADAPTER_H_ */

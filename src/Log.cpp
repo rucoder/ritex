@@ -50,6 +50,9 @@ void SetLogContext(Adapter::eExecutionContext context) {
 	case Adapter::CONTEXT_ERROR:
 		gContext = std::string("E");
 		break;
+	case Adapter::CONTEXT_BOTH:
+		gContext = std::string("B");
+		break;
 	}
 }
 
