@@ -705,6 +705,8 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 
 		int offset = all_Settings[i].m_offset;
 
+		LogFatal("i=%d name=%s off=%d size=%d\n", i, all_Settings[i].m_name, offset, all_Settings[i].m_size);
+
 		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
 		unsigned short oldValue =  all_Settings[i].m_value;
 
@@ -716,7 +718,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(newValue));
 			event->setArgument2(itoa(oldValue));
-			event->setArgument3(all_Settings[i].m_name);
+			event->setArgument3(std::string(all_Settings[i].m_name));
 
 			if(m_isFirstSettingsPacket) {
 					event->setArgument4(std::string("INIT"));
