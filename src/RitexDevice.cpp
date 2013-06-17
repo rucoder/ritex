@@ -650,6 +650,10 @@ unsigned short RitexDevice::GetSettingFromPacket(const DataPacket& pPacket, int 
 {
 	assert(size == 1 || size == 2);
 	unsigned char* data = pPacket.GetDataPtr();
+	if(offset + size > pPacket.GetSize()) {
+		LogFatal("Wrong Access: offset=%d size=%d max=%d\n", offset, size, pPacket.GetSize());
+	}
+
 	unsigned short value;
 	if(size == 1) {
 		value = data[offset];
@@ -716,7 +720,7 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 			event->setRegisterTimeDate(system_time);
 			event->setArgument1(itoa(newValue));
 			event->setArgument2(itoa(oldValue));
-			event->setArgument3(all_Settings[i].m_name);
+			event->setArgument3(std::string(all_Settings[i].m_name));
 
 			if(m_isFirstSettingsPacket) {
 					event->setArgument4(std::string("INIT"));
@@ -771,9 +775,9 @@ bool RitexDevice::IncrementEventCount() {
 }
 
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
-	m_pAdapter->getEventLogger()->EnqueData(pEvent);
-
 	DBEventCommon* pEvent2 = new DBEventCommon(*pEvent);
+
+	m_pAdapter->getEventLogger()->EnqueData(pEvent);
 
 	m_pAdapter->getEventLogger2()->EnqueData(pEvent2);
 
@@ -821,6 +825,11 @@ bool RitexDevice::UpdateSettingsValues() {
     		const unsigned char * paramId = sqlite3_column_text(pStm, 0);
     		double value = sqlite3_column_double(pStm, 1);
     		Log( "Found setting: S:%s V:%g", paramId, value);
+
+    		if(paramId == NULL) {
+    			LogFatal("UpdateSettingsValues: paramId == NULL\n");
+    			continue;
+    		}
 
     		for(unsigned int i = 0;i < NUMBER_OF_SETTINGS; i++) {
     			if(strcmp(all_Settings[i].m_name,(const char*)paramId) == 0) {

@@ -15,10 +15,10 @@ INC_PATH = -I$(HOME)/termo/sqlite-3.6.22
 LIB_PATH = -L$(HOME)/termo/sqlite-3.6.22/.libs
 
 #for debug. unstripped. file is ab out 1.5 Mb!
-#CC_FLAGS = -O0 -g3 -Wall -rdynamic -fno-omit-frame-pointer -mapcs-frame $(INC_PATH)
+#CC_FLAGS = -O0 -g3 -Wall -rdynamic -fno-omit-frame-pointer -mapcs-frame $(INC_PATH) -D_ADAPTER_VERSION_=\"$(VERSION)\"
 
 #for Release
-CC_FLAGS = -O3 -Wall -rdynamic -fno-omit-frame-pointer -mapcs-frame $(INC_PATH) -D_ADAPTER_VERSION_=\"$(VERSION)\"
+CC_FLAGS = -O3 -g3 -Wall -rdynamic -fno-omit-frame-pointer -mapcs-frame $(INC_PATH) -D_ADAPTER_VERSION_=\"$(VERSION)\"
 
 LD_FLAGS = -rdynamic -fno-omit-frame-pointer -mapcs-frame -lpthread -lsqlite3 -lrt $(LIB_PATH) -ldl
 
@@ -35,6 +35,7 @@ all::dirs $(EXECUTABLE) Makefile
 $(EXECUTABLE): $(OBJ_FILES) 
 	@echo Linking $@ version $(VERSION)
 	@$(CC) $(LD_FLAGS) -o $@ $^
+	cp $@ $@.unstripped
 	@$(STRIP) $@
 
 $(OUT)/%.o: src/%.cpp
@@ -51,3 +52,4 @@ dirs:
 clean::
 	rm -rf $(OUT)/*
 	rm -rf $(EXECUTABLE)
+	rm -rf $(EXECUTABLE).unstripped

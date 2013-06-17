@@ -16,7 +16,7 @@
 std::string itoa(int i) {
     std::ostringstream oss;
     oss << i;
-    return oss.str();
+    return std::string(oss.str());
 }
 
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {

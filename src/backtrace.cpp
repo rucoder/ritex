@@ -41,6 +41,8 @@ void print_symbol(uintptr_t addr)
 			real_name = dlinf.dli_sname;
 		//printf("[bt] %s(%s+0x%" PRIXPTR ") [0x%" PRIXPTR "]\n", dlinf.dli_fname, real_name, offset, addr);
 		LogFatal("[bt] %s(%s+0x%" PRIXPTR ") [0x%" PRIXPTR "]\n", dlinf.dli_fname, real_name, offset, addr);
+	} else {
+		LogFatal("[bt] cannot get symbol. addr=%" PRIXPTR , addr);
 	}
 }
 
