@@ -46,13 +46,18 @@ void print_symbol(uintptr_t addr)
 	}
 }
 
-void print_backtrace(uintptr_t _fp)
+void print_backtrace(uintptr_t pc, uintptr_t lr)
 {
 	LogFatal("<<<<<BACKTRACE START>>>>>\n");
 #if defined(__arm__)
-	if(_fp != 0) {
-		print_symbol(_fp);
+	if(pc != 0) {
+		print_symbol(pc);
 	}
+
+	if(lr != 0) {
+		print_symbol(lr);
+	}
+
 
 	if(__builtin_frame_address(0) != get_fp()) {
 		printf("WARNING: you have buggy implementation of __builtin_frame_address");
@@ -67,7 +72,6 @@ void print_backtrace(uintptr_t _fp)
 
 		//first 2 frames contain signal handler
 		if(i > 1) {
-		    if ( i==0 ) print_symbol(pc); // top frame
 		    if (fp != 0) print_symbol(lr); // middle frame
 		    else print_symbol(pc); // bottom frame, lr invalid
 		}
@@ -91,11 +95,13 @@ void signalHandler(int sig __attribute__((unused)),
                    void *secret)
 {
 	uintptr_t fault_addr;
+	uintptr_t fault_addr1 = 0;
 
 	ucontext_t *uc = reinterpret_cast<ucontext_t *>(secret);
 
 #if defined(__arm__)
 	fault_addr = uc->uc_mcontext.arm_pc;
+	fault_addr1 = uc->uc_mcontext.arm_lr;
 #else
 #if !defined(__i386__) && !defined(__x86_64__)
 #error Only ARM, x86 and x86-64 are supported
@@ -107,10 +113,12 @@ void signalHandler(int sig __attribute__((unused)),
 #endif
 #endif
 
-	LogFatal("SIGSEGV at\n\t");
-	print_symbol(fault_addr);
-
-	print_backtrace(fault_addr);
+#if defined (__arm__)
+	LogFatal("SIGSEGV at PC=%" PRIXPTR " LR=%" PRIXPTR "\n\t", fault_addr, fault_addr1);
+#else
+	LogFatal("SIGSEGV at EIP=%" PRIXPTR "\n\t", fault_addr);
+#endif
+	print_backtrace(fault_addr, fault_addr1);
 
 	_exit(EXIT_FAILURE);
 }
