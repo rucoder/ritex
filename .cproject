@@ -207,6 +207,7 @@
 								<option id="gnu.cpp.link.option.libs.2002358729" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="sqlite3"/>
+									<listOptionValue builtIn="false" value="dl"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.269239491" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

@@ -10,6 +10,7 @@
 #include "CmdLineParser.h"
 #include "Log.h"
 #include "Utils.h"
+#include "backtrace.h"
 
 #ifndef _ADAPTER_VERSION_
 #define VERSION_STR "v0.1.17 alpha"
@@ -18,6 +19,7 @@
 #endif
 
 int main(int argc, char* argv[]) {
+	install_sigsegv();
 	InitLog();
 
 	Log("======== START: VERSION: %s AT: %s", VERSION_STR, TimeToString(time(NULL)).c_str());
