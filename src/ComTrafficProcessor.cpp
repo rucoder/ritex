@@ -594,19 +594,20 @@ void* ComTrafficProcessor::Run()
 							unsigned char* pData = packet->GetDataPtr();
 
 							if(pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK) {
-								m_nextState = STATE_WAIT_CMD;
-								Log("********** NEXT MOD CYCLE: DELAYED: AUTO MODE ON ");
-							} else {
-								/*
-								 * go into modes loop  every 5 mins
-								 */
-								if(nextModeLoopCycle < time(NULL)) {
-									ChangeMode((m_writeMode+1) % 7);
-									m_nextState = STATE_SET_MODE;
-								} else {
-									m_nextState = STATE_WAIT_CMD;
-									Log("********** NEXT MOD CYCLE IN %d sec", nextModeLoopCycle - time(NULL));
+								Log("********** NEXT MOD CYCLE: SKIP MODE 1: AUTO MODE ON ");
+								if((m_writeMode+1) % 7 == 1) {
+									m_writeMode++;
 								}
+							}
+							/*
+							 * go into modes loop  every 5 mins
+							 */
+							if(nextModeLoopCycle < time(NULL)) {
+								ChangeMode((m_writeMode+1) % 7);
+								m_nextState = STATE_SET_MODE;
+							} else {
+								m_nextState = STATE_WAIT_CMD;
+								Log("********** NEXT MOD CYCLE IN %d sec", nextModeLoopCycle - time(NULL));
 							}
 						}
 						pthread_mutex_unlock(&m_cmdMutex);
