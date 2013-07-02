@@ -577,7 +577,7 @@ void RitexDevice::ReportFault(int code, time_t time) {
 	} else {
 		event->setTypeId(8);
 		event->setArgument1(getFaultText(code)); //error text
-		event->setArgument2(itoa(code)); //error code
+		event->setArgument2(std::string("E-") + itoa(code)); //error code
 	}
 	ReportEvent(event);
 }
