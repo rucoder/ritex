@@ -12,6 +12,7 @@
 #include "DataPacket.h"
 #include "ComTrafficProcessor.h"
 #include <vector>
+#include <string>
 
 #define ERROR_READ_NO_ERROR 0
 #define ERROR_READ_BAD_CRC  -1
@@ -144,7 +145,7 @@ public:
 	void ReportDataPacket(DataPacket* packet);
 	void ReportFault(int code, time_t time);
 	void ReportEvent(DBEventCommon* pEvent);
-	void ReportStationState(int newState, int oldState, time_t time);
+	void ReportStationState(int newState, int oldState, time_t time, std::string src);
 
 	void CheckAndReportTimeDiviation(DataPacket* packet);
 	unsigned short GetSettingFromPacket(const DataPacket& pPacket, int offset, int size);

@@ -83,6 +83,8 @@ void print_backtrace(uintptr_t pc, uintptr_t lr)
 	if(trace_size <= 1)
 		return;
 
+	trace[1] = (void*)pc;
+
 	for(int i = 0; i < trace_size; i++) {
 		print_symbol((uintptr_t)trace[i]);
 	}

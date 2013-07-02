@@ -46,15 +46,10 @@ protected:
 
 protected:
 	enum eState {
-		STATE_INIT,
-		STATE_GET_INIT_PASSWORDS,
-		STATE_SET_CURRENT_PASSWORD,
-		STATE_SET_MODE,
-		STATE_WAIT_ACK,
-		STATE_WAIT_CMD,
-
-		STATE_CUSTOM_CMD,
+		STATE_PROCESS_KSU_TRAFFIC,
+		STATE_CAPTURE_DEVICE,
 	} m_state, m_nextState;
+
 	int m_fd;
     static __tag_cmdParams m_cmdParams[];
     static __tag_cmdParams m_ackParams[];
@@ -67,7 +62,7 @@ protected:
 
     bool m_isDataCapture;
 
-    custom_command_t* m_pendingCmd;
+    std::queue<custom_command_t*> m_pendingCmdQueue;
 
     pthread_mutex_t m_cmdMutex;
 
@@ -85,6 +80,12 @@ protected:
     int m_vd_state;
 
     int m_dataCapturePeriod;
+
+    time_t m_nextModeLoopCycle;
+    bool m_isAutoMode;
+
+    unsigned char m_motorStatus;
+
 protected:
 	virtual void* Run();
     int OpenCommPort(std::string port, int speed);
@@ -108,15 +109,21 @@ protected:
     std::string GetErrorStr(int error);
     std::string GetStateStr(eState state);
 
-    void ChangeMode(unsigned short mode);
+    bool ChangeMode(unsigned short mode, int& error);
     void SetSetting(unsigned char setting, unsigned short value);
     void GetAllSettings();
-    void GetPasswords();
-    void SetPassword(unsigned short password);
+    bool GetPasswords(int& error, unsigned char& passHi, unsigned char& passLow);
+    bool SetPassword(unsigned short password, int& error, DataPacket** settings);
     void SetDataCaptureMode(bool isCapture = true) {
     	m_isDataCapture = isCapture;
     }
 
+    bool NeedCapture();
+    bool CaptureDevice(int& error);
+    void RequestCurrentData();
+    void ProcessMotorCmd(int cmd, int param, int& error);
+
+    bool ProcessCommand(custom_command_t* pCmd, int& error);
 
 public:
 	ComTrafficProcessor(RitexDevice* pDevice);

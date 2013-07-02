@@ -73,15 +73,18 @@ void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*
 		case REQ_VD_OFF:
 		case REQ_VD_ON:
 		case REQ_VD_ROTATION:
-			if (packet->GetCmd() != ACK_ACK) {
-				m_rawResult = std::string("7;Получен неизвестный ответ\n");
-			} else {
+			if (packet->GetCmd() == ACK_ACK) {
 				unsigned char errorCode = packet->GetDataPtr()[0];
-				if(errorCode == 0) {
-					m_rawResult = std::string("8;Прием без ошибок\n");
-				} else {
-					m_rawResult = std::string("7;Ошибка. Код ") + itoa(errorCode) + std::string("\n");
+				m_rawResult = std::string("7;Ошибка. Код ") + itoa(errorCode) + std::string("\n");
+			} else if(packet->GetCmd() == ACK_INFO){
+				m_rawResult = std::string("8;Прием без ошибок\n");
+				if(m_cmdId == REQ_VD_ON) {
+					m_pDevice->ReportStationState(1,0,time(NULL),m_pParentCommand->m_sourceRaw+"$" + m_pParentCommand->m_cmdIdRaw);
+				} else if(m_cmdId == REQ_VD_OFF) {
+					m_pDevice->ReportStationState(0,1,time(NULL),m_pParentCommand->m_sourceRaw+"$" + m_pParentCommand->m_cmdIdRaw);
 				}
+			} else {
+				m_rawResult = std::string("7;Получен неизвестный ответ\n");
 			}
 			break;
 		}
