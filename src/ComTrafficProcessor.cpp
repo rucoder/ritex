@@ -245,7 +245,9 @@ DataPacket* ComTrafficProcessor::WaitForKsuActivity(int timeout, int& error) {
 	pPacket = ReadPacket(&to, error);
 
 #ifdef __DEBUG__
-	Log ("[TRAFFIC] CMD=0x%X", GET_CMD(pPacket->GetCmd()));
+	if(pPacket) {
+		Log ("[TRAFFIC] CMD=0x%X", GET_CMD(pPacket->GetCmd()));
+	}
 #endif
 
 #ifdef __DEBUG__
