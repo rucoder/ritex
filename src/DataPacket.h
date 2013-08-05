@@ -36,6 +36,7 @@ public:
 	unsigned char* GetDataPtr() const { return m_pData; }
 	unsigned short GetSize() const {return m_size; }
 	unsigned short GetCmd() const { return m_cmd; }
+	unsigned short SetCmdMode(unsigned short mode) {m_cmd |= (mode & 0xff) << 8; return m_cmd;}
 	unsigned int GetType() const { return m_type; }
 	unsigned int GetAddress() const { return m_address; }
 	time_t& GetTimestamp() { return m_timestamp; }

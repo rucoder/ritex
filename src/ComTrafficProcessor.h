@@ -132,10 +132,14 @@ public:
     bool SendCustomCmd(custom_command_t* cmd);
     bool isRunning() { return m_fd != -1; };
     void Start() {
+    	Log("DataReaderThread: Start OK1\n");
     	pthread_mutex_lock(&m_startMutex);
+    	Log("DataReaderThread: Start OK2\n");
     	m_doRun = true;
+    	Log("DataReaderThread: Start OK3\n");
     	pthread_mutex_unlock(&m_startMutex);
     	pthread_cond_signal(&m_startCond);
+    	Log("DataReaderThread: Start OK4\n");
     }
 };
 

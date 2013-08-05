@@ -11,6 +11,7 @@
 #include "Device.h"
 #include "DataPacket.h"
 #include "ComTrafficProcessor.h"
+//#include "DataReaderThread.h"
 #include <vector>
 #include <string>
 
@@ -104,6 +105,7 @@
 //default value for -sync_time parameter
 #define DEFAULT_TIME_DIVIATION (5*60) //300 seconds
 
+
 struct cmd_template_t {
 	unsigned short m_cmd;
 	unsigned char m_param;
@@ -125,6 +127,7 @@ class RitexDevice: public Device {
 protected:
 	RitexDevice();
 	ComTrafficProcessor* m_pProcessor;
+	//DataReaderThread* m_pDataReaderThread;
 	int m_writeMode;
 	void CreateOffsetTable();
 	DeviceCommand* CreateExternalCommand(CmdLineCommand* cmd);

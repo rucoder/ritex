@@ -34,7 +34,7 @@
 
 #define WRITE_MODE_OFFSET 22
 
-#define MODE_CYCLE_TIME (30)
+#define MODE_CYCLE_TIME (60) /*30*/
 #define CAPTURE_TIME_LIMIT (6) // actually about 8 sec, but to be sure
 
 #define DATA_CAPTURE_PERIOD 5
@@ -89,7 +89,7 @@ ComTrafficProcessor::__tag_cmdParams ComTrafficProcessor::m_ackParams[] = {
 ComTrafficProcessor::ComTrafficProcessor(RitexDevice* pDevice)
 	: m_state(STATE_PROCESS_KSU_TRAFFIC), m_nextState(STATE_PROCESS_KSU_TRAFFIC), m_fd(-1), m_pDevice(pDevice), m_writeMode(WRITE_MODE_0), m_isDataCapture(false),m_doRun(true),
 	  m_isInFault(false), m_faultCode(-1), m_number_of_ksu_failures(MAX_KSU_CHANCES), m_vd_state(-1),
-	  m_dataCapturePeriod(DATA_CAPTURE_PERIOD)
+	  m_dataCapturePeriod(DATA_CAPTURE_PERIOD), m_motorStatus(0xFF)
 {
 
 }
@@ -388,7 +388,9 @@ bool ComTrafficProcessor::SendCustomCmd(custom_command_t* cmd)
 {
 	pthread_mutex_lock(&m_cmdMutex);
 	Log("$$$$$$ CUSTOM_CMD sent!");
+	Log("DataReaderThread CUSTOM_CMD m_pendingCmdQueue size: %d", m_pendingCmdQueue.size());
 	m_pendingCmdQueue.push(cmd);
+	Log("DataReaderThread CUSTOM_CMD m_pendingCmdQueue size: %d", m_pendingCmdQueue.size());
 	pthread_mutex_unlock(&m_cmdMutex);
 	return true;
 }
@@ -497,7 +499,6 @@ void ComTrafficProcessor::ProcessMotorCmd(int cmd, int param, int& error)
 	if (error == ERROR_READ_NO_ERROR) {
 		//we need ACK first
 		if (GET_CMD(pPacket->GetCmd()) == ACK_ACK) {
-			Log("Command result = 0x%X", pPacket->GetDataPtr()[0]);
 			// command accepted, wait for real status
 			if (pPacket->GetDataPtr()[0] == 0) {
 				pPacket2 = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
@@ -507,7 +508,7 @@ void ComTrafficProcessor::ProcessMotorCmd(int cmd, int param, int& error)
 						if (error == ERROR_READ_NO_ERROR) {
 							if (GET_CMD(pPacket3->GetCmd()) == ACK_INFO) {
 								unsigned char motorStatus = pPacket3->GetDataPtr()[0];
-								Log("Got motor status: new: 0x%X old:", motorStatus, m_motorStatus);
+								Log("Got motor status: new: 0x%X old: 0x%X", motorStatus, m_motorStatus);
 								if((m_motorStatus & VD_ON_MASK) != (motorStatus & VD_ON_MASK)) {
 									m_pDevice->ReportStationState(motorStatus & VD_ON_MASK, m_motorStatus & VD_ON_MASK, time(NULL), std::string("HND"));
 								}
@@ -515,12 +516,18 @@ void ComTrafficProcessor::ProcessMotorCmd(int cmd, int param, int& error)
 							} else {
 								error = ERROR_READ_UNEXPECTED_PACKET;
 							}
+
 						}
 					} else {
+
 						error = ERROR_READ_UNEXPECTED_PACKET;
 					}
+
 				}
+
+
 			}
+
 		}
 	}
 
@@ -581,7 +588,19 @@ void* ComTrafficProcessor::Run()
 						// get operation mode
 						unsigned char* pData = packet->GetDataPtr();
 						m_isAutoMode = (pData[VD_STATUS_OFFSET] & VD_MODE_AUTO_MASK) != 0;
-						m_motorStatus = pData[VD_STATUS_OFFSET];
+						unsigned char newMotorStatus = pData[VD_STATUS_OFFSET];
+						//station could automatically turn on/off the engine. check it
+
+						Log("*-*-*- Checking motor status: new=0x%X old=0x%X", newMotorStatus, m_motorStatus);
+
+						if(m_motorStatus != 0xFF) {
+							if((m_motorStatus & VD_ON_MASK) != (newMotorStatus & VD_ON_MASK)) {
+								m_pDevice->ReportStationState(newMotorStatus & VD_ON_MASK, m_motorStatus & VD_ON_MASK, time(NULL), std::string("HND"));
+							}
+						}
+
+
+						m_motorStatus = newMotorStatus;
 
 						// we got regular GAT_DATA-REPORT_DATA sequence so we are in the 'window'
 						// device is not captured
@@ -676,17 +695,19 @@ void* ComTrafficProcessor::Run()
 												continue;
 											}
 										}
+										if(!ChangeMode((m_writeMode+i) % 7, error))
+											break;
+										Log("############ KSU mode:%d.",(m_writeMode + i) %7);
 										RequestCurrentData();
 										packet = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
 
+										packet->SetCmdMode((m_writeMode+i) % 7);/* set mode */
 										if(error == ERROR_READ_NO_ERROR) {
 											m_pDevice->ReportDataPacket(packet);
 										}
 										if(packet)
 											delete packet;
 
-										if(!ChangeMode((m_writeMode+i) % 7, error))
-											break;
 
 
 									}

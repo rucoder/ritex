@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include "Utils.h"
 #include "Log.h"
+#include "ErrorsMsg.h"
 
 CmdExternal::CmdExternal(RitexDevice* device, std::string commport, int speed, CmdLineCommand* cmd, unsigned short cmdId, unsigned char param1, unsigned short param2)
 	: DeviceCommand(true, cmd), m_pDevice(device), m_cmdId(cmdId), m_param1(param1), m_param2(param2), m_commport(commport), m_speed(speed)
@@ -42,7 +43,7 @@ void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*
 		case REQ_SETTING_SET:
 			switch(packet->GetCmd()) {
 			case ACK_ACK:
-				m_rawResult = std::string("7;Ошибка. Код ") + itoa(packet->GetDataPtr()[0]) + std::string("\n");
+				m_rawResult = std::string("7;Ошибка. Код ") + itoa(packet->GetDataPtr()[0]) + std::string(": ") + getFaultText(packet->GetDataPtr()[0]) + std::string("\n");
 				break;
 			case ACK_ALL_SETTINGS:
 				{
@@ -75,7 +76,7 @@ void CmdExternal::SetReply(DataPacket* packet, int status/*, DataPacket* param2*
 		case REQ_VD_ROTATION:
 			if (packet->GetCmd() == ACK_ACK) {
 				unsigned char errorCode = packet->GetDataPtr()[0];
-				m_rawResult = std::string("7;Ошибка. Код ") + itoa(errorCode) + std::string("\n");
+				m_rawResult = std::string("7;Ошибка. Код ") + itoa(errorCode) + std::string(": ") + getFaultText(errorCode) + std::string("\n");
 			} else if(packet->GetCmd() == ACK_INFO){
 				m_rawResult = std::string("8;Прием без ошибок\n");
 				if(m_cmdId == REQ_VD_ON) {

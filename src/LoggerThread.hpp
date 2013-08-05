@@ -8,6 +8,8 @@
 #ifndef LOGGERTHREAD_H_
 #define LOGGERTHREAD_H_
 
+
+
 #include "Thread.h"
 
 #include <queue>
@@ -16,12 +18,36 @@
 #include <syslog.h>
 #include <assert.h>
 #include <errno.h>
+#include <iostream>
+#include <cmath>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "gateway/error.hpp"
+#include "gateway/string.hpp"
+#include "gateway/logger.hpp"
+#include "gateway/command.hpp"
+
+
+using namespace stek::oasis::ic::dbgateway;
+
 
 extern void Log(std::string format, ...);
 
 template <typename T>
 class LoggerThread: public Thread {
 private:
+	//gateway data
+
+
+
 	// sqlite3
 	std::string m_sDbName;
 	sqlite3* m_pDb;
@@ -45,12 +71,16 @@ protected:
 private:
 	sqlite3_stmt* m_pStm; //insert statement
 protected:
+
+
+
 	LoggerThread()
 		: m_pDb(NULL), m_pStm(NULL)
 	{
 
 	};
-	virtual bool BindParams(T data) = 0;
+
+	virtual bool BindParams(T data, int sock) = 0;
 	virtual void* Run()
 	{
 		T pData;
@@ -70,7 +100,7 @@ protected:
 			rc = 0;
 
 			while(m_queue.empty())
-				rc = pthread_cond_timedwait(&m_condProcessQueue, &m_queueMutex, &tm);
+			rc = pthread_cond_timedwait(&m_condProcessQueue, &m_queueMutex, &tm);
 
 			transactionSize = m_queue.size();
 
@@ -83,8 +113,65 @@ protected:
 				continue;
 			}
 
+			//open socket to gateway
 
-			sqlite3_exec(m_pDb, "BEGIN", 0, 0, 0);
+			int rc;
+
+			int sock = socket( AF_UNIX, SOCK_STREAM, 0 );
+			Log("[dbgateway] Created socket.sock=%d",sock);
+
+			sockaddr_un addr;
+			memset( & addr, 0, sizeof( addr ) );
+			addr.sun_family = AF_UNIX;
+			rc = snprintf( addr.sun_path, sizeof( addr.sun_path ), "%s", "/tmp/dbgateway.socket" );
+			Log("[dbgateway] Create socket addr.rc=%d",rc);
+			rc = connect( sock, reinterpret_cast< sockaddr * >( & addr ), sizeof( addr ) );
+			Log("[dbgateway] Connect to socket.rc=%d",rc);
+
+			//Send all available data
+			Log("[dbgateway] transactionSize=%d",transactionSize);
+
+			while(transactionSize > 0) {
+				transactionSize--;
+				Log("Queue size:%u transaction size:%u",m_queue.size(), transactionSize);
+
+				pthread_mutex_lock(&m_queueMutex);
+				if(m_queue.empty()) {
+					break;
+				}
+				pData = m_queue.front();
+				m_queue.pop();
+
+				pthread_mutex_unlock(&m_queueMutex);
+
+				//Send data
+				if(pData) {
+					Log("[dbgateway-ritex] push data");
+					BindParams(pData,sock);
+					delete pData;
+					pData = NULL;
+					//put data back to queue but not notify.
+			/*		if(pData) {
+						EnqueData(pData, false);
+						Log("Couldn't insert data. ERROR: [%d-%d] %s", getLastError(), getLastExtError(),  getLastErrorMsg());
+					}*/
+
+				}
+
+			}
+
+			//close socket to gateway
+
+				mark_t eot( "EOT" );
+				Log("[dbgateway-ritex] send EOT");
+
+				write( sock, eot.data(), eot.size() );
+
+				rc = close( sock );
+
+
+
+		/*	sqlite3_exec(m_pDb, "BEGIN", 0, 0, 0);
 
 
 			while(transactionSize > 0) {
@@ -117,7 +204,7 @@ protected:
 					sqlite3_clear_bindings(m_pStm);
 				}
 			}
-			sqlite3_exec(m_pDb, "END", 0, 0, 0);
+			sqlite3_exec(m_pDb, "END", 0, 0, 0);*/
 		}
 		return NULL;
 	}
@@ -133,7 +220,7 @@ protected:
 	int getLastExtError() {
 		return sqlite3_extended_errcode(m_pDb);
 	}
-	void flush() {
+	/*void flush() {
 		//just in case we terminated thread somewhere in between
 		if(m_pStm && m_pDb) {
 			sqlite3_reset(m_pStm);
@@ -159,7 +246,7 @@ protected:
 			}
 			sqlite3_exec(m_pDb, "END", 0, 0, 0);
 		}
-	}
+	}*/
 
 	bool Bind(int index, int value) {
 		if(sqlite3_bind_int(m_pStm, index, value) != SQLITE_OK) {
@@ -192,7 +279,7 @@ public:
 		Join();
 		pthread_cond_destroy(&m_condProcessQueue);
 		pthread_mutex_destroy(&m_queueMutex);
-		flush();
+	//	flush();
 		assert(m_queue.empty());
 		CloseDb();
 		Log("~LoggerThread-<<");

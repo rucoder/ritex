@@ -22,7 +22,8 @@ CC_FLAGS = -O3 -g3 -Wall -rdynamic -fno-omit-frame-pointer -mapcs-frame $(INC_PA
 
 LD_FLAGS = -rdynamic -fno-omit-frame-pointer -mapcs-frame -lpthread -lsqlite3 -lrt $(LIB_PATH) -ldl
 
-CPP_FILES := $(wildcard src/*.cpp)
+CPP_FILES := $(wildcard src/gateway/*.cpp src/*.cpp)
+#CPP_FILES := $(wildcard src/*.cpp)
 AS_FILES := $(wildcard src/*.s)
 
 OBJ_FILES=$(patsubst src/%.cpp,$(OUT)/%.o,$(CPP_FILES))
@@ -49,6 +50,7 @@ $(OUT)/%.o: src/%.s
 .PHONY: dirs
 dirs:
 	mkdir -p $(OUT)
+	mkdir -p $(OUT)/gateway
 clean::
 	rm -rf $(OUT)/*
 	rm -rf $(EXECUTABLE)

@@ -22,7 +22,8 @@
 
 #define DEVICE_STATE_CHANNEL_PARAM 1050100010
 
-struct setting_t {
+
+struct setting_t_d {
 	const char* m_name;
 	const char* m_suffix;
 	int m_id;
@@ -33,7 +34,7 @@ struct setting_t {
 	bool m_isValueSet;
 };
 
-static setting_t all_Settings[] = {
+static setting_t_d all_Settings[] = {
 	{"Частота вращения","",31,0,2, true, 0, false},
 	{"Ток ВД при перегрузе","",32,2,1, true, 0, false},
 	{"Защита по перегрузу","",33,3,1, true, 0, false},
@@ -66,14 +67,24 @@ static setting_t all_Settings[] = {
 	{"Время срабатывания защиты по дисбалансу I  вых. фаз","",60,38,1, true, 0, false},
 	{"Дополнительная настройка","",61,39,2, true, 0, false},
 	{"Работа с ТМС","",62,41,1, true, 0, false},
-	{"Предельная температура ВД ","",63,42,1, true, 0, false},
-	{"Давление жидкости на приеме насоса ","",64,43,1, true, 0, false},
+	{"Предельная температура ВД","",63,42,1, true, 0, false},
+	{"Давление жидкости на приеме насоса","",64,43,1, true, 0, false},
 	{"Изменение скорости вращения ВД при регулировании по давлению жидкости на приеме насоса","",65,44,1, true, 0, false},
 	{"Предел снижения скорости вращения ВД","",66,45,2, true, 0, false},
+
+	{"Номинальная мощность ЭД","",152,-1,2, true, 0, false},
+	{"Номинальный напор УЭЦН","",155,-1,2, true, 0, false},
+	{"Номинальная производительность насоса","",156,-1,2, true, 0, false},
+
+	{"Дебит жидкости(режим)","",157,-1,2, true, 0, false},
+	{"Дебит жидкости(АГЗУ)","",158,-1,2, true, 0, false},
+	{"Буферное давление(СТМ-У)","",159,-1,2, true, 0, false},
+	{"Затрубное давление(СТМ-У)","",160,-1,2, true, 0, false},
+	{"Линейное давление(СТМ-У)","",161,-1,2, true, 0, false},
 };
 
 
-#define NUMBER_OF_SETTINGS (sizeof(all_Settings) / sizeof(setting_t))
+#define NUMBER_OF_SETTINGS (sizeof(all_Settings) / sizeof(setting_t_d))
 
 
 typedef struct {
@@ -235,23 +246,23 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 	pSensor->AddChannel(new DeviceChannel(48, false, new AdapterParameter(1050109010, "Число оборотов ВД", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_0,2,2))));
 	pSensor->AddChannel(new DeviceChannel(50, false, new AdapterParameter(1050201000, "Общее время работы насоса, час", true, "X:X:X:X",
-		false, new controller_data_t(ACK_INFO_MODE_0,27,2))));
+		false, new controller_data_t(ACK_INFO_MODE_0,29/*27*/,2))));
 	pSensor->AddChannel(new DeviceChannel(51, false, new AdapterParameter(1050102010, "Общее количество запусков насоса", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_0,25,2))));
-	pSensor->AddChannel(new DeviceChannel(52, false, new AdapterParameter(1050601010, " Время наработки станции в ч", true, "X:X:X:X",
-		false, new controller_data_t(ACK_INFO_MODE_0,31,2))));
+	pSensor->AddChannel(new DeviceChannel(52, false, new AdapterParameter(1050601010, "Время наработки станции в ч", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_0,33/*31*/,2))));
 	pSensor->AddChannel(new DeviceChannel(53, false, new AdapterParameter(1080105030, "Давление на приеме насоса (пласт. жидкость)", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_0,17,1))));
 	pSensor->AddChannel(new DeviceChannel(54, false, new AdapterParameter(1080104010, "Температура на приеме насоса (масло двигателя), °С", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_0,16,1))));
-	pSensor->AddChannel(new DeviceChannel(55, false, new AdapterParameter(1080104020, "Температура обмоток двигателя, °С", true, "X:X:X:X",
+	pSensor->AddChannel(new DeviceChannel(55, false, new AdapterParameter(1080104020, "Температура пластовой жидкости, °С", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_3,2,1))));
 	pSensor->AddChannel(new DeviceChannel(56, false, new AdapterParameter(1080100009, "Вибрация насоса по оси X, м/с2", true, "X:X:X:X",
 		false, new controller_data_t(ACK_INFO_MODE_3,4,2))));
 	pSensor->AddChannel(new DeviceChannel(57, false, new AdapterParameter(1080100010, "Вибрация насоса по оси Y, м/с2", true, "X:X:X:X",
-		false, new controller_data_t(ACK_INFO_MODE_3,8,2))));
-	pSensor->AddChannel(new DeviceChannel(58, false, new AdapterParameter(1080118000, "Вибрация насоса по оси Z, м/с2", true, "X:X:X:X",
-		false, new controller_data_t(ACK_INFO_MODE_3,12,2))));
+		false, new controller_data_t(ACK_INFO_MODE_3,6,2))));
+	pSensor->AddChannel(new DeviceChannel(58, false, new AdapterParameter(1080105040, "Давление масла в двигателе", true, "X:X:X:X",
+		false, new controller_data_t(ACK_INFO_MODE_3,10,2))));
 
 	AddSensor(pSensor);
 
@@ -287,6 +298,8 @@ RitexDevice::RitexDevice(IAdapter* pAdapter)
 
 
 	m_pProcessor = new ComTrafficProcessor(this);
+	//m_pDataReaderThread = new DataReaderThread(m_pProcessor);
+	//m_pDataReaderThread->Create(false);
 }
 
 RitexDevice::~RitexDevice() {
@@ -370,7 +383,6 @@ DeviceCommand* RitexDevice::CreateExternalCommand(CmdLineCommand* cmd)
 //		pExtCmd->AddResultListener(this);
 
 	return pExtCmd;
-
 }
 
 bool RitexDevice::ExecuteCustomCommand(DeviceCommand* pCmd, std::string com, int speed, unsigned char cmd, unsigned char p1, unsigned short p2) {
@@ -534,6 +546,7 @@ void RitexDevice::ReportDataPacket(DataPacket* packet)
 
 	for(unsigned int i = 0; i < m_offsetTable.size(); i++) {
 		// parameter value is stored in this packet
+		//Log("[ReportDataPacket] m_offsetTable: %04X  packet->GetCmd() %04X", m_offsetTable[i].m_cmd, packet->GetCmd());
 		if(m_offsetTable[i].m_cmd == packet->GetCmd()) {
 			DBDataPacket* event = new DBDataPacket();
 
@@ -542,6 +555,7 @@ void RitexDevice::ReportDataPacket(DataPacket* packet)
 			event->setChannelId(m_offsetTable[i].m_channelId);
 			event->setParamId(m_offsetTable[i].m_paramId);
 			event->setRegisterDate(packet->GetTimestamp());
+
 
 			if(m_offsetTable[i].m_size == 1) {
 				unsigned char value;
@@ -553,6 +567,7 @@ void RitexDevice::ReportDataPacket(DataPacket* packet)
 				value = swap16(value);
 				event->setValue((float)value);
 			}
+			Log("Enqueue datapacket C:%u P:%u V:%f",event->getChannelId(),event->getParamId(),event->getValue());
 			m_pAdapter->getDataLogger()->EnqueData(event, false);
 		}
 	}
@@ -712,7 +727,8 @@ void RitexDevice::CheckSettigsChanged(const DataPacket& newSettings) {
 		unsigned short newValue = GetSettingFromPacket(newSettings, offset, all_Settings[i].m_size);
 		unsigned short oldValue =  all_Settings[i].m_value;
 
-		if(newValue != oldValue) {
+//Log( "RitexDevice::CheckSettigsChanged: m_value:%d m_isValueSet:%d", all_Settings[i].m_value, all_Settings[i].m_isValueSet);
+		if( ( (m_isFirstSettingsPacket == true) && (all_Settings[i].m_isValueSet == false) ) || (newValue != oldValue)) {
 			all_Settings[i].m_value = newValue;
 			DBEventCommon* event = new DBEventCommon();
 			event->setChannelId(GetDeviceStateChannelId());
@@ -775,11 +791,11 @@ bool RitexDevice::IncrementEventCount() {
 }
 
 void RitexDevice::ReportEvent(DBEventCommon* pEvent) {
-	DBEventCommon* pEvent2 = new DBEventCommon(*pEvent);
+//	DBEventCommon* pEvent2 = new DBEventCommon(*pEvent);
 
 	m_pAdapter->getEventLogger()->EnqueData(pEvent);
 
-	m_pAdapter->getEventLogger2()->EnqueData(pEvent2);
+//	m_pAdapter->getEventLogger2()->EnqueData(pEvent2);
 
 	IncrementEventCount();
 }
@@ -801,14 +817,14 @@ bool RitexDevice::UpdateSettingsValues() {
 #if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
     std::string dbPath = "/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb";
 #else
-    std::string dbPath = "/mnt/www/ControlServer/data/ic_data_event3.sdb";
+    //std::string dbPath = "/mnt/www/ControlServer/data/ic_data_event3.sdb";
+    std::string dbPath = "/forsrv/event/ic_data_event3.sdb";
 #endif
 
 	std::string sEventSqlQuery = std::string("select Argument3,Argument1 from (" \
 					"select  *  from tbleventbus as filter inner join" \
 				  	" (select Argument3, max(registerdate) as registerdate from tbleventbus where TypeId=\"11\" group by Argument3 )	as filter1" \
 					" on filter.Argument3 = filter1.Argument3 and filter.registerdate = filter1.registerdate)");
-
     int rc = sqlite3_open_v2(dbPath.c_str(), &pDb,SQLITE_OPEN_READONLY, NULL);
 
     if(rc != SQLITE_OK)
@@ -831,12 +847,16 @@ bool RitexDevice::UpdateSettingsValues() {
     			continue;
     		}
 
+    		unsigned short m_value;
+    		bool m_isValueSet;
     		for(unsigned int i = 0;i < NUMBER_OF_SETTINGS; i++) {
     			if(strcmp(all_Settings[i].m_name,(const char*)paramId) == 0) {
-    					all_Settings[i].m_value = value;
+    					m_value = all_Settings[i].m_value = value;
+    					m_isValueSet = all_Settings[i].m_isValueSet = true;
     					break;
     			}
     		}
+    		Log( "Found setting: m_value:%d m_isValueSet:%d", m_value, m_isValueSet);
     	}
     } else {
     	Log( "[SQL] UpdateSettingsValues: error preparing %d %s for DB: %s", rc, sqlite3_errmsg(pDb), dbPath.c_str());
@@ -848,7 +868,6 @@ bool RitexDevice::UpdateSettingsValues() {
 int RitexDevice::GetDeviceStateChannelId() {
 	return m_pAdapter->GetParameterFilter().FindChannel(DEVICE_STATE_CHANNEL_PARAM);
 }
-
 
 
 

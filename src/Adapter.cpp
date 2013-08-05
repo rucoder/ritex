@@ -64,8 +64,8 @@ void tolog(FILE **pfp)
 
 Adapter::Adapter(std::string name, std::string version, std::string description, CmdLineParser* parser)
 	: m_adapterName(name), m_adapterVersion(version), m_adapterDescription(description),
-	  m_pCmdLineParser(parser), m_pDevice(NULL), m_pCommChannel(NULL),
-	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pEventLogger2(NULL), m_pDataLogger(NULL)
+	  m_pCmdLineParser(parser), m_pDevice(NULL), m_daemonFd(-1), m_pCommChannel(NULL),
+	  m_pidFilePath(PID_FILE_PATH), m_pEventLogger(NULL), m_pDataLogger(NULL)
 {
 	//generate base part of socket name
 	m_socket = name + "_socket";
@@ -317,6 +317,15 @@ int Adapter::Run() {
 					 * when daemon was launched. Real command will be passed over AF_UNIX socket
 					 * if needed
 					 */
+					Log( "DataReaderThread [DAEMON]");
+
+					std::string comm;
+					int speed, deviceId;
+					pCmdLineCommand->GetParameter("comdevice", comm);
+					pCmdLineCommand->GetParameter("baudrate", speed);
+					deviceId = pCmdLineCommand->m_deviceId;
+
+
 					delete pCmdLineCommand;
 					delete pDevCmd;
 
@@ -338,6 +347,12 @@ int Adapter::Run() {
 						Log( "[DAEMON] Couldn't get parameter filter for devId=%d", m_pDevice->getDeviceId());
 						break;
 					}
+					if (!UpdateParameterFilter(-1)) {
+						//cannot continue. cleanup and exit
+						DaemonCleanup();
+						Log( "[DAEMON] Couldn't get parameter filter for all devId");
+						break;
+					}
 
 					if(!m_pDevice->UpdateSettingsValues()) {
 						//cannot continue. cleanup and exit
@@ -345,7 +360,6 @@ int Adapter::Run() {
 						Log( "[DAEMON] Couldn't update settings values for devId=%d", m_pDevice->getDeviceId());
 						break;
 					}
-
 
 					/*
 					 * Now create all necessary communication facilities:
@@ -355,6 +369,7 @@ int Adapter::Run() {
 					 */
 
 					if(CreateLoggerFacility()) {
+
 						/*
 						 * now create server socket and start listening. there must be a command alredy
 						 * which initiated daemonization! Here we have to go to some kind of endless loop
@@ -415,7 +430,10 @@ bool Adapter::UpdateParameterFilter(int devId)
     	sqlite3_close(pDb);
     	return false;
     }
-    snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where DeviceId == %d AND isOn == 1", devId);
+    if(devId == -1)
+    	snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where isOn == 1");
+    else
+    	snprintf(query, 1024, "select ParamId,ChanelId from tblChanelInfo where DeviceId == %d AND isOn == 1", devId);
 
     if ((rc = sqlite3_prepare_v2(pDb, query, - 1, &pStm, NULL)) == SQLITE_OK) {
     	if (pStm != NULL) {
@@ -425,7 +443,10 @@ bool Adapter::UpdateParameterFilter(int devId)
     			int paramId = sqlite3_column_int(pStm, 0);
     			int channelId = sqlite3_column_int(pStm, 1);
     			Log( "Add channel to filter: P:%d C:%d", paramId, channelId);
-    			m_paramFilter.AddItem(channelId, paramId);
+    			if(devId == -1)
+    				m_paramFilterForAllDevices.AddItem(channelId, paramId);
+    			else
+    				m_paramFilter.AddItem(channelId, paramId);
     		}
     		sqlite3_finalize(pStm);
     	} else {
@@ -462,16 +483,14 @@ bool Adapter::CreateLoggerFacility()
 
 #if defined(KSU_EMULATOR) || defined(RS485_ADAPTER)
 	m_pEventLogger = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/forsrv/event/ic_data_event3.sdb");
-	m_pEventLogger2 = new EventLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/home/ruinmmal/workspace/ritex/data/ic_data_value3.sdb");
 #else
 	m_pEventLogger = new EventLoggerThread("/forsrv/event/ic_data_event3.sdb");
-	m_pEventLogger2 = new EventLoggerThread("/mnt/www/ControlServer/data/ic_data_event3.sdb");
 	m_pDataLogger = new DataLoggerThread("/mnt/www/ControlServer/data/ic_data_value3.sdb");
 #endif
 
-	if(m_pEventLogger && m_pEventLogger2 && m_pDataLogger) {
-		if(m_pEventLogger->Create() && m_pEventLogger2->Create() && m_pDataLogger->Create()) {
+	if(m_pEventLogger && m_pDataLogger) {
+		if(m_pEventLogger->Create() && m_pDataLogger->Create()) {
 			return true;
 		}
 	}
@@ -479,10 +498,6 @@ bool Adapter::CreateLoggerFacility()
 	if(m_pEventLogger) {
 		delete m_pEventLogger;
 		m_pEventLogger = NULL;
-	}
-	if(m_pEventLogger2) {
-		delete m_pEventLogger2;
-		m_pEventLogger2 = NULL;
 	}
 	if(m_pDataLogger) {
 		delete m_pDataLogger;
@@ -544,11 +559,5 @@ void Adapter::DaemonCleanup() {
 		delete m_pEventLogger;
 		m_pEventLogger = NULL;
 	}
-	if(m_pEventLogger2) {
-		delete m_pEventLogger2;
-		m_pEventLogger2 = NULL;
-	}
 	DeletePidFile();
 }
-
-

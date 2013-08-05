@@ -14,7 +14,7 @@
 class EventLoggerThread: public LoggerThread<DBEventCommon*> {
 protected:
 	EventLoggerThread() {};
-	virtual bool BindParams(DBEventCommon* data);
+	virtual bool BindParams(DBEventCommon* data, int sock);
 public:
 	EventLoggerThread(std::string db_name);
 	virtual ~EventLoggerThread() {};
