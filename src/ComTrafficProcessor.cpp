@@ -455,6 +455,13 @@ bool ComTrafficProcessor::ProcessCommand(custom_command_t* pCmd, int& error)
 						if(error != ERROR_READ_NO_ERROR) {
 							break;
 						}
+						// need to get new motor status for motor related commands
+						// not the best way to do it here though
+						if(GET_CMD(pPacket->GetCmd()) == ACK_INFO) {
+							unsigned char motorStatus = pPacket->GetDataPtr()[VD_STATUS_OFFSET];
+							Log("Got motor status (SRV!!!): new: 0x%X old: 0x%X", motorStatus, m_motorStatus);
+							m_motorStatus = motorStatus;
+						}
 					} else {
 						// we know that AC_ACK matches CMD. no need to check
 						break;
@@ -507,7 +514,7 @@ void ComTrafficProcessor::ProcessMotorCmd(int cmd, int param, int& error)
 						pPacket3 = WaitForKsuActivity(KSU_INACTIVITY_TIMEOUT, error);
 						if (error == ERROR_READ_NO_ERROR) {
 							if (GET_CMD(pPacket3->GetCmd()) == ACK_INFO) {
-								unsigned char motorStatus = pPacket3->GetDataPtr()[0];
+								unsigned char motorStatus = pPacket3->GetDataPtr()[VD_STATUS_OFFSET];
 								Log("Got motor status: new: 0x%X old: 0x%X", motorStatus, m_motorStatus);
 								if((m_motorStatus & VD_ON_MASK) != (motorStatus & VD_ON_MASK)) {
 									m_pDevice->ReportStationState(motorStatus & VD_ON_MASK, m_motorStatus & VD_ON_MASK, time(NULL), std::string("HND"));
